@@ -64,7 +64,7 @@ const Header = () => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="text-2xl font-bold text-blue-600">
+            <Link href="/" className="text-2xl font-bold text-primary">
               eFileTax
             </Link>
           </div>
@@ -79,7 +79,7 @@ const Header = () => {
                   onMouseEnter={() => handleMouseEnter(index)}
                   onMouseLeave={handleMouseLeave}
                 >
-                  <button className="text-gray-700 hover:text-blue-600 py-2 font-medium">
+                  <button className="text-gray-700 hover:text-primary py-2 font-medium">
                     {item.title}
                   </button>
 
@@ -90,7 +90,7 @@ const Header = () => {
                         <Link
                           key={subIndex}
                           href={subItem.href}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary"
                         >
                           {subItem.title}
                         </Link>
@@ -114,13 +114,13 @@ const Header = () => {
                       ? "/dashboard/admin"
                       : "/dashboard/user"
                   }
-                  className="px-4 py-2 text-blue-600 hover:text-blue-800"
+                  className="px-4 py-2 text-primary hover:text-primary-700"
                 >
                   Dashboard
                 </Link>
                 <button
                   onClick={handleLogout}
-                  className="px-4 py-2 text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
+                  className="px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary-50"
                 >
                   Logout
                 </button>
@@ -129,13 +129,13 @@ const Header = () => {
               <>
                 <Link
                   href="/auth/login"
-                  className="px-4 py-2 text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50"
+                  className="px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary-50"
                 >
                   Login
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                  className="px-4 py-2 bg-secondary text-white rounded-md hover:bg-secondary-600"
                 >
                   Get Started
                 </Link>
@@ -145,7 +145,7 @@ const Header = () => {
 
           {/* Mobile Menu Button (hidden on desktop) */}
           <div className="md:hidden">
-            <button className="text-gray-500 hover:text-blue-600">
+            <button className="text-gray-500 hover:text-primary">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-6 w-6"

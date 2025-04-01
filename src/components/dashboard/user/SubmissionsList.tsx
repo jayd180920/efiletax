@@ -133,7 +133,7 @@ const UserSubmissionsList = () => {
           </label>
           <select
             id="status-filter"
-            className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
             value={statusFilter || "all"}
             onChange={handleStatusFilterChange}
           >
@@ -160,7 +160,7 @@ const UserSubmissionsList = () => {
           <p className="text-gray-500">No submissions found</p>
           <Link
             href="/services/gst-filing/new-registration"
-            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
           >
             Create New Submission
           </Link>
@@ -173,7 +173,7 @@ const UserSubmissionsList = () => {
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
-                      <p className="text-sm font-medium text-blue-600 truncate">
+                      <p className="text-sm font-medium text-primary truncate">
                         <Link
                           href={`/dashboard/user/submissions/${submission._id}`}
                         >
@@ -212,7 +212,7 @@ const UserSubmissionsList = () => {
                     <div className="mt-2 flex items-center text-sm sm:mt-0">
                       <Link
                         href={`/dashboard/user/submissions/${submission._id}`}
-                        className="text-blue-600 hover:text-blue-800"
+                        className="text-primary hover:text-primary-700"
                       >
                         View Details
                       </Link>
@@ -323,7 +323,7 @@ const UserSubmissionsList = () => {
                               onClick={() => handlePageChange(page)}
                               className={`relative inline-flex items-center px-4 py-2 border ${
                                 page === pagination.page
-                                  ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                  ? "z-10 bg-primary-50 border-primary text-primary"
                                   : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                               } text-sm font-medium`}
                             >

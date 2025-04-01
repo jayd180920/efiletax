@@ -16,9 +16,11 @@ const adminPaths = ["/dashboard/admin"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  console.log("Middleware processing path:", pathname);
 
   // Handle common typo: /dashboard/users -> /dashboard/user
   if (pathname === "/dashboard/users") {
+    console.log("Redirecting from /dashboard/users to /dashboard/user");
     return NextResponse.redirect(new URL("/dashboard/user", request.url));
   }
 
@@ -26,69 +28,86 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = protectedPaths.some((path) =>
     pathname.startsWith(path)
   );
+  console.log("Is protected path:", isProtectedPath);
 
   // If not a protected path, allow the request
   if (!isProtectedPath) {
+    console.log("Not a protected path, allowing request");
     return NextResponse.next();
   }
 
-  // Try to get NextAuth.js session token
-  const nextAuthToken = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
+  try {
+    // Try to get NextAuth.js session token
+    const nextAuthToken = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    console.log("NextAuth token exists:", !!nextAuthToken);
 
-  // Get custom token from cookies
-  const customToken = request.cookies.get("token")?.value;
+    // Get custom token from cookies
+    const customToken = request.cookies.get("token")?.value;
+    console.log("Custom token exists:", !!customToken);
 
-  // If no tokens, redirect to login
-  if (!nextAuthToken && !customToken) {
-    const url = new URL("/auth/login", request.url);
-    url.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(url);
-  }
+    // Check if we have any valid authentication
+    let isAuthenticated = false;
+    let userRole = "user";
 
-  // If we have a NextAuth token, use that
-  if (nextAuthToken) {
-    // Log token for debugging
-    console.log("NextAuth token:", nextAuthToken);
+    // Check NextAuth token
+    if (nextAuthToken) {
+      console.log("Using NextAuth token for authentication");
+      isAuthenticated = true;
 
-    // Check if admin path and user is not admin
-    const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
+      // Get role from token, default to 'user' if not present
+      userRole =
+        (nextAuthToken as any).role ||
+        (nextAuthToken as any).user?.role ||
+        "user";
+      console.log("User role from NextAuth token:", userRole);
+    }
+    // Check custom token
+    else if (customToken) {
+      console.log("Verifying custom token");
+      const payload = verifyToken(customToken);
 
-    // Get role from token, default to 'user' if not present
-    const userRole =
-      (nextAuthToken as any).role ||
-      (nextAuthToken as any).user?.role ||
-      "user";
-
-    if (isAdminPath && userRole !== "admin") {
-      console.log(`Access denied: User role '${userRole}' is not admin`);
-      // Redirect non-admin users to user dashboard
-      return NextResponse.redirect(new URL("/dashboard/user", request.url));
+      if (payload) {
+        console.log("Custom token verified, user role:", payload.role);
+        isAuthenticated = true;
+        userRole = payload.role;
+      } else {
+        console.log("Custom token verification failed");
+      }
     }
 
-    // Allow the request
-    return NextResponse.next();
-  }
+    // If authenticated, check role permissions
+    if (isAuthenticated) {
+      // Check if admin path and user is not admin
+      const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
+      console.log("Is admin path:", isAdminPath);
 
-  // Otherwise, verify custom token
-  const payload = customToken ? verifyToken(customToken) : null;
-  if (!payload) {
+      if (isAdminPath && userRole !== "admin") {
+        console.log(`Access denied: User role '${userRole}' is not admin`);
+        // Redirect non-admin users to user dashboard
+        return NextResponse.redirect(new URL("/dashboard/user", request.url));
+      }
+
+      console.log("Authentication successful, allowing request");
+      // Allow the request
+      return NextResponse.next();
+    }
+
+    // If no valid authentication, redirect to login
+    console.log("No valid authentication found, redirecting to login");
+    const url = new URL("/auth/login", request.url);
+    url.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(url);
+  } catch (error) {
+    console.error("Error in middleware:", error);
+
+    // In case of error, redirect to login for safety
     const url = new URL("/auth/login", request.url);
     url.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(url);
   }
-
-  // Check if admin path and user is not admin
-  const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
-  if (isAdminPath && payload.role !== "admin") {
-    // Redirect non-admin users to user dashboard
-    return NextResponse.redirect(new URL("/dashboard/user", request.url));
-  }
-
-  // Allow the request
-  return NextResponse.next();
 }
 
 // Configure the middleware to run on specific paths

@@ -110,25 +110,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     callbackUrl?: string
   ) => {
     try {
+      console.log(
+        "AuthContext: login called with email:",
+        email,
+        "callbackUrl:",
+        callbackUrl
+      );
       setLoading(true);
       setError(null);
+
+      // Call the login API
       const user = await loginApi(email, password, callbackUrl);
+      console.log("AuthContext: login API returned user:", user);
+
+      // Set the user in state
       setUser(user);
 
-      console.log("Redirecting after login, callbackUrl:", callbackUrl);
+      // Determine the target URL
+      const targetUrl =
+        callbackUrl ||
+        (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+
+      console.log("AuthContext: Redirecting to:", targetUrl);
 
       // Use window.location for direct navigation
       if (typeof window !== "undefined") {
-        const targetUrl =
-          callbackUrl ||
-          (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
-
-        // Only redirect if we're not already on the target URL
-        if (!window.location.pathname.startsWith(targetUrl)) {
-          window.location.href = targetUrl;
-        }
+        // Force navigation to the target URL
+        console.log(
+          "AuthContext: Using window.location to navigate to:",
+          targetUrl
+        );
+        window.location.href = targetUrl;
       }
     } catch (error: any) {
+      console.error("AuthContext: Login error:", error);
       setError(error.message || "Login failed");
       throw error;
     } finally {

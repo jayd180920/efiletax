@@ -37,33 +37,24 @@ export default function LoginPage() {
 
   // Redirect if user is already logged in
   useEffect(() => {
-    // Skip redirection if we're already on the login page to prevent loops
-    if (
-      typeof window !== "undefined" &&
-      window.location.pathname.includes("/auth/login")
-    ) {
-      console.log("Already on login page, skipping redirection");
-      return;
-    }
-
     // Only redirect if we're sure the user is logged in (has id and role)
     if (!loading && user && user.id && user.role) {
-      console.log(
-        "User authenticated, redirecting to:",
+      console.log("User authenticated:", user);
+
+      // Determine target URL
+      const targetUrl =
         callbackUrl ||
-          (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user")
-      );
+        (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+
+      console.log("User authenticated, redirecting to:", targetUrl);
 
       // Use window.location for direct navigation
       if (typeof window !== "undefined") {
-        const targetUrl =
-          callbackUrl ||
-          (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+        console.log("Target URL for redirect:", targetUrl);
+        console.log("Current pathname:", window.location.pathname);
 
-        // Only redirect if we're not already on the target URL
-        if (!window.location.pathname.startsWith(targetUrl)) {
-          window.location.href = targetUrl;
-        }
+        // Force navigation to the target URL
+        window.location.href = targetUrl;
       }
     }
   }, [user, loading, callbackUrl]);

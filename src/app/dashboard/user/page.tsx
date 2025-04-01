@@ -10,26 +10,28 @@ export default function UserDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect admin users to admin dashboard or unauthenticated users to login
+  // Redirect admin users to admin dashboard
   React.useEffect(() => {
     if (!loading) {
+      console.log("Dashboard/user page - Auth state:", { user, loading });
+
       if (user && user.role === "admin") {
+        console.log("User is admin, should redirect to admin dashboard");
         // Only redirect if we're not already on the admin dashboard
         if (
           typeof window !== "undefined" &&
           !window.location.pathname.startsWith("/dashboard/admin")
         ) {
+          console.log("Redirecting admin to admin dashboard");
           window.location.href = "/dashboard/admin";
         }
-      } else if (!user) {
-        // Only redirect if we're not already on the login page
-        if (
-          typeof window !== "undefined" &&
-          !window.location.pathname.startsWith("/auth/login")
-        ) {
-          window.location.href = "/auth/login";
-        }
+      } else if (user) {
+        console.log(
+          "User is authenticated as regular user, staying on user dashboard"
+        );
       }
+      // Note: We're not redirecting unauthenticated users here anymore
+      // The middleware will handle that to avoid redirect loops
     }
   }, [user, loading]);
 

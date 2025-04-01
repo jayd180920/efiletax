@@ -20,32 +20,62 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          return null;
-        }
-
-        await dbConnect();
-
-        const user = await User.findOne({ email: credentials.email });
-        if (!user) {
-          return null;
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          user.password
+        console.log(
+          "NextAuth: authorize called with credentials:",
+          credentials?.email
         );
 
-        if (!isPasswordValid) {
+        if (!credentials?.email || !credentials?.password) {
+          console.log("NextAuth: Missing email or password");
           return null;
         }
 
-        return {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          role: user.role,
-        };
+        try {
+          await dbConnect();
+          console.log("NextAuth: Connected to database");
+
+          const user = await User.findOne({ email: credentials.email }).select(
+            "+password"
+          );
+          if (!user) {
+            console.log(
+              "NextAuth: User not found with email:",
+              credentials.email
+            );
+            return null;
+          }
+          console.log("NextAuth: User found:", {
+            id: user._id,
+            role: user.role,
+          });
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+          if (!isPasswordValid) {
+            console.log(
+              "NextAuth: Invalid password for user:",
+              credentials.email
+            );
+            return null;
+          }
+          console.log("NextAuth: Password validated successfully");
+
+          const userData = {
+            id: user._id.toString(),
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          };
+
+          console.log("NextAuth: Returning user data:", userData);
+          return userData;
+        } catch (error) {
+          console.error("NextAuth: Error in authorize function:", error);
+          return null;
+        }
       },
     }),
   ],

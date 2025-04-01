@@ -84,8 +84,10 @@ export async function middleware(request: NextRequest) {
       const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
       console.log("Is admin path:", isAdminPath);
 
-      if (isAdminPath && userRole !== "admin") {
-        console.log(`Access denied: User role '${userRole}' is not admin`);
+      if (isAdminPath && userRole !== "admin" && userRole !== "regionAdmin") {
+        console.log(
+          `Access denied: User role '${userRole}' is not admin or regionAdmin`
+        );
         // Redirect non-admin users to user dashboard
         return NextResponse.redirect(new URL("/dashboard/user", request.url));
       }

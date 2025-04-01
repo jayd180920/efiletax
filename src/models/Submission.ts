@@ -10,6 +10,7 @@ export interface ISubmission extends mongoose.Document {
   rejectionReason?: string;
   paymentStatus: "pending" | "paid";
   amount: number;
+  region?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
   approvedAt?: Date;
@@ -57,6 +58,10 @@ const SubmissionSchema = new mongoose.Schema<ISubmission>(
       type: Number,
       required: [true, "Amount is required"],
     },
+    region: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Region",
+    },
     approvedAt: {
       type: Date,
     },
@@ -72,6 +77,7 @@ SubmissionSchema.index({ userId: 1 });
 SubmissionSchema.index({ status: 1 });
 SubmissionSchema.index({ serviceId: 1 });
 SubmissionSchema.index({ paymentStatus: 1 });
+SubmissionSchema.index({ region: 1 });
 
 // Check if model exists before creating a new one (for hot reloading in development)
 const Submission =

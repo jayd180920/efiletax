@@ -129,7 +129,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Determine the target URL
       const targetUrl =
         callbackUrl ||
-        (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+        (user.role === "admin" || user.role === "regionAdmin"
+          ? "/dashboard/admin"
+          : "/dashboard/user");
 
       console.log("AuthContext: Redirecting to:", targetUrl);
 

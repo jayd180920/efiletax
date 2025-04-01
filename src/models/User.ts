@@ -4,8 +4,10 @@ import bcrypt from "bcryptjs";
 export interface IUser extends mongoose.Document {
   name: string;
   email: string;
+  phone?: string;
   password?: string;
-  role: "user" | "admin";
+  role: "user" | "admin" | "regionAdmin";
+  region?: mongoose.Types.ObjectId;
   provider?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +31,13 @@ const UserSchema = new mongoose.Schema<IUser>(
       unique: true,
       lowercase: true,
       trim: true,
+    },
+    phone: {
+      type: String,
+      match: [
+        /^(\+\d{1,3}[- ]?)?\d{10}$/,
+        "Please provide a valid phone number",
+      ],
     },
     password: {
       type: String,
@@ -65,8 +74,12 @@ const UserSchema = new mongoose.Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "admin", "regionAdmin"],
       default: "user",
+    },
+    region: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Region",
     },
   },
   { timestamps: true }

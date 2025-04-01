@@ -55,6 +55,12 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("Missing required fields");
     }
 
+    // Get the user's region
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new UnauthorizedError("User not found");
+    }
+
     // Create submission
     const submission = await Submission.create({
       userId,
@@ -65,6 +71,7 @@ export async function POST(req: NextRequest) {
       amount,
       status: "pending",
       paymentStatus: "pending", // Default to pending, update after payment
+      region: user.region, // Set the region from the user's region
     });
 
     return NextResponse.json({
@@ -131,8 +138,20 @@ export async function GET(req: NextRequest) {
     // Build query
     const query: any = {};
 
-    // If not admin, only show user's submissions
-    if (role !== "admin") {
+    // If user is admin, show all submissions
+    if (role === "admin") {
+      // No filter, show all submissions
+    }
+    // If user is regionAdmin, show submissions from their region
+    else if (role === "regionAdmin") {
+      const admin = await User.findById(userId);
+      if (!admin || !admin.region) {
+        throw new ValidationError("Region admin not assigned to any region");
+      }
+      query.region = admin.region;
+    }
+    // For regular users, only show their own submissions
+    else {
       query.userId = new mongoose.Types.ObjectId(userId);
     }
 

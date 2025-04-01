@@ -83,7 +83,7 @@ export const getTokenFromCookies = async (): Promise<string | undefined> => {
 // Authentication middleware
 export const authenticate = async (
   req: NextRequest,
-  requiredRole?: "user" | "admin"
+  requiredRole?: "user" | "admin" | "regionAdmin"
 ): Promise<{ userId: string; role: string } | null> => {
   console.log("auth.ts: authenticate called, requiredRole:", requiredRole);
 

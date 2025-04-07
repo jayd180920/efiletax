@@ -642,11 +642,7 @@ const RegionsPage = () => {
                           >
                             <option value="">Select an admin (optional)</option>
                             {users
-                              .filter(
-                                (user) =>
-                                  user.role === "user" ||
-                                  user.role === "regionAdmin"
-                              )
+                              .filter((user) => user.role === "regionAdmin")
                               .map((user) => (
                                 <option key={user._id} value={user._id}>
                                   {user.name} ({user.email})

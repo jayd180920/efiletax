@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import UserSubmissionsList from "@/components/dashboard/user/SubmissionsList";
+import DirectSubmissionsList from "@/components/dashboard/user/DirectSubmissionsList";
+import SubmissionsDebug from "@/components/dashboard/user/SubmissionsDebug";
 import Link from "next/link";
 import Layout from "@/components/layout/Layout";
 
@@ -170,7 +172,27 @@ export default function UserDashboard() {
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 My Submissions
               </h2>
-              <UserSubmissionsList />
+
+              {/* Direct Submissions List */}
+              <DirectSubmissionsList />
+
+              {/* Original Submissions List (commented out for comparison) */}
+              {/* <UserSubmissionsList /> */}
+
+              {/* Debug Component */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Debug Information
+                </h3>
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <p className="text-sm text-gray-500 mb-4">
+                    This section shows debug information about your submissions.
+                  </p>
+                  <div className="border-t border-gray-200 pt-4">
+                    <SubmissionsDebug />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </main>

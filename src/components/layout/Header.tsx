@@ -96,18 +96,6 @@ const Header = () => {
     fetchServices();
   }, []);
 
-  const handleMouseEnter = (index: number) => {
-    setActiveMenu(index);
-  };
-
-  const handleMouseLeave = () => {
-    // Use a timeout to prevent the menu from closing immediately
-    // This gives users time to move their cursor to the submenu
-    setTimeout(() => {
-      setActiveMenu(null);
-    }, 300);
-  };
-
   const handleClick = (index: number) => {
     // Toggle the active menu when clicked
     setActiveMenu(activeMenu === index ? null : index);
@@ -138,44 +126,38 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex">
-            <ul className="flex space-x-8">
-              {menuItems.map((item, index) => (
-                <li
-                  key={index}
-                  className="relative"
-                  onMouseEnter={() => handleMouseEnter(index)}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <button
-                    className="text-gray-700 hover:text-primary py-2 font-medium"
-                    onClick={() => handleClick(index)}
-                  >
-                    {item.title}
-                  </button>
-
-                  {/* Submenu */}
-                  {activeMenu === index && (
-                    <div
-                      className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 py-2"
-                      onClick={(e) => e.stopPropagation()} // Prevent clicks from bubbling up
+          {/* Navigation - Only show for regular users or non-logged in users */}
+          {(!user || (user && user.role === "user")) && (
+            <nav className="hidden md:flex">
+              <ul className="flex space-x-8">
+                {menuItems.map((item, index) => (
+                  <li key={index} className="relative">
+                    <button
+                      className="text-gray-700 hover:text-primary py-2 font-medium"
+                      onClick={() => handleClick(index)}
                     >
-                      {item.submenu.map((subItem, subIndex) => (
-                        <Link
-                          key={subIndex}
-                          href={subItem.href}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary"
-                        >
-                          {subItem.title}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </nav>
+                      {item.title}
+                    </button>
+
+                    {/* Submenu */}
+                    {activeMenu === index && (
+                      <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 py-2">
+                        {item.submenu.map((subItem, subIndex) => (
+                          <Link
+                            key={subIndex}
+                            href={subItem.href}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary"
+                          >
+                            {subItem.title}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-4">

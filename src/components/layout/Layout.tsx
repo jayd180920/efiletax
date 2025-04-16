@@ -1,8 +1,6 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import Header from "./Header";
-import Footer from "./Footer";
 import Sidebar from "./Sidebar";
 import { useAuth } from "@/components/auth/AuthContext";
 
@@ -33,8 +31,6 @@ const Layout = ({ children }: LayoutProps) => {
       <div
         className={`flex flex-col flex-grow ${showSidebar ? "lg:ml-64" : ""}`}
       >
-        <Header />
-
         {/* Mobile sidebar toggle button */}
         {showSidebar && (
           <div className="lg:hidden p-4">
@@ -61,7 +57,6 @@ const Layout = ({ children }: LayoutProps) => {
         )}
 
         <main className="flex-grow">{children}</main>
-        <Footer />
       </div>
     </div>
   );

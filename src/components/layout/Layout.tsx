@@ -18,11 +18,14 @@ const Layout = ({ children }: LayoutProps) => {
 
   // Check if user is admin or regionAdmin to show sidebar
   const showSidebar =
-    user && (user.role === "admin" || user.role === "regionAdmin");
+    user &&
+    (user.role === "admin" ||
+      user.role === "regionAdmin" ||
+      user.role === "user");
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar for admin and regionAdmin */}
+      {/* Sidebar for admin, regionAdmin, and user */}
       {showSidebar && (
         <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
       )}

@@ -1,14 +1,60 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import UserSubmissionsList from "@/components/dashboard/user/SubmissionsList";
 import Link from "next/link";
+import Layout from "@/components/layout/Layout";
+
+interface Service {
+  _id: string;
+  name: string;
+  category: "GST filing" | "ITR filing" | "ROC filing";
+  charge: number;
+  otherInfo?: string;
+}
 
 export default function UserDashboard() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [services, setServices] = useState<Service[]>([]);
+  const [servicesLoading, setServicesLoading] = useState(true);
+  const [servicesByCategory, setServicesByCategory] = useState<
+    Record<string, Service[]>
+  >({});
+
+  // Fetch services
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await fetch("/api/services");
+        if (response.ok) {
+          const data = await response.json();
+          setServices(data.services);
+
+          // Group services by category
+          const groupedServices: Record<string, Service[]> = {};
+          data.services.forEach((service: Service) => {
+            if (!groupedServices[service.category]) {
+              groupedServices[service.category] = [];
+            }
+            groupedServices[service.category].push(service);
+          });
+
+          setServicesByCategory(groupedServices);
+        } else {
+          console.error("Failed to fetch services");
+        }
+      } catch (error) {
+        console.error("Error fetching services:", error);
+      } finally {
+        setServicesLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
 
   // Redirect admin users to admin dashboard
   React.useEffect(() => {
@@ -35,14 +81,16 @@ export default function UserDashboard() {
     }
   }, [user, loading]);
 
-  if (loading) {
+  if (loading || servicesLoading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <Layout>
+        <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading...</p>
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
 
@@ -50,95 +98,83 @@ export default function UserDashboard() {
     return null; // Will redirect in useEffect
   }
 
+  // Helper function to format URL path
+  const formatPath = (category: string, serviceName: string) => {
+    const categoryPath = category
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace("filing", "");
+    const servicePath = serviceName.toLowerCase().replace(/\s+/g, "-");
+    return `/services/${categoryPath}/${servicePath}`;
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold text-gray-900">User Dashboard</h1>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600">Welcome, {user.name}</span>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Quick Actions */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              Quick Actions
-            </h2>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    New GST Registration
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Start a new GST registration application
-                  </p>
-                  <div className="mt-4">
-                    <Link
-                      href="/services/gst-filing/new-registration"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                    >
-                      Start Application
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    Monthly GST Filing
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    File your monthly GST returns
-                  </p>
-                  <div className="mt-4">
-                    <Link
-                      href="/services/gst-filing/monthly-filing"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                    >
-                      Start Filing
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white overflow-hidden shadow rounded-lg">
-                <div className="px-4 py-5 sm:p-6">
-                  <h3 className="text-lg font-medium text-gray-900">
-                    GST e-Invoice
-                  </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Generate GST e-Invoices for your business
-                  </p>
-                  <div className="mt-4">
-                    <Link
-                      href="/services/itr-filing/gst-e-invoice"
-                      className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
-                    >
-                      Generate Invoice
-                    </Link>
-                  </div>
-                </div>
+    <Layout>
+      <div className="min-h-screen bg-gray-100">
+        <header className="bg-white shadow">
+          <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center">
+              <h1 className="text-3xl font-bold text-gray-900">
+                User Dashboard
+              </h1>
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-600">Welcome, {user.name}</span>
               </div>
             </div>
           </div>
+        </header>
 
-          {/* Submissions */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">
-              My Submissions
-            </h2>
-            <UserSubmissionsList />
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          <div className="px-4 py-6 sm:px-0">
+            {/* Services by Category */}
+            {Object.keys(servicesByCategory).map((category) => (
+              <div key={category} className="mb-8">
+                <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                  {category}
+                </h2>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {servicesByCategory[category].map((service) => (
+                    <div
+                      key={service._id}
+                      className="bg-white overflow-hidden shadow rounded-lg"
+                    >
+                      <div className="px-4 py-5 sm:p-6">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          {service.name}
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          {service.otherInfo ||
+                            `Start a new ${service.name} application`}
+                        </p>
+                        <div className="mt-2 text-sm text-gray-700">
+                          <span className="font-semibold">Fee:</span> ₹
+                          {service.charge.toLocaleString()}
+                        </div>
+                        <div className="mt-4">
+                          <Link
+                            href={formatPath(category, service.name)}
+                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                          >
+                            Start Application
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Submissions */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                My Submissions
+              </h2>
+              <UserSubmissionsList />
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+    </Layout>
   );
 }

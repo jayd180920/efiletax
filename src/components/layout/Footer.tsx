@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const Footer = () => {
   return (
@@ -7,7 +8,15 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">eFileTax</h3>
+            <div className="mb-4">
+              <Image
+                src="/efiletax-logo.svg"
+                alt="eFileTax Logo"
+                width={150}
+                height={40}
+                className="brightness-0 invert"
+              />
+            </div>
             <p className="text-gray-300 mb-4">
               Simplifying tax filing and compliance for businesses and
               individuals.

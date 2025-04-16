@@ -104,6 +104,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin", "regionAdmin"],
     },
     {
+      title: "Service Pricing",
+      href: "/dashboard/admin/services",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 102 0V6a1 1 0 00-1-1z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+      roles: ["admin"],
+    },
+    {
       title: "My Submissions",
       href: "/dashboard/user/submissions",
       icon: (

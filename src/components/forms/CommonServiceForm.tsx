@@ -125,6 +125,38 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
       }
 
       // Prepare submission data
+      // Ensure file URLs and keys are properly included in the formData
+      if (mergedFormData.fileUrls || mergedFormData.fileKeys) {
+        // Create a structured file data object for database storage
+        const fileData: Record<string, any> = {};
+
+        // Process file URLs and keys
+        if (mergedFormData.fileUrls) {
+          Object.entries(mergedFormData.fileUrls).forEach(
+            ([fieldName, url]) => {
+              if (!fileData[fieldName]) {
+                fileData[fieldName] = {};
+              }
+              fileData[fieldName].url = url;
+            }
+          );
+        }
+
+        if (mergedFormData.fileKeys) {
+          Object.entries(mergedFormData.fileKeys).forEach(
+            ([fieldName, key]) => {
+              if (!fileData[fieldName]) {
+                fileData[fieldName] = {};
+              }
+              fileData[fieldName].key = key;
+            }
+          );
+        }
+
+        // Add the structured file data to the form data
+        mergedFormData.files = fileData;
+      }
+
       const submissionData = {
         formtype: serviceUniqueId,
         formData: mergedFormData,

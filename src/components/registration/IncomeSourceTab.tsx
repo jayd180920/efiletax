@@ -191,11 +191,22 @@ export default function IncomeSourceTab({
     try {
       // Upload files to S3 if any
       if (Object.values(files).some((file) => file !== null)) {
+        // Create a FormData object for the upload
         const formData = new FormData();
+
+        // Add serviceId to the FormData (required for S3 upload)
+        if (
+          typeof window !== "undefined" &&
+          window.formData &&
+          window.formData.serviceId
+        ) {
+          formData.append("serviceId", window.formData.serviceId);
+        }
 
         // Track which files we're uploading for logging
         const fileNames: string[] = [];
 
+        // Add each file to the FormData
         Object.entries(files).forEach(([name, file]) => {
           if (file) {
             formData.append(name, file);
@@ -203,7 +214,7 @@ export default function IncomeSourceTab({
           }
         });
 
-        console.log(`Uploading files: ${fileNames.join(", ")}`);
+        console.log(`Uploading files to S3: ${fileNames.join(", ")}`);
 
         // Upload files to S3
         const uploadResponse = await fetch("/api/upload", {
@@ -212,19 +223,22 @@ export default function IncomeSourceTab({
         });
 
         if (!uploadResponse.ok) {
-          throw new Error("File upload failed");
+          const errorData = await uploadResponse.json();
+          throw new Error(errorData.error || "File upload failed");
         }
 
         const uploadResult = await uploadResponse.json();
-        console.log("Files uploaded successfully:", uploadResult);
+        console.log("Files uploaded successfully to S3:", uploadResult);
 
-        // Store the uploaded file URLs in the form data
-        // This ensures the file references are included in the submission
+        // Process the upload results to extract file URLs
         const fileUrls: Record<string, string> = {};
+        const fileKeys: Record<string, string> = {};
 
         if (uploadResult && uploadResult.files) {
-          Object.entries(uploadResult.files).forEach(([name, url]) => {
-            fileUrls[name] = url as string;
+          uploadResult.files.forEach((fileInfo: any) => {
+            const fieldName = fileInfo.fieldName;
+            fileUrls[fieldName] = fileInfo.url;
+            fileKeys[fieldName] = fileInfo.key;
           });
         }
 
@@ -235,74 +249,79 @@ export default function IncomeSourceTab({
             window.formData = {};
           }
 
-          // Store the uploaded file URLs in window.formData
-          if (!window.formData.fileUrls) {
-            window.formData.fileUrls = {};
-          }
-
-          // Merge new file URLs with existing ones
-          window.formData.fileUrls = {
-            ...window.formData.fileUrls,
-            ...fileUrls,
-          };
+          // Store the uploaded file URLs and keys in window.formData
+          window.formData.fileUrls = fileUrls;
+          window.formData.fileKeys = fileKeys;
 
           // Add service-specific data based on serviceUniqueId
           if (serviceUniqueId === "gst_amendment") {
-            // Store both the File object and the URL
-            window.formData.amendmentDocFile = {
-              file: files.amendmentDocFile,
-              url: fileUrls.amendmentDocFile || null,
-            };
-
             window.formData.gstAmendmentData = {
               ...gstAmendmentData,
-              amendmentDocFile: fileUrls.amendmentDocFile || null,
+              amendmentDocFile: {
+                url: fileUrls.amendmentDocFile || null,
+                key: fileKeys.amendmentDocFile || null,
+                originalName: files.amendmentDocFile?.name || null,
+              },
             };
           } else if (serviceUniqueId === "gst_e_waybill") {
-            window.formData.eWaybillDocFile = {
-              file: files.eWaybillDocFile,
-              url: fileUrls.eWaybillDocFile || null,
-            };
-
             window.formData.gstEWaybillData = {
               ...gstEWaybillData,
-              eWaybillDocFile: fileUrls.eWaybillDocFile || null,
+              eWaybillDocFile: {
+                url: fileUrls.eWaybillDocFile || null,
+                key: fileKeys.eWaybillDocFile || null,
+                originalName: files.eWaybillDocFile?.name || null,
+              },
             };
           } else if (serviceUniqueId === "gst_closure") {
-            window.formData.closureDocFile = {
-              file: files.closureDocFile,
-              url: fileUrls.closureDocFile || null,
-            };
-
             window.formData.gstClosureData = {
               ...gstClosureData,
-              closureDocFile: fileUrls.closureDocFile || null,
+              closureDocFile: {
+                url: fileUrls.closureDocFile || null,
+                key: fileKeys.closureDocFile || null,
+                originalName: files.closureDocFile?.name || null,
+              },
             };
           } else if (serviceUniqueId === "monthly_filing") {
             window.formData.monthlyFilingData = {
               ...monthlyFilingData,
-              salesInvoiceFile: fileUrls.salesInvoiceFile || null,
-              purchaseInvoiceFile: fileUrls.purchaseInvoiceFile || null,
-              bankStatementFile: fileUrls.bankStatementFile || null,
+              salesInvoiceFile: fileUrls.salesInvoiceFile
+                ? {
+                    url: fileUrls.salesInvoiceFile,
+                    key: fileKeys.salesInvoiceFile,
+                    originalName: files.salesInvoiceFile?.name || null,
+                  }
+                : null,
+              purchaseInvoiceFile: fileUrls.purchaseInvoiceFile
+                ? {
+                    url: fileUrls.purchaseInvoiceFile,
+                    key: fileKeys.purchaseInvoiceFile,
+                    originalName: files.purchaseInvoiceFile?.name || null,
+                  }
+                : null,
+              bankStatementFile: fileUrls.bankStatementFile
+                ? {
+                    url: fileUrls.bankStatementFile,
+                    key: fileKeys.bankStatementFile,
+                    originalName: files.bankStatementFile?.name || null,
+                  }
+                : null,
             };
           }
 
-          // Include all files in the formData
-          window.formData.files = fileUrls;
-
           console.log(
-            "Updated window.formData with file URLs:",
+            "Updated window.formData with S3 file URLs and keys:",
             window.formData
           );
         }
       } else {
-        console.log("No files to upload");
+        console.log("No files to upload to S3");
       }
 
       // Move to next tab
       setActiveTab("tax-savings");
     } catch (error) {
-      console.error("Error saving form data:", error);
+      console.error("Error uploading files to S3:", error);
+      alert(`File upload failed: ${(error as Error).message}`);
     }
   };
 

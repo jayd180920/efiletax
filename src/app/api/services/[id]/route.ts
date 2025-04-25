@@ -82,7 +82,20 @@ export async function PUT(
       return NextResponse.json({ error: "Service not found" }, { status: 404 });
     }
 
-    // Update service (category cannot be changed)
+    // Check if another service with the same name exists (excluding current service)
+    const existingService = await Service.findOne({
+      name: data.name,
+      _id: { $ne: id },
+    });
+
+    if (existingService) {
+      return NextResponse.json(
+        { error: "Another service with this name already exists" },
+        { status: 400 }
+      );
+    }
+
+    // Update service (category and service_unique_name cannot be changed)
     const updatedService = await Service.findByIdAndUpdate(
       id,
       {
@@ -97,16 +110,31 @@ export async function PUT(
     return NextResponse.json({ service: updatedService });
   } catch (error: any) {
     console.error("Error updating service:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      name: error.name,
+      stack: error.stack,
+    });
 
     if (error.code === 11000) {
+      // Extract the duplicate key field from the error message
+      const keyPattern = error.keyPattern || {};
+      const duplicateField = Object.keys(keyPattern)[0] || "field";
+
       return NextResponse.json(
-        { error: "Service with this name already exists" },
+        {
+          error: `Service with this ${duplicateField.replace(
+            "_",
+            " "
+          )} already exists`,
+        },
         { status: 400 }
       );
     }
 
     return NextResponse.json(
-      { error: "Failed to update service" },
+      { error: `Failed to update service: ${error.message}` },
       { status: 500 }
     );
   }

@@ -19,10 +19,8 @@ const ServiceSchema = new mongoose.Schema<IService>(
     },
     service_unique_name: {
       type: String,
-      required: [true, "Service unique name is required"],
       trim: true,
-      lowercase: true,
-      unique: true,
+      required: [false, "Service unique name is required"],
     },
     category: {
       type: String,

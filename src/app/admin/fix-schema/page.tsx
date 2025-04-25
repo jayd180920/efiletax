@@ -153,7 +153,7 @@ export default function FixSchemaPage() {
 
           <div className="border border-gray-200 rounded-md p-4">
             <h2 className="text-lg font-medium text-gray-900 mb-2">
-              Run Fix Model Script
+              Run Fix User Model Script
             </h2>
             <p className="text-sm text-gray-600 mb-4">
               This will run the fix-user-model.js script to fix the User model.
@@ -165,7 +165,25 @@ export default function FixSchemaPage() {
               disabled={isFixing}
               className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
-              {isFixing ? "Running..." : "Run Fix Model Script"}
+              {isFixing ? "Running..." : "Run Fix User Model Script"}
+            </button>
+          </div>
+
+          <div className="border border-gray-200 rounded-md p-4">
+            <h2 className="text-lg font-medium text-gray-900 mb-2">
+              Run Fix Service Model Script
+            </h2>
+            <p className="text-sm text-gray-600 mb-4">
+              This will run the fix-service-model.js script to fix the Service
+              model. Use this if you are experiencing issues with the
+              service_unique_name field not being saved correctly.
+            </p>
+            <button
+              onClick={() => runScript("fix-service-model")}
+              disabled={isFixing}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+            >
+              {isFixing ? "Running..." : "Run Fix Service Model Script"}
             </button>
           </div>
 

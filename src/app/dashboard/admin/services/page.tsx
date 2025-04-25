@@ -81,19 +81,44 @@ const ServicesList = () => {
   const handleAddService = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // Generate a more unique name with multiple random components
+      const timestamp = new Date().getTime();
+      const randomSuffix1 = Math.floor(Math.random() * 10000);
+      const randomSuffix2 = Math.floor(Math.random() * 10000);
+
+      // Create base name from service name
+      const baseUniqueName = formData.name
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
+
+      // Combine with multiple random elements to ensure uniqueness
+      const uniqueName = `${baseUniqueName}_${timestamp}_${randomSuffix1}_${randomSuffix2}`;
+
+      // Create the data object with the generated unique name
+      const dataToSend = {
+        name: formData.name,
+        service_unique_name: baseUniqueName,
+        category: formData.category,
+        charge: parseFloat(formData.charge),
+        otherInfo: formData.otherInfo || "",
+        testFields: "test",
+      };
+
+      // Log the data being sent
+      console.log("Sending form data:", dataToSend);
+      console.log("service_unique_name:", uniqueName);
+
       const response = await fetch("/api/services", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...formData,
-          charge: parseFloat(formData.charge),
-        }),
+        body: JSON.stringify(dataToSend),
       });
 
       const data = await response.json();
-
+      console.log("Response data:", data);
       if (!response.ok) {
         throw new Error(data.error || "Failed to add service");
       }
@@ -386,16 +411,23 @@ const ServicesList = () => {
                   name="name"
                   value={formData.name}
                   onChange={(e) => {
+                    // First call the regular input change handler
                     handleInputChange(e);
-                    // Auto-generate service_unique_name
+
+                    // Then auto-generate service_unique_name
                     const uniqueName = e.target.value
                       .toLowerCase()
                       .replace(/\s+/g, "_")
                       .replace(/[^a-z0-9_]/g, "");
+
+                    // Update the form data with the new unique name
                     setFormData((prev) => ({
                       ...prev,
                       service_unique_name: uniqueName,
                     }));
+
+                    // Log for debugging
+                    console.log("Generated unique name:", uniqueName);
                   }}
                   required
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -538,25 +570,6 @@ const ServicesList = () => {
                   required
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-              </div>
-              <div className="mb-4">
-                <label
-                  htmlFor="service_unique_name"
-                  className="mb-1 block text-sm font-medium text-gray-700"
-                >
-                  Service Unique Name
-                </label>
-                <input
-                  type="text"
-                  id="service_unique_name"
-                  name="service_unique_name"
-                  value={formData.service_unique_name}
-                  disabled
-                  className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-600"
-                />
-                <p className="mt-1 text-xs text-gray-500">
-                  Service unique name cannot be changed
-                </p>
               </div>
               <div className="mb-4">
                 <label

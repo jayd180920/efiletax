@@ -29,7 +29,11 @@ export async function GET(req: NextRequest) {
     }
 
     // Validate the script name to prevent command injection
-    const validScripts = ["update-user-schema", "fix-user-model"];
+    const validScripts = [
+      "update-user-schema",
+      "fix-user-model",
+      "fix-service-model",
+    ];
     if (!validScripts.includes(script)) {
       return NextResponse.json(
         { error: "Invalid script name" },

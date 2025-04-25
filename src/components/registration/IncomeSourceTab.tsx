@@ -3,6 +3,12 @@
 import React, { useState } from "react";
 import BusinessKYC from "./BusinessKYC";
 import MonthlyFiling from "./MonthlyFiling";
+import AnnualReturn from "./AnnualReturn";
+import GSTEInvoice from "./GSTEInvoice";
+import ClaimGSTRefund from "./ClaimGSTRefund";
+import GSTClosure from "./GSTClosure";
+import GSTAmendment from "./GSTAmendment";
+import GSTEWaybill from "./GSTEWaybill";
 
 interface IncomeSourceTabProps {
   activeTab: string;
@@ -20,6 +26,46 @@ export default function IncomeSourceTab({
     salesInvoiceFile: null as File | null,
     purchaseInvoiceFile: null as File | null,
     bankStatementFile: null as File | null,
+  });
+
+  // State for AnnualReturn component
+  const [annualReturnData, setAnnualReturnData] = useState({
+    gstrType: "GSTR-9" as "GSTR-9" | "GSTR-9C" | "GSTR-9A",
+    // GSTR-9 and GSTR-9A fields
+    outwardInwardSupplyFile: null as File | null,
+    taxPaymentDetailsFile: null as File | null,
+    inputTaxCreditFile: null as File | null,
+    previousYearReturnFile: null as File | null,
+    // GSTR-9C specific fields
+    auditedFinancialStatementsFile: null as File | null,
+    reconciliationStatementFile: null as File | null,
+  });
+
+  // State for GSTEInvoice component
+  const [gstEInvoiceData, setGstEInvoiceData] = useState({
+    eInvoiceDocumentsFile: null as File | null,
+  });
+
+  // State for ClaimGSTRefund component
+  const [claimGSTRefundData, setClaimGSTRefundData] = useState({
+    salesInvoiceFile: null as File | null,
+    purchaseInvoiceFile: null as File | null,
+    annexureBFile: null as File | null,
+  });
+
+  // State for GSTClosure component
+  const [gstClosureData, setGSTClosureData] = useState({
+    closureDocFile: null as File | null,
+  });
+
+  // State for GSTAmendment component
+  const [gstAmendmentData, setGSTAmendmentData] = useState({
+    amendmentDocFile: null as File | null,
+  });
+
+  // State for GSTEWaybill component
+  const [gstEWaybillData, setGSTEWaybillData] = useState({
+    eWaybillDocFile: null as File | null,
   });
 
   // State for BusinessKYC component
@@ -141,6 +187,31 @@ export default function IncomeSourceTab({
           data={monthlyFilingData}
           onFileChange={handleFileChange}
         />
+      ) : serviceUniqueId === "annual_return" ? (
+        // Show AnnualReturn for annual_return service
+        <AnnualReturn
+          data={annualReturnData}
+          onChange={setAnnualReturnData}
+          onFileChange={handleFileChange}
+        />
+      ) : serviceUniqueId === "gst_e_invoice" ? (
+        // Show GSTEInvoice for gst_e_invoice service
+        <GSTEInvoice data={gstEInvoiceData} onFileChange={handleFileChange} />
+      ) : serviceUniqueId === "calim_gst_refund" ? (
+        // Show ClaimGSTRefund for calim_gst_refund service
+        <ClaimGSTRefund
+          data={claimGSTRefundData}
+          onFileChange={handleFileChange}
+        />
+      ) : serviceUniqueId === "gst_closure" ? (
+        // Show GSTClosure for gst_closure service
+        <GSTClosure data={gstClosureData} onFileChange={handleFileChange} />
+      ) : serviceUniqueId === "gst_amendment" ? (
+        // Show GSTAmendment for gst_amendment service
+        <GSTAmendment data={gstAmendmentData} onFileChange={handleFileChange} />
+      ) : serviceUniqueId === "gst_e_waybill" ? (
+        // Show GSTEWaybill for gst_e_waybill service
+        <GSTEWaybill data={gstEWaybillData} onFileChange={handleFileChange} />
       ) : (
         // Show Financial Details for other services
         <div className="p-6 border rounded-md">

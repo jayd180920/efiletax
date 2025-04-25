@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 export interface IService extends mongoose.Document {
   name: string;
+  service_unique_name: string;
   category: "GST filing" | "ITR filing" | "ROC filing";
   charge: number;
   otherInfo?: string;
@@ -15,6 +16,13 @@ const ServiceSchema = new mongoose.Schema<IService>(
       type: String,
       required: [true, "Service name is required"],
       trim: true,
+    },
+    service_unique_name: {
+      type: String,
+      required: [true, "Service unique name is required"],
+      trim: true,
+      lowercase: true,
+      unique: true,
     },
     category: {
       type: String,

@@ -89,6 +89,7 @@ export async function PUT(
         name: data.name,
         charge: data.charge,
         otherInfo: data.otherInfo || "",
+        // service_unique_name is not updated as it should remain constant
       },
       { new: true, runValidators: true }
     );

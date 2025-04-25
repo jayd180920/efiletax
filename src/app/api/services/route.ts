@@ -50,6 +50,7 @@ export async function POST(req: NextRequest) {
     // Create new service
     const service = await Service.create({
       name: data.name,
+      service_unique_name: data.service_unique_name,
       category: data.category,
       charge: data.charge,
       otherInfo: data.otherInfo || "",

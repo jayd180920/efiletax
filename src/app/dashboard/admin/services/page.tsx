@@ -8,6 +8,7 @@ import Layout from "@/components/layout/Layout";
 interface Service {
   _id: string;
   name: string;
+  service_unique_name: string;
   category: "GST filing" | "ITR filing" | "ROC filing";
   charge: number;
   otherInfo?: string;
@@ -27,6 +28,7 @@ const ServicesList = () => {
   const [currentService, setCurrentService] = useState<Service | null>(null);
   const [formData, setFormData] = useState({
     name: "",
+    service_unique_name: "",
     category: "GST filing",
     charge: "",
     otherInfo: "",
@@ -99,6 +101,7 @@ const ServicesList = () => {
       // Reset form and close modal
       setFormData({
         name: "",
+        service_unique_name: "",
         category: "GST filing",
         charge: "",
         otherInfo: "",
@@ -139,6 +142,7 @@ const ServicesList = () => {
       // Reset form and close modal
       setFormData({
         name: "",
+        service_unique_name: "",
         category: "GST filing",
         charge: "",
         otherInfo: "",
@@ -185,6 +189,7 @@ const ServicesList = () => {
     setCurrentService(service);
     setFormData({
       name: service.name,
+      service_unique_name: service.service_unique_name || "",
       category: service.category,
       charge: service.charge.toString(),
       otherInfo: service.otherInfo || "",
@@ -380,10 +385,40 @@ const ServicesList = () => {
                   id="name"
                   name="name"
                   value={formData.name}
-                  onChange={handleInputChange}
+                  onChange={(e) => {
+                    handleInputChange(e);
+                    // Auto-generate service_unique_name
+                    const uniqueName = e.target.value
+                      .toLowerCase()
+                      .replace(/\s+/g, "_")
+                      .replace(/[^a-z0-9_]/g, "");
+                    setFormData((prev) => ({
+                      ...prev,
+                      service_unique_name: uniqueName,
+                    }));
+                  }}
                   required
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="service_unique_name"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Service Unique Name
+                </label>
+                <input
+                  type="text"
+                  id="service_unique_name"
+                  name="service_unique_name"
+                  value={formData.service_unique_name}
+                  readOnly
+                  className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-600"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Auto-generated unique identifier for the service
+                </p>
               </div>
               <div className="mb-4">
                 <label
@@ -503,6 +538,25 @@ const ServicesList = () => {
                   required
                   className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 />
+              </div>
+              <div className="mb-4">
+                <label
+                  htmlFor="service_unique_name"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
+                  Service Unique Name
+                </label>
+                <input
+                  type="text"
+                  id="service_unique_name"
+                  name="service_unique_name"
+                  value={formData.service_unique_name}
+                  disabled
+                  className="w-full rounded-md border border-gray-200 bg-gray-100 px-3 py-2 text-gray-600"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Service unique name cannot be changed
+                </p>
               </div>
               <div className="mb-4">
                 <label

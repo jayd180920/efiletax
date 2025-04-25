@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PersonalInfoTab from "@/components/registration/PersonalInfoTab";
 import IncomeSourceTab from "@/components/registration/IncomeSourceTab";
-import TaxSavingsTab from "@/components/registration/TaxSavingsTab";
+import TaxSummaryTab from "@/components/registration/TaxSummaryTab";
 import Layout from "@/components/layout/Layout";
 import CommonServiceForm from "@/components/forms/CommonServiceForm";
 import PaymentGateway from "@/components/payment/PaymentGateway";
@@ -143,20 +143,32 @@ export default function CommonServicePage() {
       >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
-          <TabsTrigger value="income-source">Income Source</TabsTrigger>
-          <TabsTrigger value="tax-savings">Tax Savings</TabsTrigger>
+          <TabsTrigger value="income-source">
+            {service_unique_name === "new_registration"
+              ? "KYC"
+              : "Financial Details"}
+          </TabsTrigger>
+          <TabsTrigger value="tax-savings">Tax Summary</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal-info">
-          <PersonalInfoTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <PersonalInfoTab
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            serviceUniqueId={service_unique_name as string}
+          />
         </TabsContent>
 
         <TabsContent value="income-source">
-          <IncomeSourceTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <IncomeSourceTab
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            serviceUniqueId={service_unique_name as string}
+          />
         </TabsContent>
 
         <TabsContent value="tax-savings">
-          <TaxSavingsTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <TaxSummaryTab activeTab={activeTab} setActiveTab={setActiveTab} />
         </TabsContent>
       </Tabs>
     </div>

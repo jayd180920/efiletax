@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PersonalInfoTab from "@/components/registration/PersonalInfoTab";
 import IncomeSourceTab from "@/components/registration/IncomeSourceTab";
-import TaxSavingsTab from "@/components/registration/TaxSavingsTab";
+import TaxSummaryTab from "@/components/registration/TaxSummaryTab";
 import PaymentGateway from "@/components/payment/PaymentGateway";
 import CommonServiceForm from "@/components/forms/CommonServiceForm";
 import Layout from "@/components/layout/Layout";
@@ -70,20 +70,28 @@ export default function NewRegistrationPage() {
       >
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="personal-info">Personal Info</TabsTrigger>
-          <TabsTrigger value="income-source">Income Source</TabsTrigger>
-          <TabsTrigger value="tax-savings">Tax Savings</TabsTrigger>
+          <TabsTrigger value="income-source">KYC</TabsTrigger>
+          <TabsTrigger value="tax-savings">Tax Summary</TabsTrigger>
         </TabsList>
 
         <TabsContent value="personal-info">
-          <PersonalInfoTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <PersonalInfoTab
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            serviceUniqueId="new_registration"
+          />
         </TabsContent>
 
         <TabsContent value="income-source">
-          <IncomeSourceTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <IncomeSourceTab
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            serviceUniqueId="new_registration"
+          />
         </TabsContent>
 
         <TabsContent value="tax-savings">
-          <TaxSavingsTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <TaxSummaryTab activeTab={activeTab} setActiveTab={setActiveTab} />
         </TabsContent>
       </Tabs>
     </div>

@@ -10,11 +10,13 @@ import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
 interface PersonalInfoTabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  serviceUniqueId?: string;
 }
 
 export default function PersonalInfoTab({
   activeTab,
   setActiveTab,
+  serviceUniqueId,
 }: PersonalInfoTabProps) {
   // State for each section
   const [permanentInfo, setPermanentInfo] = useState({
@@ -289,10 +291,13 @@ export default function PersonalInfoTab({
         onFileChange={handleFileChange}
       />
 
-      <PlaceOfBusinessSection
-        data={placeOfBusiness}
-        onFileChange={handleFileChange}
-      />
+      {/* Only show PlaceOfBusinessSection for new_registration service */}
+      {serviceUniqueId === "new_registration" && (
+        <PlaceOfBusinessSection
+          data={placeOfBusiness}
+          onFileChange={handleFileChange}
+        />
+      )}
 
       <div className="flex justify-end mt-6">
         <button

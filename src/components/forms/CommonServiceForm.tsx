@@ -1,5 +1,12 @@
 "use client";
 
+// Extend Window interface to include our custom formData property
+declare global {
+  interface Window {
+    formData: Record<string, any>;
+  }
+}
+
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +30,28 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+
+  // Initialize window.formData when component mounts
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Initialize or reset window.formData
+      window.formData = {};
+
+      // Add service information to window.formData
+      window.formData.serviceId = serviceId;
+      window.formData.serviceName = serviceName;
+      window.formData.serviceUniqueId = serviceUniqueId;
+
+      console.log("Initialized window.formData:", window.formData);
+    }
+
+    // Clean up window.formData when component unmounts
+    return () => {
+      if (typeof window !== "undefined") {
+        window.formData = {};
+      }
+    };
+  }, [serviceId, serviceName, serviceUniqueId]);
 
   // Status options for the dropdown
   const statusOptions = [
@@ -84,14 +113,28 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
     setIsSubmitting(true);
 
     try {
+      // Merge window.formData with local formData if available
+      let mergedFormData = { ...formData };
+
+      if (typeof window !== "undefined" && window.formData) {
+        mergedFormData = {
+          ...mergedFormData,
+          ...window.formData,
+        };
+        console.log("Merged form data:", mergedFormData);
+      }
+
       // Prepare submission data
       const submissionData = {
         formtype: serviceUniqueId,
-        formData,
+        formData: mergedFormData,
         serviceId,
         currentStatus: "submitted", // Default status
         paymentStatus: "pending", // Default payment status
       };
+
+      // Log the submission data for debugging
+      console.log("Submitting form data:", submissionData);
 
       // Submit form data to API
       const response = await fetch("/api/common-services", {

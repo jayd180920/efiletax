@@ -1,5 +1,12 @@
 "use client";
 
+// Extend Window interface to include our custom formData property
+declare global {
+  interface Window {
+    formData: Record<string, any>;
+  }
+}
+
 import React, { useState } from "react";
 import BusinessKYC from "./BusinessKYC";
 import MonthlyFiling from "./MonthlyFiling";
@@ -126,10 +133,58 @@ export default function IncomeSourceTab({
 
   // Handle file changes
   const handleFileChange = (name: string, file: File | null) => {
+    // Update local files state
     setFiles({
       ...files,
       [name]: file,
     });
+
+    // Immediately update window.formData with the file
+    if (typeof window !== "undefined") {
+      if (!window.formData) {
+        window.formData = {};
+      }
+
+      // Store the file reference in window.formData
+      window.formData[name] = file;
+
+      // Update component-specific data in window.formData based on serviceUniqueId
+      if (serviceUniqueId === "gst_amendment" && name === "amendmentDocFile") {
+        if (!window.formData.gstAmendmentData) {
+          window.formData.gstAmendmentData = {};
+        }
+        window.formData.gstAmendmentData.amendmentDocFile = file;
+      } else if (
+        serviceUniqueId === "gst_e_waybill" &&
+        name === "eWaybillDocFile"
+      ) {
+        if (!window.formData.gstEWaybillData) {
+          window.formData.gstEWaybillData = {};
+        }
+        window.formData.gstEWaybillData.eWaybillDocFile = file;
+      } else if (
+        serviceUniqueId === "gst_closure" &&
+        name === "closureDocFile"
+      ) {
+        if (!window.formData.gstClosureData) {
+          window.formData.gstClosureData = {};
+        }
+        window.formData.gstClosureData.closureDocFile = file;
+      } else if (serviceUniqueId === "monthly_filing") {
+        if (!window.formData.monthlyFilingData) {
+          window.formData.monthlyFilingData = {};
+        }
+        if (
+          name === "salesInvoiceFile" ||
+          name === "purchaseInvoiceFile" ||
+          name === "bankStatementFile"
+        ) {
+          window.formData.monthlyFilingData[name] = file;
+        }
+      }
+
+      console.log(`Updated window.formData with ${name}:`, window.formData);
+    }
   };
 
   const handleNext = async () => {
@@ -138,11 +193,17 @@ export default function IncomeSourceTab({
       if (Object.values(files).some((file) => file !== null)) {
         const formData = new FormData();
 
+        // Track which files we're uploading for logging
+        const fileNames: string[] = [];
+
         Object.entries(files).forEach(([name, file]) => {
           if (file) {
             formData.append(name, file);
+            fileNames.push(name);
           }
         });
+
+        console.log(`Uploading files: ${fileNames.join(", ")}`);
 
         // Upload files to S3
         const uploadResponse = await fetch("/api/upload", {
@@ -155,11 +216,88 @@ export default function IncomeSourceTab({
         }
 
         const uploadResult = await uploadResponse.json();
-        console.log("Files uploaded:", uploadResult);
-      }
+        console.log("Files uploaded successfully:", uploadResult);
 
-      // Save data to database
-      // This would be implemented based on your backend API
+        // Store the uploaded file URLs in the form data
+        // This ensures the file references are included in the submission
+        const fileUrls: Record<string, string> = {};
+
+        if (uploadResult && uploadResult.files) {
+          Object.entries(uploadResult.files).forEach(([name, url]) => {
+            fileUrls[name] = url as string;
+          });
+        }
+
+        // Add file data to window.formData for the CommonServiceForm to access
+        if (typeof window !== "undefined") {
+          // Create or update the global formData object
+          if (!window.formData) {
+            window.formData = {};
+          }
+
+          // Store the uploaded file URLs in window.formData
+          if (!window.formData.fileUrls) {
+            window.formData.fileUrls = {};
+          }
+
+          // Merge new file URLs with existing ones
+          window.formData.fileUrls = {
+            ...window.formData.fileUrls,
+            ...fileUrls,
+          };
+
+          // Add service-specific data based on serviceUniqueId
+          if (serviceUniqueId === "gst_amendment") {
+            // Store both the File object and the URL
+            window.formData.amendmentDocFile = {
+              file: files.amendmentDocFile,
+              url: fileUrls.amendmentDocFile || null,
+            };
+
+            window.formData.gstAmendmentData = {
+              ...gstAmendmentData,
+              amendmentDocFile: fileUrls.amendmentDocFile || null,
+            };
+          } else if (serviceUniqueId === "gst_e_waybill") {
+            window.formData.eWaybillDocFile = {
+              file: files.eWaybillDocFile,
+              url: fileUrls.eWaybillDocFile || null,
+            };
+
+            window.formData.gstEWaybillData = {
+              ...gstEWaybillData,
+              eWaybillDocFile: fileUrls.eWaybillDocFile || null,
+            };
+          } else if (serviceUniqueId === "gst_closure") {
+            window.formData.closureDocFile = {
+              file: files.closureDocFile,
+              url: fileUrls.closureDocFile || null,
+            };
+
+            window.formData.gstClosureData = {
+              ...gstClosureData,
+              closureDocFile: fileUrls.closureDocFile || null,
+            };
+          } else if (serviceUniqueId === "monthly_filing") {
+            window.formData.monthlyFilingData = {
+              ...monthlyFilingData,
+              salesInvoiceFile: fileUrls.salesInvoiceFile || null,
+              purchaseInvoiceFile: fileUrls.purchaseInvoiceFile || null,
+              bankStatementFile: fileUrls.bankStatementFile || null,
+            };
+          }
+
+          // Include all files in the formData
+          window.formData.files = fileUrls;
+
+          console.log(
+            "Updated window.formData with file URLs:",
+            window.formData
+          );
+        }
+      } else {
+        console.log("No files to upload");
+      }
 
       // Move to next tab
       setActiveTab("tax-savings");

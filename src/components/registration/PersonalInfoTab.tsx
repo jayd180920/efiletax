@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import PermanentInfoSection from "./PermanentInfoSection";
-import IdentificationSection from "./IdentificationSection";
+// import IdentificationSection from "./IdentificationSection";
 import AddressSection from "./AddressSection";
 import BankDetailsSection from "./BankDetailsSection";
 import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
@@ -285,11 +285,11 @@ export default function PersonalInfoTab({
         onBankDetailsChange={setBankDetails}
       />
 
-      <IdentificationSection
+      {/* <IdentificationSection
         data={identification}
         onChange={setIdentification}
         onFileChange={handleFileChange}
-      />
+      /> */}
 
       {/* Only show PlaceOfBusinessSection for new_registration service */}
       {serviceUniqueId === "new_registration" && (

@@ -5,6 +5,7 @@ import PermanentInfoSection from "./PermanentInfoSection";
 import IdentificationSection from "./IdentificationSection";
 import AddressSection from "./AddressSection";
 import BankDetailsSection from "./BankDetailsSection";
+import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
 
 interface PersonalInfoTabProps {
   activeTab: string;
@@ -24,6 +25,8 @@ export default function PersonalInfoTab({
     fatherName: "",
     gender: "",
     maritalStatus: "",
+    mobileNumber: "",
+    email: "",
   });
 
   const [identification, setIdentification] = useState({
@@ -33,8 +36,6 @@ export default function PersonalInfoTab({
     aadhaarAttachment: null as File | null,
     panNumber: "",
     panAttachment: null as File | null,
-    mobileNumber: "",
-    email: "",
   });
 
   const [address, setAddress] = useState({
@@ -54,10 +55,22 @@ export default function PersonalInfoTab({
     accountType: "",
   });
 
+  // State for place of business
+  const [placeOfBusiness, setPlaceOfBusiness] = useState({
+    rentalAgreement: null as File | null,
+    ebBillPropertyTax: null as File | null,
+    saleDeedConcerned: null as File | null,
+    consentLetter: null as File | null,
+  });
+
   // State for file uploads
   const [files, setFiles] = useState<Record<string, File | null>>({
     aadhaarAttachment: null,
     panAttachment: null,
+    rentalAgreement: null,
+    ebBillPropertyTax: null,
+    saleDeedConcerned: null,
+    consentLetter: null,
   });
 
   // Handle file changes
@@ -66,6 +79,19 @@ export default function PersonalInfoTab({
       ...files,
       [name]: file,
     });
+
+    // Update place of business state if the file is related to it
+    if (
+      name === "rentalAgreement" ||
+      name === "ebBillPropertyTax" ||
+      name === "saleDeedConcerned" ||
+      name === "consentLetter"
+    ) {
+      setPlaceOfBusiness({
+        ...placeOfBusiness,
+        [name]: file,
+      });
+    }
   };
 
   // Check if all required fields are filled
@@ -76,7 +102,9 @@ export default function PersonalInfoTab({
       !permanentInfo.lastName ||
       !permanentInfo.dateOfBirth ||
       !permanentInfo.fatherName ||
-      !permanentInfo.gender
+      !permanentInfo.gender ||
+      !permanentInfo.mobileNumber ||
+      !permanentInfo.email
     ) {
       return false;
     }
@@ -87,9 +115,7 @@ export default function PersonalInfoTab({
         !identification.aadhaarNumber) ||
       (identification.aadhaarType === "enrollment" &&
         !identification.aadhaarEnrollment) ||
-      !identification.panNumber ||
-      !identification.mobileNumber ||
-      !identification.email
+      !identification.panNumber
     ) {
       return false;
     }
@@ -113,7 +139,14 @@ export default function PersonalInfoTab({
     if (isFormValid()) {
       try {
         // Upload files to S3
-        if (files.aadhaarAttachment || files.panAttachment) {
+        if (
+          files.aadhaarAttachment ||
+          files.panAttachment ||
+          files.rentalAgreement ||
+          files.ebBillPropertyTax ||
+          files.saleDeedConcerned ||
+          files.consentLetter
+        ) {
           const formData = new FormData();
 
           if (files.aadhaarAttachment) {
@@ -122,6 +155,22 @@ export default function PersonalInfoTab({
 
           if (files.panAttachment) {
             formData.append("panAttachment", files.panAttachment);
+          }
+
+          if (files.rentalAgreement) {
+            formData.append("rentalAgreement", files.rentalAgreement);
+          }
+
+          if (files.ebBillPropertyTax) {
+            formData.append("ebBillPropertyTax", files.ebBillPropertyTax);
+          }
+
+          if (files.saleDeedConcerned) {
+            formData.append("saleDeedConcerned", files.saleDeedConcerned);
+          }
+
+          if (files.consentLetter) {
+            formData.append("consentLetter", files.consentLetter);
           }
 
           // Upload files to S3
@@ -178,6 +227,8 @@ export default function PersonalInfoTab({
           },
           body: JSON.stringify({
             ...identification,
+            mobileNumber: permanentInfo.mobileNumber,
+            email: permanentInfo.email,
             aadhaarAttachment: files.aadhaarAttachment ? true : false,
             panAttachment: files.panAttachment ? true : false,
           }),
@@ -223,7 +274,14 @@ export default function PersonalInfoTab({
 
   return (
     <div className="space-y-6">
-      <PermanentInfoSection data={permanentInfo} onChange={setPermanentInfo} />
+      <PermanentInfoSection
+        data={permanentInfo}
+        onChange={setPermanentInfo}
+        addressData={address}
+        onAddressChange={setAddress}
+        bankDetails={bankDetails}
+        onBankDetailsChange={setBankDetails}
+      />
 
       <IdentificationSection
         data={identification}
@@ -231,9 +289,10 @@ export default function PersonalInfoTab({
         onFileChange={handleFileChange}
       />
 
-      <AddressSection data={address} onChange={setAddress} />
-
-      <BankDetailsSection data={bankDetails} onChange={setBankDetails} />
+      <PlaceOfBusinessSection
+        data={placeOfBusiness}
+        onFileChange={handleFileChange}
+      />
 
       <div className="flex justify-end mt-6">
         <button

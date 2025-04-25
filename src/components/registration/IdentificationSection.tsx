@@ -10,8 +10,6 @@ interface IdentificationData {
   aadhaarAttachment: File | null;
   panNumber: string;
   panAttachment: File | null;
-  mobileNumber: string;
-  email: string;
 }
 
 interface IdentificationSectionProps {
@@ -99,8 +97,8 @@ export default function IdentificationSection({
   return (
     <FormSection
       id="identification"
-      title="Identification & Contact details"
-      subtitle="To e-file your returns, please provide your Aadhaar, PAN and contact details."
+      title="Identification Details"
+      subtitle="To e-file your returns, please provide your Aadhaar and PAN details."
       icon={icon}
     >
       <div className="space-y-6">
@@ -323,45 +321,6 @@ export default function IdentificationSection({
               </div>
             </div>
           )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="mobileNumber"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Mobile No <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="tel"
-              id="mobileNumber"
-              name="mobileNumber"
-              value={data.mobileNumber}
-              onChange={handleChange}
-              placeholder="Enter Mobile Number"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={data.email}
-              onChange={handleChange}
-              placeholder="Enter Email Address"
-              required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-            />
-          </div>
         </div>
       </div>
     </FormSection>

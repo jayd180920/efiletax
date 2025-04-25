@@ -6,12 +6,15 @@ import PersonalInfoTab from "@/components/registration/PersonalInfoTab";
 import IncomeSourceTab from "@/components/registration/IncomeSourceTab";
 import TaxSavingsTab from "@/components/registration/TaxSavingsTab";
 import PaymentGateway from "@/components/payment/PaymentGateway";
+import CommonServiceForm from "@/components/forms/CommonServiceForm";
+import Layout from "@/components/layout/Layout";
 
 export default function NewRegistrationPage() {
   const [activeTab, setActiveTab] = useState("personal-info");
   const [serviceDetails, setServiceDetails] = useState({
     id: "",
     name: "GST Filing - New Registration",
+    description: "Complete your GST registration application",
     price: 0,
     isLoading: true,
   });
@@ -31,6 +34,9 @@ export default function NewRegistrationPage() {
             setServiceDetails({
               id: service._id,
               name: service.name,
+              description:
+                service.otherInfo ||
+                "Complete your GST registration application",
               price: service.charge || 0,
               isLoading: false,
             });
@@ -49,10 +55,13 @@ export default function NewRegistrationPage() {
     fetchServiceDetails();
   }, []);
 
-  // Service content
-  const ServiceContent = () => (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold mb-6">GST Filing - New Registration</h1>
+  // Define service-specific form content with tabs
+  const ServiceSpecificContent = () => (
+    <div className="mb-6">
+      <h4 className="text-base font-semibold text-gray-900 mb-4">
+        GST Registration Information
+      </h4>
+      <p className="text-sm text-gray-600 mb-4">{serviceDetails.description}</p>
 
       <Tabs
         defaultValue={activeTab}
@@ -83,20 +92,35 @@ export default function NewRegistrationPage() {
   // If service details are still loading, show loading spinner
   if (serviceDetails.isLoading) {
     return (
-      <div className="container mx-auto py-8 px-4 flex justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
+      <Layout>
+        <div className="container mx-auto py-8 px-4 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </Layout>
     );
   }
 
-  // Wrap service content with payment gateway
+  // Render the service form wrapped in payment gateway
   return (
-    <PaymentGateway
-      serviceId={serviceDetails.id}
-      serviceName={serviceDetails.name}
-      price={serviceDetails.price}
-    >
-      <ServiceContent />
-    </PaymentGateway>
+    <Layout>
+      <div className="container mx-auto py-8 px-4">
+        <h1 className="text-2xl font-bold mb-6">{serviceDetails.name}</h1>
+
+        <PaymentGateway
+          serviceId={serviceDetails.id}
+          serviceName={serviceDetails.name}
+          price={serviceDetails.price}
+        >
+          <CommonServiceForm
+            serviceId={serviceDetails.id}
+            serviceName={serviceDetails.name}
+            serviceUniqueId="new-registration"
+            price={serviceDetails.price}
+          >
+            <ServiceSpecificContent />
+          </CommonServiceForm>
+        </PaymentGateway>
+      </div>
+    </Layout>
   );
 }

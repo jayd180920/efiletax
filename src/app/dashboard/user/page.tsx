@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import UserSubmissionsList from "@/components/dashboard/user/SubmissionsList";
@@ -12,6 +12,7 @@ import Layout from "@/components/layout/Layout";
 interface Service {
   _id: string;
   name: string;
+  service_unique_name: string;
   category: "GST filing" | "ITR filing" | "ROC filing";
   charge: number;
   otherInfo?: string;
@@ -25,6 +26,8 @@ export default function UserDashboard() {
   const [servicesByCategory, setServicesByCategory] = useState<
     Record<string, Service[]>
   >({});
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const submenuRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Fetch services
   useEffect(() => {
@@ -83,6 +86,21 @@ export default function UserDashboard() {
     }
   }, [user, loading]);
 
+  // Handle mouse enter for category
+  const handleCategoryMouseEnter = (category: string) => {
+    setActiveCategory(category);
+  };
+
+  // Handle mouse leave for category
+  const handleCategoryMouseLeave = () => {
+    setActiveCategory(null);
+  };
+
+  // Handle service click
+  const handleServiceClick = () => {
+    setActiveCategory(null);
+  };
+
   if (loading || servicesLoading) {
     return (
       <Layout>
@@ -101,13 +119,12 @@ export default function UserDashboard() {
   }
 
   // Helper function to format URL path
-  const formatPath = (category: string, serviceName: string) => {
+  const formatPath = (category: string, serviceUniqueName: string) => {
     const categoryPath = category
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace("filing", "");
-    const servicePath = serviceName.toLowerCase().replace(/\s+/g, "-");
-    return `/services/${categoryPath}/${servicePath}`;
+    return `/services/${categoryPath}/${serviceUniqueName}`;
   };
 
   return (
@@ -128,14 +145,68 @@ export default function UserDashboard() {
 
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            {/* Services by Category */}
-            {Object.keys(servicesByCategory).map((category) => (
-              <div key={category} className="mb-8">
-                <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                  {category}
-                </h2>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {servicesByCategory[category].map((service) => (
+            {/* Services Categories with Hover Submenu */}
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                Our Services
+              </h2>
+
+              <div className="flex flex-wrap gap-4">
+                {Object.keys(servicesByCategory).map((category) => (
+                  <div
+                    key={category}
+                    className="relative"
+                    onMouseOver={() => handleCategoryMouseEnter(category)}
+                    onMouseLeave={handleCategoryMouseLeave}
+                    style={{ cursor: "pointer" }}
+                    ref={(el) => {
+                      submenuRefs.current[category] = el;
+                    }}
+                  >
+                    <div className="px-4 py-2 bg-white rounded-md shadow cursor-pointer hover:bg-gray-50">
+                      <span className="font-medium">{category}</span>
+                    </div>
+
+                    {/* Submenu */}
+                    <div
+                      className={`absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 py-2 transition-all duration-200 ease-in-out ${
+                        activeCategory === category
+                          ? "opacity-100 visible"
+                          : "opacity-0 invisible"
+                      }`}
+                    >
+                      {servicesByCategory[category].map((service) => (
+                        <Link
+                          key={service._id}
+                          href={formatPath(
+                            category,
+                            service.service_unique_name
+                          )}
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={handleServiceClick}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span>{service.name}</span>
+                            <span className="text-xs font-semibold text-gray-500">
+                              ₹{service.charge.toLocaleString()}
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Featured Services */}
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-800 mb-4">
+                Featured Services
+              </h2>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.keys(servicesByCategory).flatMap((category) =>
+                  servicesByCategory[category].slice(0, 2).map((service) => (
                     <div
                       key={service._id}
                       className="bg-white overflow-hidden shadow rounded-lg"
@@ -154,24 +225,44 @@ export default function UserDashboard() {
                         </div>
                         <div className="mt-4">
                           <Link
-                            href={formatPath(category, service.name)}
+                            href={formatPath(
+                              category,
+                              service.service_unique_name
+                            )}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                            onClick={handleServiceClick}
                           >
                             Start Application
                           </Link>
                         </div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
-            ))}
+            </div>
 
             {/* Submissions */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 My Submissions
               </h2>
+
+              <div className="mb-4 flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-gray-600">
+                    View and manage your service submissions
+                  </p>
+                </div>
+                <div>
+                  <Link
+                    href="/dashboard/user/common-submissions"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    View All Submissions
+                  </Link>
+                </div>
+              </div>
 
               {/* Direct Submissions List */}
               <DirectSubmissionsList />

@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import FormSection from "./FormSection";
+import AddressSection from "./AddressSection";
+import BankDetailsSection from "./BankDetailsSection";
 
 interface PermanentInfoData {
   firstName: string;
@@ -11,16 +13,43 @@ interface PermanentInfoData {
   fatherName: string;
   gender: string;
   maritalStatus: string;
+  mobileNumber: string;
+  email: string;
+}
+
+interface AddressData {
+  flatNumber: string;
+  premiseName: string;
+  roadStreet: string;
+  areaLocality: string;
+  pincode: string;
+  state: string;
+  city: string;
+}
+
+interface BankDetailsData {
+  accountNumber: string;
+  ifscCode: string;
+  bankName: string;
+  accountType: string;
 }
 
 interface PermanentInfoSectionProps {
   data: PermanentInfoData;
   onChange: (data: PermanentInfoData) => void;
+  addressData?: AddressData;
+  onAddressChange?: (data: AddressData) => void;
+  bankDetails?: BankDetailsData;
+  onBankDetailsChange?: (data: BankDetailsData) => void;
 }
 
 export default function PermanentInfoSection({
   data,
   onChange,
+  addressData,
+  onAddressChange,
+  bankDetails,
+  onBankDetailsChange,
 }: PermanentInfoSectionProps) {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -30,6 +59,39 @@ export default function PermanentInfoSection({
       ...data,
       [name]: value,
     });
+  };
+
+  // Default address data if not provided
+  const defaultAddressData: AddressData = addressData || {
+    flatNumber: "",
+    premiseName: "",
+    roadStreet: "",
+    areaLocality: "",
+    pincode: "",
+    state: "",
+    city: "",
+  };
+
+  // Default address change handler if not provided
+  const handleAddressChange = (newAddressData: AddressData) => {
+    if (onAddressChange) {
+      onAddressChange(newAddressData);
+    }
+  };
+
+  // Default bank details data if not provided
+  const defaultBankDetails: BankDetailsData = bankDetails || {
+    accountNumber: "",
+    ifscCode: "",
+    bankName: "",
+    accountType: "",
+  };
+
+  // Default bank details change handler if not provided
+  const handleBankDetailsChange = (newBankDetails: BankDetailsData) => {
+    if (onBankDetailsChange) {
+      onBankDetailsChange(newBankDetails);
+    }
   };
 
   // Icon for the section
@@ -201,6 +263,67 @@ export default function PermanentInfoSection({
             <option value="notDisclose">Prefer not to disclose</option>
           </select>
         </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="mobileNumber"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Mobile No <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="tel"
+            id="mobileNumber"
+            name="mobileNumber"
+            value={data.mobileNumber}
+            onChange={handleChange}
+            placeholder="Enter Mobile Number"
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Email <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            value={data.email}
+            onChange={handleChange}
+            placeholder="Enter Email Address"
+            required
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+          />
+        </div>
+      </div>
+
+      {/* Integrated Address Section */}
+      <div className="mt-6 border-t border-gray-200 pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Address Information
+        </h3>
+        <AddressSection
+          data={defaultAddressData}
+          onChange={handleAddressChange}
+        />
+      </div>
+
+      {/* Integrated Bank Details Section */}
+      <div className="mt-6 border-t border-gray-200 pt-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">
+          Bank Account Details
+        </h3>
+        <BankDetailsSection
+          data={defaultBankDetails}
+          onChange={handleBankDetailsChange}
+        />
       </div>
     </FormSection>
   );

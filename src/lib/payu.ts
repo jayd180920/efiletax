@@ -31,12 +31,13 @@ export const generateHash = (
   amount: number,
   productInfo: string,
   firstName: string,
-  email: string
+  email: string,
+  udf1: string = ""
 ): string => {
   const config = getPayUConfig();
 
   // Hash sequence: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-  const hashString = `${config.merchantKey}|${txnId}|${amount}|${productInfo}|${firstName}|${email}|||||||||||${config.merchantSalt}`;
+  const hashString = `${config.merchantKey}|${txnId}|${amount}|${productInfo}|${firstName}|${email}|${udf1}||||||||||${config.merchantSalt}`;
 
   return crypto.createHash("sha512").update(hashString).digest("hex");
 };
@@ -46,7 +47,15 @@ export const verifyHash = (payuResponse: any): boolean => {
   const config = getPayUConfig();
 
   // Response hash sequence: salt|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
-  const hashString = `${config.merchantSalt}|${payuResponse.status}|||||||||||${payuResponse.email}|${payuResponse.firstname}|${payuResponse.productinfo}|${payuResponse.amount}|${payuResponse.txnid}|${config.merchantKey}`;
+  const hashString = `${config.merchantSalt}|${payuResponse.status}|||||||${
+    payuResponse.udf5 || ""
+  }|${payuResponse.udf4 || ""}|${payuResponse.udf3 || ""}|${
+    payuResponse.udf2 || ""
+  }|${payuResponse.udf1 || ""}|${payuResponse.email}|${
+    payuResponse.firstname
+  }|${payuResponse.productinfo}|${payuResponse.amount}|${payuResponse.txnid}|${
+    config.merchantKey
+  }`;
 
   const calculatedHash = crypto
     .createHash("sha512")
@@ -68,7 +77,14 @@ export const generatePayUFormData = (
 ) => {
   const config = getPayUConfig();
 
-  const hash = generateHash(txnId, amount, productInfo, firstName, email);
+  const hash = generateHash(
+    txnId,
+    amount,
+    productInfo,
+    firstName,
+    email,
+    serviceId
+  );
 
   return {
     key: config.merchantKey,

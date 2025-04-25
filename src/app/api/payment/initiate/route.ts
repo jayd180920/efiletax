@@ -57,16 +57,35 @@ export async function POST(req: NextRequest) {
       hash: "", // Will be updated with the actual hash
     });
 
+    // Ensure we have valid values for all required parameters
+    const amount = service.charge || 0;
+    if (amount <= 0) {
+      return NextResponse.json(
+        { error: "Service charge must be greater than 0" },
+        { status: 400 }
+      );
+    }
+
+    const productInfo = service.name || "Service";
+    const firstName = user.name || "User";
+    const email = user.email;
+
+    // Phone is required by PayU - use a default if not provided
+    const phone = user.phone || "9999999999"; // Default phone number if not available
+
     // Generate PayU form data
     const formData = generatePayUFormData(
       txnId,
-      service.charge || 0,
-      service.name,
-      user.name || "User",
-      user.email,
-      user.phone || "",
+      amount,
+      productInfo,
+      firstName,
+      email,
+      phone,
       service._id.toString()
     );
+
+    // Log form data for debugging (remove in production)
+    console.log("PayU Form Data:", JSON.stringify(formData, null, 2));
 
     // Update hash in payment transaction
     paymentTransaction.hash = formData.hash;

@@ -86,8 +86,35 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
 
   // Handle payment form submission
   const handlePaymentSubmit = (e: React.FormEvent) => {
-    // Allow the form to submit naturally to PayU's payment URL
+    // Log form data for debugging
     console.log("Submitting payment form to:", paymentData?.paymentUrl);
+    console.log("Form data:", paymentData?.formData);
+
+    // Validate required fields before submission
+    const requiredFields = [
+      "key",
+      "txnid",
+      "amount",
+      "productinfo",
+      "firstname",
+      "email",
+      "surl",
+      "furl",
+      "hash",
+    ];
+
+    const missingFields = requiredFields.filter(
+      (field) => !paymentData?.formData[field]
+    );
+
+    if (missingFields.length > 0) {
+      console.error("Missing required fields:", missingFields);
+      alert(`Missing required fields: ${missingFields.join(", ")}`);
+      e.preventDefault(); // Prevent form submission if fields are missing
+      return;
+    }
+
+    // Allow the form to submit naturally to PayU's payment URL
     // Do not call e.preventDefault() here as we want the form to submit
   };
 
@@ -203,6 +230,18 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
                 value={value as string}
               />
             ))}
+
+            {/* Debug information - remove in production */}
+            <div className="mb-4 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-40">
+              <p className="font-semibold mb-1">
+                Debug Info (remove in production):
+              </p>
+              <p>Payment URL: {paymentData.paymentUrl}</p>
+              <div>
+                <p className="font-semibold mt-1">Form Data:</p>
+                <pre>{JSON.stringify(paymentData.formData, null, 2)}</pre>
+              </div>
+            </div>
 
             <div className="mt-6 space-y-3">
               <button

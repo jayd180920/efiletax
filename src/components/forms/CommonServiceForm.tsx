@@ -9,6 +9,7 @@ declare global {
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import React from "react";
 
 export interface CommonServiceFormProps {
   serviceId: string;
@@ -67,6 +68,7 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >
   ) => {
+    console.log("Input changed:", e.target.name, e.target.value);
     const { name, value, type } = e.target;
 
     // Handle checkbox inputs
@@ -113,16 +115,57 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
     setIsSubmitting(true);
 
     try {
-      // Merge window.formData with local formData if available
-      let mergedFormData = { ...formData };
+      // Get all form inputs from the DOM
+      const formElement = e.target as HTMLFormElement;
+      const allInputs = formElement.querySelectorAll("input, select, textarea");
 
+      // Create an object to store all form values
+      const formValues: Record<string, any> = {};
+
+      // Extract values from all inputs
+      allInputs.forEach((element) => {
+        // Type assertion for the element
+        const input = element as
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement;
+
+        if (input.name && !input.disabled) {
+          if (input.type === "checkbox") {
+            formValues[input.name] = (input as HTMLInputElement).checked;
+          } else {
+            formValues[input.name] = input.value;
+          }
+        }
+      });
+
+      console.log("All form values from DOM:", formValues);
+      console.log("Local form data state:", formData);
+
+      // Merge with component state
+      let mergedFormData = {
+        ...formValues,
+        ...formData,
+      };
+
+      // Also check for any data in window.formData
       if (typeof window !== "undefined" && window.formData) {
-        mergedFormData = {
-          ...mergedFormData,
-          ...window.formData,
-        };
-        console.log("Merged form data:", mergedFormData);
+        console.log("Window form data:", window.formData);
+
+        // Get all properties from window.formData
+        for (const key in window.formData) {
+          // Skip the service info properties that are already in mergedFormData
+          if (
+            key !== "serviceId" &&
+            key !== "serviceName" &&
+            key !== "serviceUniqueId"
+          ) {
+            mergedFormData[key] = window.formData[key];
+          }
+        }
       }
+
+      console.log("Final merged form data:", mergedFormData);
 
       // Prepare submission data
       // Ensure file URLs and keys are properly included in the formData
@@ -258,7 +301,20 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
             <input type="hidden" name="formtype" value={serviceUniqueId} />
 
             {/* Service-specific form content */}
-            {children}
+            {React.Children.map(children, (child) => {
+              // Check if child is a valid React element
+              if (React.isValidElement(child)) {
+                // Check if it's a component (not a DOM element)
+                if (typeof child.type !== "string") {
+                  // Clone the element with handleChange prop
+                  return React.cloneElement(child as React.ReactElement<any>, {
+                    onChange: handleChange, // Pass handleChange to child components
+                    formData, // Optionally pass formData for controlled inputs
+                  });
+                }
+              }
+              return child;
+            })}
 
             {/* Common fields */}
             <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">

@@ -1,19 +1,63 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
+
+// Extend Window interface to include our custom formData property
+declare global {
+  interface Window {
+    formData: Record<string, any>;
+  }
+}
 
 interface TaxSummaryTabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
+  formData?: any;
+  serviceUniqueId?: string;
 }
 
 export default function TaxSummaryTab({
   activeTab,
   setActiveTab,
+  formData,
+  serviceUniqueId,
 }: TaxSummaryTabProps) {
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
+
+  // Log form data when component mounts or formData changes
+  useEffect(() => {
+    if (isMounted.current && formData) {
+      console.log("Tax Summary Tab - Form Data:", formData);
+    }
+  }, [formData]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
   const handleSubmit = () => {
-    // Submit the entire form
-    alert("Form submitted successfully!");
+    // Store form data in window.formData for final submission
+    if (typeof window !== "undefined" && formData) {
+      // Initialize window.formData if it doesn't exist
+      if (!window.formData) {
+        window.formData = {};
+      }
+
+      // Store all form data
+      window.formData = {
+        ...window.formData,
+        ...formData,
+        serviceUniqueId,
+      };
+
+      console.log("All form data stored for submission:", window.formData);
+
+      // Submit the entire form
+      alert("Form submitted successfully!");
+    }
   };
 
   const handleBack = () => {

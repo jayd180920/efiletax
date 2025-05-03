@@ -126,46 +126,13 @@ const Header = () => {
             </Link>
           </div>
 
-          {/* Navigation - Only show for regular users or non-logged in users */}
-          {(!user || (user && user.role === "user")) && (
-            <nav className="hidden md:flex">
-              <ul className="flex space-x-8">
-                {menuItems.map((item, index) => (
-                  <li key={index} className="relative">
-                    <button
-                      className="text-gray-700 hover:text-primary py-2 font-medium"
-                      onClick={() => handleClick(index)}
-                    >
-                      {item.title}
-                    </button>
-
-                    {/* Submenu */}
-                    {activeMenu === index && (
-                      <div className="absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 py-2">
-                        {item.submenu.map((subItem, subIndex) => (
-                          <Link
-                            key={subIndex}
-                            href={subItem.href}
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-primary-50 hover:text-primary"
-                          >
-                            {subItem.title}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          )}
-
           {/* Action Buttons */}
           <div className="flex items-center space-x-4">
             {loading ? (
               <div className="px-4 py-2">Loading...</div>
             ) : user ? (
               <>
-                <Link
+                {/* <Link
                   href={
                     user.role === "admin"
                       ? "/dashboard/admin"
@@ -174,7 +141,7 @@ const Header = () => {
                   className="px-4 py-2 text-primary hover:text-primary-700"
                 >
                   Dashboard
-                </Link>
+                </Link> */}
                 <button
                   onClick={handleLogout}
                   className="px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary-50"

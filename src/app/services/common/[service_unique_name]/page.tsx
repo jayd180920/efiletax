@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PersonalInfoTab from "@/components/registration/PersonalInfoTab";
@@ -14,7 +14,144 @@ export default function CommonServicePage() {
   const params = useParams();
   const { service_unique_name } = params;
 
+  // State for active tab
   const [activeTab, setActiveTab] = useState("personal-info");
+
+  // State for form data
+  const [formState, setFormState] = useState({
+    personalInfo: {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      dateOfBirth: "",
+      fatherName: "",
+      gender: "",
+      maritalStatus: "",
+      mobileNumber: "",
+      email: "",
+    },
+    identification: {
+      aadhaarType: "number" as "number" | "enrollment",
+      aadhaarNumber: "",
+      aadhaarEnrollment: "",
+      aadhaarAttachment: null as File | null,
+      panNumber: "",
+      panAttachment: null as File | null,
+    },
+    address: {
+      flatNumber: "",
+      premiseName: "",
+      roadStreet: "",
+      areaLocality: "",
+      pincode: "",
+      state: "",
+      city: "",
+    },
+    bankDetails: {
+      accountNumber: "",
+      ifscCode: "",
+      bankName: "",
+      accountType: "",
+    },
+    placeOfBusiness: {
+      rentalAgreement: null as File | null,
+      ebBillPropertyTax: null as File | null,
+      saleDeedConcerned: null as File | null,
+      consentLetter: null as File | null,
+    },
+    businessKYCData: {
+      businessType: "proprietor" as
+        | "proprietor"
+        | "partnership"
+        | "company"
+        | "llp",
+      proprietorData: {
+        tradeName: "",
+        natureOfBusiness: "",
+        proprietorAadharNumber: "",
+        proprietorAadharFile: null as File | null,
+        proprietorPanNumber: "",
+        proprietorPanFile: null as File | null,
+      },
+      partnershipData: {
+        authorizationLetterFile: null as File | null,
+        partnershipDeedFile: null as File | null,
+        firmPanNumber: "",
+        firmPanFile: null as File | null,
+        partners: [
+          {
+            aadharNumber: "",
+            aadharFile: null as File | null,
+            panNumber: "",
+            panFile: null as File | null,
+          },
+        ],
+      },
+      companyData: {
+        certificateOfIncorporationFile: null as File | null,
+        boardResolutionFile: null as File | null,
+        companyPanNumber: "",
+        companyPanFile: null as File | null,
+        directors: [
+          {
+            aadharNumber: "",
+            aadharFile: null as File | null,
+            panNumber: "",
+            panFile: null as File | null,
+          },
+        ],
+      },
+      llpData: {
+        certificateOfIncorporationFile: null as File | null,
+        boardResolutionFile: null as File | null,
+        llpPanNumber: "",
+        llpPanFile: null as File | null,
+        designatedPartnerPanNumber: "",
+        designatedPartnerPanFile: null as File | null,
+      },
+    },
+    monthlyFilingData: {
+      salesInvoiceFile: null as File | null,
+      purchaseInvoiceFile: null as File | null,
+      bankStatementFile: null as File | null,
+    },
+    annualReturnData: {
+      gstrType: "GSTR-9" as "GSTR-9" | "GSTR-9C" | "GSTR-9A",
+      outwardInwardSupplyFile: null as File | null,
+      taxPaymentDetailsFile: null as File | null,
+      inputTaxCreditFile: null as File | null,
+      previousYearReturnFile: null as File | null,
+      auditedFinancialStatementsFile: null as File | null,
+      reconciliationStatementFile: null as File | null,
+    },
+    gstEInvoiceData: {
+      eInvoiceDocumentsFile: null as File | null,
+    },
+    claimGSTRefundData: {
+      salesInvoiceFile: null as File | null,
+      purchaseInvoiceFile: null as File | null,
+      annexureBFile: null as File | null,
+    },
+    gstClosureData: {
+      closureDocFile: null as File | null,
+    },
+    gstAmendmentData: {
+      amendmentDocFile: null as File | null,
+    },
+    gstEWaybillData: {
+      eWaybillDocFile: null as File | null,
+    },
+    files: {} as Record<string, File | null>,
+    incomeSourceFiles: {} as Record<string, File | null>,
+  });
+
+  // Update form state
+  const updateFormState = useCallback((section: string, data: any) => {
+    setFormState((prevState) => ({
+      ...prevState,
+      [section]: data,
+    }));
+  }, []);
   const [serviceDetails, setServiceDetails] = useState({
     id: "",
     name: "",
@@ -128,11 +265,18 @@ export default function CommonServicePage() {
     );
   }
 
+  // Effect to update form data when tab changes
+  useEffect(() => {
+    // This ensures form data is preserved when switching tabs
+    console.log("Active tab changed to:", activeTab);
+    console.log("Current form state:", formState);
+  }, [activeTab, formState]);
+
   // Define service-specific form content with tabs
   const ServiceSpecificContent = () => (
     <div className="mb-6">
       <h4 className="text-base font-semibold text-gray-900 mb-4">
-        Service Information111 {JSON.stringify(serviceDetails)}
+        Service Information {serviceDetails.name}
       </h4>
       <p className="text-sm text-gray-600 mb-4">{serviceDetails.description}</p>
 
@@ -156,6 +300,22 @@ export default function CommonServicePage() {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             serviceUniqueId={service_unique_name as string}
+            formData={{
+              permanentInfo: formState.personalInfo,
+              identification: formState.identification,
+              address: formState.address,
+              bankDetails: formState.bankDetails,
+              placeOfBusiness: formState.placeOfBusiness,
+              files: formState.files,
+            }}
+            updateFormData={(data) => {
+              updateFormState("personalInfo", data.permanentInfo);
+              updateFormState("identification", data.identification);
+              updateFormState("address", data.address);
+              updateFormState("bankDetails", data.bankDetails);
+              updateFormState("placeOfBusiness", data.placeOfBusiness);
+              updateFormState("files", data.files);
+            }}
           />
         </TabsContent>
 
@@ -164,11 +324,47 @@ export default function CommonServicePage() {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             serviceUniqueId={service_unique_name as string}
+            formData={{
+              businessKYCData: formState.businessKYCData,
+              monthlyFilingData: formState.monthlyFilingData,
+              annualReturnData: formState.annualReturnData,
+              gstEInvoiceData: formState.gstEInvoiceData,
+              claimGSTRefundData: formState.claimGSTRefundData,
+              gstClosureData: formState.gstClosureData,
+              gstAmendmentData: formState.gstAmendmentData,
+              gstEWaybillData: formState.gstEWaybillData,
+              files: formState.incomeSourceFiles,
+            }}
+            updateFormData={(data) => {
+              if (service_unique_name === "new_registration") {
+                updateFormState("businessKYCData", data.businessKYCData);
+              } else if (service_unique_name === "monthly_filing") {
+                updateFormState("monthlyFilingData", data.monthlyFilingData);
+              } else if (service_unique_name === "annual_return") {
+                updateFormState("annualReturnData", data.annualReturnData);
+              } else if (service_unique_name === "gst_e_invoice") {
+                updateFormState("gstEInvoiceData", data.gstEInvoiceData);
+              } else if (service_unique_name === "claim_gst_refund") {
+                updateFormState("claimGSTRefundData", data.claimGSTRefundData);
+              } else if (service_unique_name === "gst_closure") {
+                updateFormState("gstClosureData", data.gstClosureData);
+              } else if (service_unique_name === "gst_amendment") {
+                updateFormState("gstAmendmentData", data.gstAmendmentData);
+              } else if (service_unique_name === "gst_e_waybill") {
+                updateFormState("gstEWaybillData", data.gstEWaybillData);
+              }
+              updateFormState("incomeSourceFiles", data.files);
+            }}
           />
         </TabsContent>
 
         <TabsContent value="tax-savings">
-          <TaxSummaryTab activeTab={activeTab} setActiveTab={setActiveTab} />
+          <TaxSummaryTab
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            formData={formState}
+            serviceUniqueId={service_unique_name as string}
+          />
         </TabsContent>
       </Tabs>
     </div>

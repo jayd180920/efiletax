@@ -200,7 +200,7 @@ export default function UserDashboard() {
             </div>
 
             {/* Featured Services */}
-            <div className="mb-8">
+            {/* <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
                 Featured Services
               </h2>
@@ -240,7 +240,7 @@ export default function UserDashboard() {
                   ))
                 )}
               </div>
-            </div>
+            </div> */}
 
             {/* Submissions */}
             <div className="mb-8">

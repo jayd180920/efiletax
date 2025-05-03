@@ -178,12 +178,12 @@ const DirectSubmissionsList = () => {
       ) : submissions.length === 0 ? (
         <div className="px-4 py-5 sm:p-6 text-center">
           <p className="text-gray-500">No submissions found</p>
-          <Link
+          {/* <Link
             href="/services/gst-filing/new-registration"
             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
           >
             Create New Submission
-          </Link>
+          </Link> */}
         </div>
       ) : (
         <>

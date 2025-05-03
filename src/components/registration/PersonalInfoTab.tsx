@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PermanentInfoSection from "./PermanentInfoSection";
 // import IdentificationSection from "./IdentificationSection";
 import AddressSection from "./AddressSection";
@@ -11,69 +11,168 @@ interface PersonalInfoTabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   serviceUniqueId?: string;
+  formData?: {
+    permanentInfo: {
+      firstName: string;
+      middleName: string;
+      lastName: string;
+      dateOfBirth: string;
+      fatherName: string;
+      gender: string;
+      maritalStatus: string;
+      mobileNumber: string;
+      email: string;
+    };
+    identification: {
+      aadhaarType: "number" | "enrollment";
+      aadhaarNumber: string;
+      aadhaarEnrollment: string;
+      aadhaarAttachment: File | null;
+      panNumber: string;
+      panAttachment: File | null;
+    };
+    address: {
+      flatNumber: string;
+      premiseName: string;
+      roadStreet: string;
+      areaLocality: string;
+      pincode: string;
+      state: string;
+      city: string;
+    };
+    bankDetails: {
+      accountNumber: string;
+      ifscCode: string;
+      bankName: string;
+      accountType: string;
+    };
+    placeOfBusiness: {
+      rentalAgreement: File | null;
+      ebBillPropertyTax: File | null;
+      saleDeedConcerned: File | null;
+      consentLetter: File | null;
+    };
+    files: Record<string, File | null>;
+  };
+  updateFormData?: (data: {
+    permanentInfo: any;
+    identification: any;
+    address: any;
+    bankDetails: any;
+    placeOfBusiness: any;
+    files: Record<string, File | null>;
+  }) => void;
 }
 
 export default function PersonalInfoTab({
   activeTab,
   setActiveTab,
   serviceUniqueId,
+  formData,
+  updateFormData,
 }: PersonalInfoTabProps) {
-  // State for each section
-  const [permanentInfo, setPermanentInfo] = useState({
-    firstName: "",
-    middleName: "",
-    lastName: "",
-    dateOfBirth: "",
-    fatherName: "",
-    gender: "",
-    maritalStatus: "",
-    mobileNumber: "",
-    email: "",
-  });
+  // Track if component is mounted to prevent state updates after unmount
+  const isMounted = useRef(true);
 
-  const [identification, setIdentification] = useState({
-    aadhaarType: "number" as "number" | "enrollment",
-    aadhaarNumber: "",
-    aadhaarEnrollment: "",
-    aadhaarAttachment: null as File | null,
-    panNumber: "",
-    panAttachment: null as File | null,
-  });
+  // State for each section - initialize with formData if provided
+  const [permanentInfo, setPermanentInfo] = useState(
+    formData?.permanentInfo || {
+      firstName: "",
+      middleName: "",
+      lastName: "",
+      dateOfBirth: "",
+      fatherName: "",
+      gender: "",
+      maritalStatus: "",
+      mobileNumber: "",
+      email: "",
+    }
+  );
 
-  const [address, setAddress] = useState({
-    flatNumber: "",
-    premiseName: "",
-    roadStreet: "",
-    areaLocality: "",
-    pincode: "",
-    state: "",
-    city: "",
-  });
+  const [identification, setIdentification] = useState(
+    formData?.identification || {
+      aadhaarType: "number" as "number" | "enrollment",
+      aadhaarNumber: "",
+      aadhaarEnrollment: "",
+      aadhaarAttachment: null as File | null,
+      panNumber: "",
+      panAttachment: null as File | null,
+    }
+  );
 
-  const [bankDetails, setBankDetails] = useState({
-    accountNumber: "",
-    ifscCode: "",
-    bankName: "",
-    accountType: "",
-  });
+  const [address, setAddress] = useState(
+    formData?.address || {
+      flatNumber: "",
+      premiseName: "",
+      roadStreet: "",
+      areaLocality: "",
+      pincode: "",
+      state: "",
+      city: "",
+    }
+  );
+
+  const [bankDetails, setBankDetails] = useState(
+    formData?.bankDetails || {
+      accountNumber: "",
+      ifscCode: "",
+      bankName: "",
+      accountType: "",
+    }
+  );
 
   // State for place of business
-  const [placeOfBusiness, setPlaceOfBusiness] = useState({
-    rentalAgreement: null as File | null,
-    ebBillPropertyTax: null as File | null,
-    saleDeedConcerned: null as File | null,
-    consentLetter: null as File | null,
-  });
+  const [placeOfBusiness, setPlaceOfBusiness] = useState(
+    formData?.placeOfBusiness || {
+      rentalAgreement: null as File | null,
+      ebBillPropertyTax: null as File | null,
+      saleDeedConcerned: null as File | null,
+      consentLetter: null as File | null,
+    }
+  );
 
   // State for file uploads
-  const [files, setFiles] = useState<Record<string, File | null>>({
-    aadhaarAttachment: null,
-    panAttachment: null,
-    rentalAgreement: null,
-    ebBillPropertyTax: null,
-    saleDeedConcerned: null,
-    consentLetter: null,
-  });
+  const [files, setFiles] = useState<Record<string, File | null>>(
+    formData?.files || {
+      aadhaarAttachment: null,
+      panAttachment: null,
+      rentalAgreement: null,
+      ebBillPropertyTax: null,
+      saleDeedConcerned: null,
+      consentLetter: null,
+    }
+  );
+
+  // Update local state when formData props change
+  useEffect(() => {
+    if (isMounted.current && formData) {
+      if (formData.permanentInfo) {
+        setPermanentInfo(formData.permanentInfo);
+      }
+      if (formData.identification) {
+        setIdentification(formData.identification);
+      }
+      if (formData.address) {
+        setAddress(formData.address);
+      }
+      if (formData.bankDetails) {
+        setBankDetails(formData.bankDetails);
+      }
+      if (formData.placeOfBusiness) {
+        setPlaceOfBusiness(formData.placeOfBusiness);
+      }
+      if (formData.files) {
+        setFiles(formData.files);
+      }
+    }
+  }, [formData]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   // Handle file changes
   const handleFileChange = (name: string, file: File | null) => {
@@ -112,165 +211,51 @@ export default function PersonalInfoTab({
     }
 
     // Check identification required fields
-    if (
-      (identification.aadhaarType === "number" &&
-        !identification.aadhaarNumber) ||
-      (identification.aadhaarType === "enrollment" &&
-        !identification.aadhaarEnrollment) ||
-      !identification.panNumber
-    ) {
-      return false;
-    }
+    // if (
+    //   (identification.aadhaarType === "number" &&
+    //     !identification.aadhaarNumber) ||
+    //   (identification.aadhaarType === "enrollment" &&
+    //     !identification.aadhaarEnrollment) ||
+    //   !identification.panNumber
+    // ) {
+    //   return false;
+    // }
 
-    // Check address required fields
-    if (
-      !address.flatNumber ||
-      !address.areaLocality ||
-      !address.pincode ||
-      !address.state ||
-      !address.city
-    ) {
-      return false;
-    }
+    // // Check address required fields
+    // if (
+    //   !address.flatNumber ||
+    //   !address.areaLocality ||
+    //   !address.pincode ||
+    //   !address.state ||
+    //   !address.city
+    // ) {
+    //   return false;
+    // }
 
     return true;
   };
 
   // Handle next button click
-  const handleNext = async () => {
+  const handleNext = () => {
     if (isFormValid()) {
-      try {
-        // Upload files to S3
-        if (
-          files.aadhaarAttachment ||
-          files.panAttachment ||
-          files.rentalAgreement ||
-          files.ebBillPropertyTax ||
-          files.saleDeedConcerned ||
-          files.consentLetter
-        ) {
-          const formData = new FormData();
-
-          if (files.aadhaarAttachment) {
-            formData.append("aadhaarAttachment", files.aadhaarAttachment);
-          }
-
-          if (files.panAttachment) {
-            formData.append("panAttachment", files.panAttachment);
-          }
-
-          if (files.rentalAgreement) {
-            formData.append("rentalAgreement", files.rentalAgreement);
-          }
-
-          if (files.ebBillPropertyTax) {
-            formData.append("ebBillPropertyTax", files.ebBillPropertyTax);
-          }
-
-          if (files.saleDeedConcerned) {
-            formData.append("saleDeedConcerned", files.saleDeedConcerned);
-          }
-
-          if (files.consentLetter) {
-            formData.append("consentLetter", files.consentLetter);
-          }
-
-          // Upload files to S3
-          const uploadResponse = await fetch("/api/upload", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!uploadResponse.ok) {
-            throw new Error("File upload failed");
-          }
-
-          const uploadResult = await uploadResponse.json();
-          console.log("Files uploaded:", uploadResult);
-        }
-
-        // Save data to database
-        await saveFormData();
-
-        // Move to next tab
-        setActiveTab("income-source");
-      } catch (error) {
-        console.error("Error saving form data:", error);
-      }
-    }
-  };
-
-  // Save form data to database
-  const saveFormData = async () => {
-    try {
-      // Save permanent info
-      const permanentInfoResponse = await fetch(
-        "/api/submissions/permanent-info",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(permanentInfo),
-        }
-      );
-
-      if (!permanentInfoResponse.ok) {
-        throw new Error("Failed to save permanent info");
-      }
-
-      // Save identification
-      const identificationResponse = await fetch(
-        "/api/submissions/identification",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
+      // Update parent component's state with form data
+      if (updateFormData) {
+        updateFormData({
+          permanentInfo,
+          identification: {
             ...identification,
             mobileNumber: permanentInfo.mobileNumber,
             email: permanentInfo.email,
-            aadhaarAttachment: files.aadhaarAttachment ? true : false,
-            panAttachment: files.panAttachment ? true : false,
-          }),
-        }
-      );
-
-      if (!identificationResponse.ok) {
-        throw new Error("Failed to save identification");
+          },
+          address,
+          bankDetails,
+          placeOfBusiness,
+          files,
+        });
       }
 
-      // Save address
-      const addressResponse = await fetch("/api/submissions/address", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(address),
-      });
-
-      if (!addressResponse.ok) {
-        throw new Error("Failed to save address");
-      }
-
-      // Save bank details
-      const bankDetailsResponse = await fetch("/api/submissions/bank-details", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(bankDetails),
-      });
-
-      if (!bankDetailsResponse.ok) {
-        throw new Error("Failed to save bank details");
-      }
-
-      console.log("All form data saved successfully");
-    } catch (error) {
-      console.error("Error saving form data:", error);
-      throw error;
+      // Move to next tab without saving to database
+      setActiveTab("income-source");
     }
   };
 

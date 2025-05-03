@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 
+import Image from "next/image";
+
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
@@ -187,7 +189,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           {/* Sidebar header */}
           <div className="flex items-center justify-between border-b px-4 py-5">
             <Link href="/" className="text-xl font-bold text-primary">
-              eFileTax Admin
+              <Image
+                src="/efiletax-logo.svg"
+                alt="eFileTax Logo"
+                width={150}
+                height={40}
+                priority
+              />
             </Link>
             <button
               onClick={toggleSidebar}

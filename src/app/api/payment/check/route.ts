@@ -3,17 +3,29 @@ import { getServerSession } from "next-auth";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { hasUserPaidForService } from "@/lib/payment-utils";
+import { authenticate } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
-    // Get the current user session
-    const session = await getServerSession();
+    let userId = null;
+    let userEmail = null;
 
-    if (!session || !session.user) {
-      return NextResponse.json(
-        { error: "Authentication required" },
-        { status: 401 }
-      );
+    // First try to get the user from NextAuth session
+    const session = await getServerSession();
+    if (session && session.user) {
+      userEmail = session.user.email;
+    } else {
+      // If NextAuth session fails, try custom JWT authentication
+      const authResult = await authenticate(req);
+      if (authResult) {
+        userId = authResult.userId;
+      } else {
+        // If both authentication methods fail, return 401
+        return NextResponse.json(
+          { error: "Authentication required" },
+          { status: 401 }
+        );
+      }
     }
 
     // Get serviceId from query parameters
@@ -31,7 +43,13 @@ export async function GET(req: NextRequest) {
     await dbConnect();
 
     // Get user details
-    const user = await User.findOne({ email: session.user.email });
+    let user;
+    if (userEmail) {
+      user = await User.findOne({ email: userEmail });
+    } else if (userId) {
+      user = await User.findOne({ _id: userId });
+    }
+
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

@@ -29,6 +29,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
         setIsLoading(true);
 
         // Call API to check if service is paid
+        console.log(`Checking payment status for service ID: ${serviceId}`);
         const response = await fetch(
           `/api/payment/check?serviceId=${serviceId}`,
           {
@@ -36,11 +37,21 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
             headers: {
               "Content-Type": "application/json",
             },
+            credentials: "include", // Include cookies for authentication
           }
         );
 
+        console.log(
+          "Payment status response:",
+          response.status,
+          response.statusText
+        );
         if (!response.ok) {
-          throw new Error("Failed to check payment status");
+          const errorData = await response.json().catch(() => ({}));
+          console.error("Payment check error:", errorData);
+          throw new Error(
+            `Failed to check payment status: ${response.status} ${response.statusText}`
+          );
         }
 
         const data = await response.json();
@@ -64,16 +75,27 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   // Initiate payment process
   const initiatePayment = async () => {
     try {
+      console.log(`Initiating payment for service ID: ${serviceId}`);
       const response = await fetch("/api/payment/initiate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Include cookies for authentication
         body: JSON.stringify({ serviceId }),
       });
 
+      console.log(
+        "Payment initiate response:",
+        response.status,
+        response.statusText
+      );
       if (!response.ok) {
-        throw new Error("Failed to initiate payment");
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Payment initiate error:", errorData);
+        throw new Error(
+          `Failed to initiate payment: ${response.status} ${response.statusText}`
+        );
       }
 
       const data = await response.json();
@@ -173,8 +195,6 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   }
 
   // If service is paid, show the children (service content)
-
-  // This is where you would render the actual service content - UPENDRA
   if (!isPaid) {
     return <>{children}</>;
   }

@@ -38,7 +38,48 @@ export default function TaxSummaryTab({
       isMounted.current = false;
     };
   }, []);
-  const handleSubmit = () => {
+  const handleSave = async () => {
+    try {
+      // Check if we have a submission ID from a previous save
+      const submissionId =
+        typeof window !== "undefined" &&
+        window.formData &&
+        window.formData.submissionId
+          ? window.formData.submissionId
+          : null;
+
+      if (!submissionId) {
+        alert(
+          "No saved form data found. Please save your data in previous tabs first."
+        );
+        return;
+      }
+
+      // Update existing submission
+      const response = await fetch(`/api/submissions/${submissionId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: submissionId,
+          formData: formData || {},
+          status: "draft",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update form data");
+      }
+
+      alert("Form data saved successfully!");
+    } catch (error) {
+      console.error("Error saving form data:", error);
+      alert("Failed to save form data. Please try again.");
+    }
+  };
+
+  const handleSubmit = async () => {
     // Store form data in window.formData for final submission
     if (typeof window !== "undefined" && formData) {
       // Initialize window.formData if it doesn't exist
@@ -60,7 +101,68 @@ export default function TaxSummaryTab({
     }
   };
 
-  const handleBack = () => {
+  const handleFinish = async () => {
+    try {
+      // Check if we have a submission ID from a previous save
+      const submissionId =
+        typeof window !== "undefined" &&
+        window.formData &&
+        window.formData.submissionId
+          ? window.formData.submissionId
+          : null;
+
+      if (!submissionId) {
+        alert(
+          "No saved form data found. Please save your data in previous tabs first."
+        );
+        return;
+      }
+
+      // Update existing submission with completed status
+      const response = await fetch(`/api/submissions/${submissionId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: submissionId,
+          formData: formData || {},
+          status: "completed",
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update form data");
+      }
+
+      alert("Form completed successfully! Redirecting to dashboard...");
+
+      // Redirect to dashboard
+      window.location.href = "/dashboard/user";
+    } catch (error) {
+      console.error("Error completing form:", error);
+      alert("Failed to complete form. Please try again.");
+    }
+  };
+
+  const handleBack = async () => {
+    const shouldSave = window.confirm(
+      "Do you want to save your changes before going back to the previous tab?"
+    );
+
+    if (shouldSave) {
+      await handleSave();
+    } else {
+      // If user doesn't want to save, ask for confirmation to proceed without saving
+      const shouldProceed = window.confirm(
+        "Are you sure you want to go back without saving your changes? Your data may be lost."
+      );
+
+      if (!shouldProceed) {
+        return; // Don't proceed if user cancels
+      }
+    }
+
     setActiveTab("income-source");
   };
 
@@ -107,13 +209,22 @@ export default function TaxSummaryTab({
         >
           Back
         </button>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 font-medium"
-        >
-          Submit
-        </button>
+        <div className="space-x-4">
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 font-medium"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={handleFinish}
+            className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium"
+          >
+            Finish
+          </button>
+        </div>
       </div>
     </div>
   );

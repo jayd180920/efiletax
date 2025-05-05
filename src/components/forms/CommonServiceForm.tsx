@@ -30,7 +30,9 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submissionId, setSubmissionId] = useState<string | null>(null);
 
   // Initialize window.formData when component mounts
   useEffect(() => {
@@ -102,6 +104,171 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle save functionality
+  const handleSave = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      // Get all form inputs from the DOM
+      const formElement = document.querySelector("form") as HTMLFormElement;
+      if (!formElement) {
+        throw new Error("Form element not found");
+      }
+
+      const allInputs = formElement.querySelectorAll("input, select, textarea");
+
+      // Create an object to store all form values
+      const formValues: Record<string, any> = {};
+
+      // Extract values from all inputs
+      allInputs.forEach((element) => {
+        // Type assertion for the element
+        const input = element as
+          | HTMLInputElement
+          | HTMLSelectElement
+          | HTMLTextAreaElement;
+
+        if (input.name && !input.disabled) {
+          if (input.type === "checkbox") {
+            formValues[input.name] = (input as HTMLInputElement).checked;
+          } else {
+            formValues[input.name] = input.value;
+          }
+        }
+      });
+
+      console.log("All form values from DOM:", formValues);
+      console.log("Local form data state:", formData);
+
+      // Merge with component state
+      let mergedFormData = {
+        ...formValues,
+        ...formData,
+      };
+
+      // Also check for any data in window.formData
+      if (typeof window !== "undefined" && window.formData) {
+        console.log("Window form data:", window.formData);
+
+        // Get all properties from window.formData
+        for (const key in window.formData) {
+          // Skip the service info properties that are already in mergedFormData
+          if (
+            key !== "serviceId" &&
+            key !== "serviceName" &&
+            key !== "serviceUniqueId"
+          ) {
+            mergedFormData[key] = window.formData[key];
+          }
+        }
+      }
+
+      // Prepare submission data
+      // Ensure file URLs and keys are properly included in the formData
+      if (mergedFormData.fileUrls || mergedFormData.fileKeys) {
+        // Create a structured file data object for database storage
+        const fileData: Record<string, any> = {};
+
+        // Process file URLs and keys
+        if (mergedFormData.fileUrls) {
+          Object.entries(mergedFormData.fileUrls).forEach(
+            ([fieldName, url]) => {
+              if (!fileData[fieldName]) {
+                fileData[fieldName] = {};
+              }
+              fileData[fieldName].url = url;
+            }
+          );
+        }
+
+        if (mergedFormData.fileKeys) {
+          Object.entries(mergedFormData.fileKeys).forEach(
+            ([fieldName, key]) => {
+              if (!fileData[fieldName]) {
+                fileData[fieldName] = {};
+              }
+              fileData[fieldName].key = key;
+            }
+          );
+        }
+
+        // Add the structured file data to the form data
+        mergedFormData.files = fileData;
+      }
+
+      const submissionData = {
+        formtype: serviceUniqueId,
+        formData: mergedFormData,
+        serviceId,
+        currentStatus: "draft", // Save as draft
+        paymentStatus: "pending", // Default payment status
+      };
+
+      // If we already have a submission ID, update the existing record
+      if (submissionId) {
+        const response = await fetch(`/api/submissions/${submissionId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: submissionId,
+            formData: mergedFormData,
+            status: "draft",
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to update form data");
+        }
+
+        alert("Form data saved successfully!");
+      } else {
+        // Otherwise create a new submission
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            formData: mergedFormData,
+            serviceUniqueId,
+            status: "draft",
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Failed to save form data");
+        }
+
+        // Store the submission ID for future updates
+        setSubmissionId(result.id);
+
+        // Store the ID in window.formData for access by child components
+        if (typeof window !== "undefined") {
+          window.formData.submissionId = result.id;
+        }
+
+        alert("Form data saved successfully!");
+      }
+    } catch (error) {
+      console.error("Error saving form data:", error);
+      setErrors({
+        form: "An error occurred while saving the form. Please try again.",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Handle form submission
@@ -394,7 +561,17 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
             )}
           </div>
 
-          <div className="bg-gray-50 px-4 py-3 text-right sm:px-6">
+          <div className="bg-gray-50 px-4 py-3 text-right sm:px-6 flex justify-end space-x-4">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className={`inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 ${
+                isSaving ? "opacity-70 cursor-not-allowed" : ""
+              }`}
+            >
+              {isSaving ? "Saving..." : "Save"}
+            </button>
             <button
               type="submit"
               disabled={isSubmitting}

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 import { verifyTokenEdge } from "./lib/auth-edge";
 
 // Paths that require authentication
@@ -15,7 +16,7 @@ const adminPaths = ["/dashboard/admin"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  console.log("Edge middleware processing path:", pathname);
+  console.log("Middleware processing path:", pathname);
 
   // Handle common typo: /dashboard/users -> /dashboard/user
   if (pathname === "/dashboard/users") {
@@ -36,24 +37,37 @@ export async function middleware(request: NextRequest) {
   }
 
   try {
-    // Get token from cookies
-    const token = request.cookies.get("token")?.value;
-    console.log("Auth token exists:", !!token);
+    // Try to get NextAuth.js session token
+    const nextAuthToken = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET,
+    });
+    console.log("NextAuth token exists:", !!nextAuthToken);
 
-    // Get session token from cookies (for NextAuth)
-    const sessionToken =
-      request.cookies.get("next-auth.session-token")?.value ||
-      request.cookies.get("__Secure-next-auth.session-token")?.value;
-    console.log("NextAuth session token exists:", !!sessionToken);
+    // Get custom token from cookies
+    const customToken = request.cookies.get("token")?.value;
+    console.log("Custom token exists:", !!customToken);
 
     // Check if we have any valid authentication
     let isAuthenticated = false;
     let userRole = "user";
 
-    // First try to verify the custom token
-    if (token) {
+    // Check NextAuth token
+    if (nextAuthToken) {
+      console.log("Using NextAuth token for authentication");
+      isAuthenticated = true;
+
+      // Get role from token, default to 'user' if not present
+      userRole =
+        (nextAuthToken as any).role ||
+        (nextAuthToken as any).user?.role ||
+        "user";
+      console.log("User role from NextAuth token:", userRole);
+    }
+    // Check custom token
+    else if (customToken) {
       console.log("Verifying custom token");
-      const payload = await verifyTokenEdge(token);
+      const payload = await verifyTokenEdge(customToken);
 
       if (payload) {
         console.log("Custom token verified, user role:", payload.role);
@@ -64,33 +78,18 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // If we have a NextAuth session token, assume it's valid
-    // (NextAuth validation happens in the API routes)
-    if (!isAuthenticated && sessionToken) {
-      console.log("NextAuth session token found, assuming authenticated");
-      isAuthenticated = true;
-      // We don't know the role from the session token alone,
-      // but we'll check it when accessing admin paths
-    }
-
-    // If authenticated, check role permissions for admin paths
+    // If authenticated, check role permissions
     if (isAuthenticated) {
+      // Check if admin path and user is not admin
       const isAdminPath = adminPaths.some((path) => pathname.startsWith(path));
       console.log("Is admin path:", isAdminPath);
 
-      // For admin paths, we need to verify the role
-      if (isAdminPath) {
-        // If we already know the role from the custom token
-        if (token && userRole !== "admin" && userRole !== "regionAdmin") {
-          console.log(
-            `Access denied: User role '${userRole}' is not admin or regionAdmin`
-          );
-          // Redirect non-admin users to user dashboard
-          return NextResponse.redirect(new URL("/dashboard/user", request.url));
-        }
-
-        // If we're using NextAuth and don't know the role yet,
-        // let the request through and let the page handle the role check
+      if (isAdminPath && userRole !== "admin" && userRole !== "regionAdmin") {
+        console.log(
+          `Access denied: User role '${userRole}' is not admin or regionAdmin`
+        );
+        // Redirect non-admin users to user dashboard
+        return NextResponse.redirect(new URL("/dashboard/user", request.url));
       }
 
       console.log("Authentication successful, allowing request");

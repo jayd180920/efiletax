@@ -1,186 +1,148 @@
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Submission from "@/models/Submission";
-import User from "@/models/User";
+import { NextResponse, NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/db";
+import { ObjectId } from "mongodb";
 import { authenticate } from "@/lib/auth";
-import mongoose from "mongoose";
-import {
-  apiHandler,
-  ValidationError,
-  UnauthorizedError,
-} from "@/lib/api-utils";
-import { getToken } from "next-auth/jwt";
 
-export async function POST(req: NextRequest) {
-  return apiHandler(async () => {
-    // Try to get NextAuth.js session token
-    const nextAuthToken = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    // Try custom authentication
-    const auth = await authenticate(req);
-
-    // If neither authentication method works, throw error
-    if (!nextAuthToken && !auth) {
-      throw new UnauthorizedError("Authentication required");
-    }
-
-    // Connect to database
-    await dbConnect();
-
-    let userId;
-
-    // If we have a NextAuth token, get the user ID
-    if (nextAuthToken) {
-      const user = await User.findOne({ email: nextAuthToken.email });
-      if (!user) {
-        throw new UnauthorizedError("User not found");
-      }
-      userId = user._id;
-    } else if (auth) {
-      // Otherwise, use custom token
-      userId = new mongoose.Types.ObjectId(auth.userId);
-    } else {
-      throw new UnauthorizedError("Authentication required");
-    }
-
-    // Parse request body
-    const body = await req.json();
-    const { serviceId, serviceName, formData, files, amount } = body;
-
-    // Validate input
-    if (!serviceId || !serviceName || !formData || !amount) {
-      throw new ValidationError("Missing required fields");
-    }
-
-    // Get the user's region
-    const user = await User.findById(userId);
-    if (!user) {
-      throw new UnauthorizedError("User not found");
-    }
-
-    // Create submission
-    const submission = await Submission.create({
-      userId,
-      serviceId,
-      serviceName,
-      formData,
-      files: files || {},
-      amount,
-      status: "pending",
-      paymentStatus: "pending", // Default to pending, update after payment
-      region: user.region, // Set the region from the user's region
-    });
-
-    return NextResponse.json({
-      success: true,
-      submission: {
-        id: submission._id,
-        serviceId: submission.serviceId,
-        serviceName: submission.serviceName,
-        status: submission.status,
-        paymentStatus: submission.paymentStatus,
-        amount: submission.amount,
-        createdAt: submission.createdAt,
-      },
-    });
-  });
-}
-
-export async function GET(req: NextRequest) {
-  return apiHandler(async () => {
-    // Try to get NextAuth.js session token
-    const nextAuthToken = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    // Try custom authentication
-    const auth = await authenticate(req);
-
-    // If neither authentication method works, throw error
-    if (!nextAuthToken && !auth) {
-      throw new UnauthorizedError("Authentication required");
-    }
-
-    // Connect to database
-    await dbConnect();
-
-    let userId;
-    let role = "user";
-
-    // If we have a NextAuth token, get the user ID and role
-    if (nextAuthToken) {
-      const user = await User.findOne({ email: nextAuthToken.email });
-      if (!user) {
-        throw new UnauthorizedError("User not found");
-      }
-      userId = user._id;
-      role = user.role;
-    } else if (auth) {
-      // Otherwise, use custom token
-      userId = auth.userId;
-      role = auth.role;
-    } else {
-      throw new UnauthorizedError("Authentication required");
-    }
-
+export async function GET(request: NextRequest) {
+  try {
     // Get query parameters
-    const url = new URL(req.url);
-    const status = url.searchParams.get("status");
-    const serviceId = url.searchParams.get("serviceId");
-    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const url = new URL(request.url);
     const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const status = url.searchParams.get("status");
+
+    // Calculate skip for pagination
     const skip = (page - 1) * limit;
 
-    // Build query
-    const query: any = {};
+    // Get user session or authenticate with custom token
+    const session = await getServerSession(authOptions);
+    let userId;
 
-    // If user is admin, show all submissions
-    if (role === "admin") {
-      // No filter, show all submissions
-    }
-    // If user is regionAdmin, show submissions from their region
-    else if (role === "regionAdmin") {
-      const admin = await User.findById(userId);
-      if (!admin || !admin.region) {
-        throw new ValidationError("Region admin not assigned to any region");
+    if (session?.user) {
+      userId = session.user.id;
+    } else {
+      // Try custom authentication
+      const auth = await authenticate(request);
+
+      if (!auth) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      query.region = admin.region;
-    }
-    // For regular users, only show their own submissions
-    else {
-      query.userId = new mongoose.Types.ObjectId(userId);
+
+      userId = auth.userId;
     }
 
-    // Add filters if provided
+    // Connect to database
+    const db = await connectToDatabase();
+    const submissionsCollection = db.collection("submissions");
+
+    // Build query
+    const query: any = { userId };
     if (status) {
       query.status = status;
     }
-    if (serviceId) {
-      query.serviceId = serviceId;
-    }
-
-    // Get submissions
-    const submissions = await Submission.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
 
     // Get total count for pagination
-    const total = await Submission.countDocuments(query);
+    const total = await submissionsCollection.countDocuments(query);
 
+    // Get submissions with pagination
+    const submissions = await submissionsCollection
+      .find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .toArray();
+
+    // Calculate total pages
+    const pages = Math.ceil(total / limit);
+
+    // Return submissions with pagination info
     return NextResponse.json({
-      success: true,
       submissions,
       pagination: {
         total,
         page,
         limit,
-        pages: Math.ceil(total / limit),
+        pages,
       },
     });
-  });
+  } catch (error) {
+    console.error("Error fetching submissions:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch submissions" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { formData, serviceUniqueId, status } = await request.json();
+
+    const db = await connectToDatabase();
+    const submissions = db.collection("submissions");
+
+    const result = await submissions.insertOne({
+      userId: session.user.id,
+      formData,
+      serviceUniqueId,
+      status,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    return NextResponse.json({ id: result.insertedId });
+  } catch (error) {
+    console.error("Error saving submission:", error);
+    return NextResponse.json(
+      { error: "Failed to save submission" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, formData, status } = await request.json();
+
+    const db = await connectToDatabase();
+    const submissions = db.collection("submissions");
+
+    const result = await submissions.updateOne(
+      { _id: new ObjectId(id), userId: session.user.id },
+      {
+        $set: {
+          formData,
+          status,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: "Submission not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error updating submission:", error);
+    return NextResponse.json(
+      { error: "Failed to update submission" },
+      { status: 500 }
+    );
+  }
 }

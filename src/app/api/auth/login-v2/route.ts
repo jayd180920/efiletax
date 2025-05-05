@@ -69,8 +69,8 @@ export async function POST(req: NextRequest) {
 
     console.log("Response data prepared:", JSON.stringify(responseData));
 
-    // Create the response
-    const response = new NextResponse(JSON.stringify(responseData), {
+    // Create the response with proper headers
+    const response = NextResponse.json(responseData, {
       status: 200,
       headers: {
         "Content-Type": "application/json",
@@ -79,13 +79,13 @@ export async function POST(req: NextRequest) {
 
     console.log("Response created");
 
-    // Set cookie
+    // Set cookie with proper configuration
     response.cookies.set({
       name: "token",
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
+      sameSite: "lax", // Changed from 'strict' to 'lax' for better compatibility
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });

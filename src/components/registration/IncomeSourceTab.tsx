@@ -335,7 +335,114 @@ export default function IncomeSourceTab({
     console.log(`Updated local state with file ${name}`);
   };
 
-  const handleNext = () => {
+  // Handle save functionality
+  const handleSave = async () => {
+    try {
+      const data: any = { files };
+
+      // Add service-specific data based on serviceUniqueId
+      if (serviceUniqueId === "gst_amendment") {
+        data.gstAmendmentData = { ...gstAmendmentData };
+      } else if (serviceUniqueId === "gst_e_waybill") {
+        data.gstEWaybillData = { ...gstEWaybillData };
+      } else if (serviceUniqueId === "gst_closure") {
+        data.gstClosureData = { ...gstClosureData };
+      } else if (serviceUniqueId === "monthly_filing") {
+        data.monthlyFilingData = { ...monthlyFilingData };
+      } else if (serviceUniqueId === "annual_return") {
+        data.annualReturnData = { ...annualReturnData };
+      } else if (serviceUniqueId === "gst_e_invoice") {
+        data.gstEInvoiceData = { ...gstEInvoiceData };
+      } else if (serviceUniqueId === "claim_gst_refund") {
+        data.claimGSTRefundData = { ...claimGSTRefundData };
+      } else if (serviceUniqueId === "new_registration") {
+        data.businessKYCData = { ...businessKYCData };
+      }
+
+      // Check if we have a submission ID from a previous save
+      const submissionId =
+        typeof window !== "undefined" &&
+        window.formData &&
+        window.formData.submissionId
+          ? window.formData.submissionId
+          : null;
+
+      if (submissionId) {
+        // Update existing submission
+        const response = await fetch(`/api/submissions/${submissionId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: submissionId,
+            formData: data,
+            status: "draft",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to update form data");
+        }
+
+        const result = await response.json();
+        alert("Form data saved successfully!");
+      } else {
+        // Create new submission
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            formData: data,
+            serviceUniqueId,
+            status: "draft",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save form data");
+        }
+
+        const result = await response.json();
+
+        // Store the submission ID for future updates
+        if (typeof window !== "undefined") {
+          window.formData.submissionId = result.id;
+        }
+
+        alert("Form data saved successfully!");
+      }
+
+      // Update parent component if needed
+      if (updateFormData) {
+        updateFormData(data);
+      }
+    } catch (error) {
+      console.error("Error saving form data:", error);
+      alert("Failed to save form data. Please try again.");
+    }
+  };
+
+  const handleNext = async () => {
+    const shouldSave = window.confirm(
+      "Do you want to save your changes before proceeding to the next tab?"
+    );
+
+    if (shouldSave) {
+      await handleSave();
+    } else {
+      // If user doesn't want to save, ask for confirmation to proceed without saving
+      const shouldProceed = window.confirm(
+        "Are you sure you want to proceed without saving your changes? Your data may be lost."
+      );
+
+      if (!shouldProceed) {
+        return; // Don't proceed if user cancels
+      }
+    }
+
     // Update parent component's state with form data
     if (updateFormData) {
       const data: any = { files };
@@ -362,11 +469,28 @@ export default function IncomeSourceTab({
       updateFormData(data);
     }
 
-    // Move to next tab without uploading files
+    // Move to next tab
     setActiveTab("tax-savings");
   };
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    const shouldSave = window.confirm(
+      "Do you want to save your changes before going back to the previous tab?"
+    );
+
+    if (shouldSave) {
+      await handleSave();
+    } else {
+      // If user doesn't want to save, ask for confirmation to proceed without saving
+      const shouldProceed = window.confirm(
+        "Are you sure you want to go back without saving your changes? Your data may be lost."
+      );
+
+      if (!shouldProceed) {
+        return; // Don't proceed if user cancels
+      }
+    }
+
     setActiveTab("personal-info");
   };
 
@@ -434,13 +558,22 @@ export default function IncomeSourceTab({
         >
           Back
         </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium"
-        >
-          Next
-        </button>
+        <div className="space-x-4">
+          <button
+            type="button"
+            onClick={handleSave}
+            className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 font-medium"
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium"
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

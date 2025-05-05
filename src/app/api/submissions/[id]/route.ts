@@ -1,165 +1,160 @@
-import { NextRequest, NextResponse } from "next/server";
-import dbConnect from "@/lib/mongodb";
-import Submission from "@/models/Submission";
-import User from "@/models/User";
+import { NextResponse, NextRequest } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { connectToDatabase } from "@/lib/db";
+import { ObjectId } from "mongodb";
 import { authenticate } from "@/lib/auth";
-import mongoose from "mongoose";
-import {
-  apiHandler,
-  ValidationError,
-  UnauthorizedError,
-  ForbiddenError,
-  NotFoundError,
-} from "@/lib/api-utils";
-import { getToken } from "next-auth/jwt";
 
-// Get a single submission by ID
-export async function GET(
-  req: NextRequest,
+export async function PUT(
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  return apiHandler(async () => {
-    // Try to get NextAuth.js session token
-    const nextAuthToken = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    // Try custom authentication
-    const auth = await authenticate(req);
-
-    // If neither authentication method works, throw error
-    if (!nextAuthToken && !auth) {
-      throw new UnauthorizedError("Authentication required");
-    }
-
-    // Connect to database
-    await dbConnect();
-
+  try {
+    // Get user session or authenticate with custom token
+    const session = await getServerSession(authOptions);
     let userId;
-    let role = "user";
 
-    // If we have a NextAuth token, get the user ID and role
-    if (nextAuthToken) {
-      const user = await User.findOne({ email: nextAuthToken.email });
-      if (!user) {
-        throw new UnauthorizedError("User not found");
-      }
-      userId = user._id.toString();
-      role = user.role;
-    } else if (auth) {
-      // Otherwise, use custom token
-      userId = auth.userId;
-      role = auth.role;
+    if (session?.user) {
+      userId = session.user.id;
     } else {
-      throw new UnauthorizedError("Authentication required");
-    }
+      // Try custom authentication
+      const auth = await authenticate(request);
 
-    // Validate ID
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      throw new ValidationError("Invalid submission ID");
-    }
-
-    // Get submission
-    const submission = await Submission.findById(params.id);
-    if (!submission) {
-      throw new NotFoundError("Submission not found");
-    }
-
-    // Check if user is authorized to view this submission
-    if (role !== "admin" && submission.userId.toString() !== userId) {
-      throw new ForbiddenError("Not authorized to view this submission");
-    }
-
-    return NextResponse.json({
-      success: true,
-      submission,
-    });
-  });
-}
-
-// Update submission status (approve/reject)
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  return apiHandler(async () => {
-    // Try to get NextAuth.js session token
-    const nextAuthToken = await getToken({
-      req,
-      secret: process.env.NEXTAUTH_SECRET,
-    });
-
-    // Try custom authentication
-    const auth = await authenticate(req, "admin");
-
-    let isAdmin = false;
-
-    // Check if user is admin
-    if (nextAuthToken) {
-      const user = await User.findOne({ email: nextAuthToken.email });
-      if (user && user.role === "admin") {
-        isAdmin = true;
+      if (!auth) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-    } else if (auth) {
-      isAdmin = true; // authenticate(req, "admin") already checks for admin role
+
+      userId = auth.userId;
     }
 
-    if (!isAdmin) {
-      throw new ForbiddenError("Admin access required");
-    }
+    const { formData, status } = await request.json();
+    const id = params.id;
 
-    // Connect to database
-    await dbConnect();
+    const db = await connectToDatabase();
+    const submissions = db.collection("submissions");
 
-    // Validate ID
-    if (!mongoose.Types.ObjectId.isValid(params.id)) {
-      throw new ValidationError("Invalid submission ID");
-    }
+    const result = await submissions.updateOne(
+      { _id: new ObjectId(id), userId: userId },
+      {
+        $set: {
+          formData,
+          status,
+          updatedAt: new Date(),
+        },
+      }
+    );
 
-    // Parse request body
-    const body = await req.json();
-    const { status, rejectionReason } = body;
-
-    // Validate input
-    if (!status || !["approved", "rejected"].includes(status)) {
-      throw new ValidationError(
-        "Invalid status. Must be 'approved' or 'rejected'"
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { error: "Submission not found or unauthorized" },
+        { status: 404 }
       );
     }
 
-    // If rejecting, require a reason
-    if (status === "rejected" && !rejectionReason) {
-      throw new ValidationError("Rejection reason is required");
-    }
-
-    // Get submission
-    const submission = await Submission.findById(params.id);
-    if (!submission) {
-      throw new NotFoundError("Submission not found");
-    }
-
-    // Update submission
-    const updateData: any = {
-      status,
-    };
-
-    if (status === "approved") {
-      updateData.approvedAt = new Date();
-    } else if (status === "rejected") {
-      updateData.rejectedAt = new Date();
-      updateData.rejectionReason = rejectionReason;
-    }
-
-    const updatedSubmission = await Submission.findByIdAndUpdate(
-      params.id,
-      updateData,
-      { new: true }
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error updating submission:", error);
+    return NextResponse.json(
+      { error: "Failed to update submission" },
+      { status: 500 }
     );
+  }
+}
 
-    return NextResponse.json({
-      success: true,
-      submission: updatedSubmission,
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Get user session or authenticate with custom token
+    const session = await getServerSession(authOptions);
+    let userId;
+
+    if (session?.user) {
+      userId = session.user.id;
+    } else {
+      // Try custom authentication
+      const auth = await authenticate(request);
+
+      if (!auth) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      userId = auth.userId;
+    }
+
+    const id = params.id;
+
+    const db = await connectToDatabase();
+    const submissions = db.collection("submissions");
+
+    const submission = await submissions.findOne({
+      _id: new ObjectId(id),
+      userId: userId,
     });
-  });
+
+    if (!submission) {
+      return NextResponse.json(
+        { error: "Submission not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json(submission);
+  } catch (error) {
+    console.error("Error fetching submission:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch submission" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    // Get user session or authenticate with custom token
+    const session = await getServerSession(authOptions);
+    let userId;
+
+    if (session?.user) {
+      userId = session.user.id;
+    } else {
+      // Try custom authentication
+      const auth = await authenticate(request);
+
+      if (!auth) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      userId = auth.userId;
+    }
+
+    const id = params.id;
+
+    const db = await connectToDatabase();
+    const submissions = db.collection("submissions");
+
+    const result = await submissions.deleteOne({
+      _id: new ObjectId(id),
+      userId: userId,
+    });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        { error: "Submission not found or unauthorized" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting submission:", error);
+    return NextResponse.json(
+      { error: "Failed to delete submission" },
+      { status: 500 }
+    );
+  }
 }

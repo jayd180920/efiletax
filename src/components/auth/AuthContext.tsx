@@ -137,12 +137,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Use window.location for direct navigation
       if (typeof window !== "undefined") {
-        // Force navigation to the target URL
-        console.log(
-          "AuthContext: Using window.location to navigate to:",
-          targetUrl
-        );
-        window.location.href = targetUrl;
+        // Add a small delay to ensure cookies are properly set before navigation
+        setTimeout(() => {
+          // Force navigation to the target URL
+          console.log(
+            "AuthContext: Using window.location to navigate to:",
+            targetUrl
+          );
+          window.location.href = targetUrl;
+        }, 100);
       }
     } catch (error: any) {
       console.error("AuthContext: Login error:", error);

@@ -61,6 +61,7 @@ interface PersonalInfoTabProps {
     bankDetails: any;
     placeOfBusiness: any;
     files: Record<string, File | null>;
+    submissionId?: string;
   }) => void;
 }
 
@@ -235,27 +236,129 @@ export default function PersonalInfoTab({
     return true;
   };
 
-  // Handle next button click
-  const handleNext = () => {
+  // Handle save button click
+  const handleSave = async () => {
     if (isFormValid()) {
-      // Update parent component's state with form data
-      if (updateFormData) {
-        updateFormData({
-          permanentInfo,
-          identification: {
-            ...identification,
-            mobileNumber: permanentInfo.mobileNumber,
-            email: permanentInfo.email,
-          },
-          address,
-          bankDetails,
-          placeOfBusiness,
-          files,
-        });
-      }
+      const formData = {
+        permanentInfo,
+        identification: {
+          ...identification,
+          mobileNumber: permanentInfo.mobileNumber,
+          email: permanentInfo.email,
+        },
+        address,
+        bankDetails,
+        placeOfBusiness,
+        files,
+      };
 
-      // Move to next tab without saving to database
-      setActiveTab("income-source");
+      try {
+        const response = await fetch("/api/submissions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            formData,
+            serviceUniqueId,
+            status: "draft",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to save form data");
+        }
+
+        const result = await response.json();
+
+        // Update parent component's state with form data and submission ID
+        if (updateFormData) {
+          updateFormData({
+            ...formData,
+            submissionId: result.id,
+          });
+        }
+
+        alert("Form data saved successfully!");
+      } catch (error) {
+        console.error("Error saving form data:", error);
+        alert("Failed to save form data. Please try again.");
+      }
+    }
+  };
+
+  // Handle next button click
+  const handleNext = async () => {
+    if (isFormValid()) {
+      const shouldSave = window.confirm(
+        "Do you want to save your changes before proceeding to the next tab?"
+      );
+
+      if (shouldSave) {
+        await handleSave();
+
+        // Update parent component's state with form data and submission ID
+        if (
+          updateFormData &&
+          typeof window !== "undefined" &&
+          window.formData &&
+          window.formData.submissionId
+        ) {
+          updateFormData({
+            permanentInfo,
+            identification: {
+              ...identification,
+              mobileNumber: permanentInfo.mobileNumber,
+              email: permanentInfo.email,
+            },
+            address,
+            bankDetails,
+            placeOfBusiness,
+            files,
+            submissionId: window.formData.submissionId,
+          });
+        } else if (updateFormData) {
+          updateFormData({
+            permanentInfo,
+            identification: {
+              ...identification,
+              mobileNumber: permanentInfo.mobileNumber,
+              email: permanentInfo.email,
+            },
+            address,
+            bankDetails,
+            placeOfBusiness,
+            files,
+          });
+        }
+
+        setActiveTab("income-source");
+      } else {
+        // If user doesn't want to save, ask for confirmation to proceed without saving
+        const shouldProceed = window.confirm(
+          "Are you sure you want to proceed without saving your changes? Your data may be lost."
+        );
+
+        if (shouldProceed) {
+          // Update parent component's state with form data
+          if (updateFormData) {
+            updateFormData({
+              permanentInfo,
+              identification: {
+                ...identification,
+                mobileNumber: permanentInfo.mobileNumber,
+                email: permanentInfo.email,
+              },
+              address,
+              bankDetails,
+              placeOfBusiness,
+              files,
+            });
+          }
+
+          setActiveTab("income-source");
+        }
+      }
     }
   };
 
@@ -284,7 +387,19 @@ export default function PersonalInfoTab({
         />
       )}
 
-      <div className="flex justify-end mt-6">
+      <div className="flex justify-end space-x-4 mt-6">
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={!isFormValid()}
+          className={`px-4 py-2 rounded-md text-white font-medium ${
+            isFormValid()
+              ? "bg-green-600 hover:bg-green-700"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
+        >
+          Save
+        </button>
         <button
           type="button"
           onClick={handleNext}

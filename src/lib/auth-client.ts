@@ -32,8 +32,30 @@ export async function login(
   );
 
   try {
-    // First try to login with NextAuth
-    console.log("auth-client: Attempting to login with NextAuth");
+    // Try the improved v2 login endpoint first
+    console.log("auth-client: Attempting to login with v2 API");
+    const v2Response = await fetch("/api/auth/login-v2", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    console.log(
+      "auth-client: Login v2 API response status:",
+      v2Response.status
+    );
+
+    if (v2Response.ok) {
+      const data = await v2Response.json();
+      console.log("auth-client: Login v2 API success, user data:", data.user);
+      return data.user;
+    }
+
+    console.log("auth-client: Login v2 API failed, trying NextAuth");
+
+    // If v2 login fails, try NextAuth
     const result = await signIn("credentials", {
       redirect: false,
       email,
@@ -59,9 +81,9 @@ export async function login(
     if (!sessionResponse.ok) {
       console.error("auth-client: Failed to fetch session");
 
-      // Fall back to the custom auth system
-      console.log("auth-client: Falling back to custom auth system");
-      return await loginWithCustomAuth(email, password, callbackUrl);
+      // Fall back to the original custom auth system
+      console.log("auth-client: Falling back to original custom auth system");
+      return await loginWithOriginalCustomAuth(email, password);
     }
 
     const session = await sessionResponse.json();
@@ -69,10 +91,10 @@ export async function login(
 
     if (!session || !session.user) {
       console.log(
-        "auth-client: No session or user in session, falling back to custom auth"
+        "auth-client: No session or user in session, falling back to original custom auth"
       );
-      // Fall back to the custom auth system
-      return await loginWithCustomAuth(email, password, callbackUrl);
+      // Fall back to the original custom auth system
+      return await loginWithOriginalCustomAuth(email, password);
     }
 
     // Convert NextAuth session user to our User type
@@ -88,19 +110,20 @@ export async function login(
   } catch (error) {
     console.error("auth-client: login exception:", error);
 
-    // Fall back to the custom auth system
-    console.log("auth-client: Falling back to custom auth system after error");
-    return await loginWithCustomAuth(email, password, callbackUrl);
+    // Fall back to the original custom auth system as last resort
+    console.log(
+      "auth-client: Falling back to original custom auth system after error"
+    );
+    return await loginWithOriginalCustomAuth(email, password);
   }
 }
 
-// Custom auth login function (fallback)
-async function loginWithCustomAuth(
+// Original custom auth login function (last resort fallback)
+async function loginWithOriginalCustomAuth(
   email: string,
-  password: string,
-  callbackUrl?: string
+  password: string
 ): Promise<User> {
-  console.log("auth-client: loginWithCustomAuth called");
+  console.log("auth-client: loginWithOriginalCustomAuth called");
 
   const response = await fetch("/api/auth/login", {
     method: "POST",
@@ -111,18 +134,21 @@ async function loginWithCustomAuth(
   });
 
   console.log(
-    "auth-client: Custom login API response status:",
+    "auth-client: Original custom login API response status:",
     response.status
   );
 
   if (!response.ok) {
     const error = await response.json();
-    console.error("auth-client: Custom login API error:", error);
+    console.error("auth-client: Original custom login API error:", error);
     throw new Error(error.error || "Login failed");
   }
 
   const data = await response.json();
-  console.log("auth-client: Custom login API success, user data:", data.user);
+  console.log(
+    "auth-client: Original custom login API success, user data:",
+    data.user
+  );
 
   return data.user;
 }

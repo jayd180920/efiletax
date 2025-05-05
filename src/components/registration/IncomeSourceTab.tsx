@@ -7,7 +7,7 @@ declare global {
   }
 }
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import BusinessKYC from "./BusinessKYC";
 import MonthlyFiling from "./MonthlyFiling";
 import AnnualReturn from "./AnnualReturn";
@@ -231,6 +231,55 @@ export default function IncomeSourceTab({
     formData?.files || {}
   );
 
+  // State for tab2 data (from PersonalInfoTab)
+  const [tab2Data, setTab2Data] = useState<any>(null);
+
+  // Function to fetch submission data using submissionId
+  const fetchSubmissionData = useCallback(async (submissionId: string) => {
+    try {
+      const response = await fetch(`/api/submissions/${submissionId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch submission data");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching submission data:", error);
+      return null;
+    }
+  }, []);
+
+  // Effect to fetch submission data when component mounts
+  useEffect(() => {
+    const getSubmissionData = async () => {
+      // Check if we have a submission ID
+      const submissionId =
+        typeof window !== "undefined" &&
+        window.formData &&
+        window.formData.submissionId
+          ? window.formData.submissionId
+          : null;
+
+      if (submissionId) {
+        const data = await fetchSubmissionData(submissionId);
+        if (data && data.formData) {
+          // Extract tab2 data (PersonalInfoTab data)
+          const personalInfoData = {
+            permanentInfo: data.formData.permanentInfo || {},
+            identification: data.formData.identification || {},
+            address: data.formData.address || {},
+            bankDetails: data.formData.bankDetails || {},
+            placeOfBusiness: data.formData.placeOfBusiness || {},
+          };
+
+          setTab2Data(personalInfoData);
+        }
+      }
+    };
+
+    getSubmissionData();
+  }, [fetchSubmissionData]);
+
   // Update local state when formData props change
   useEffect(() => {
     if (isMounted.current && formData) {
@@ -359,6 +408,15 @@ export default function IncomeSourceTab({
         data.businessKYCData = { ...businessKYCData };
       }
 
+      // Append tab2 data if available
+      if (tab2Data) {
+        data.permanentInfo = tab2Data.permanentInfo;
+        data.identification = tab2Data.identification;
+        data.address = tab2Data.address;
+        data.bankDetails = tab2Data.bankDetails;
+        data.placeOfBusiness = tab2Data.placeOfBusiness;
+      }
+
       // Check if we have a submission ID from a previous save
       const submissionId =
         typeof window !== "undefined" &&
@@ -375,7 +433,6 @@ export default function IncomeSourceTab({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            id: submissionId,
             formData: data,
             status: "draft",
           }),
@@ -386,6 +443,7 @@ export default function IncomeSourceTab({
         }
 
         const result = await response.json();
+        console.log("Updated existing submission:", submissionId);
         alert("Form data saved successfully!");
       } else {
         // Create new submission
@@ -407,17 +465,29 @@ export default function IncomeSourceTab({
 
         const result = await response.json();
 
-        // Store the submission ID for future updates
+        // Initialize window.formData if it doesn't exist
         if (typeof window !== "undefined") {
+          if (!window.formData) {
+            window.formData = {};
+          }
+          // Store the submission ID for future updates
           window.formData.submissionId = result.id;
         }
 
+        console.log("Created new submission:", result.id);
         alert("Form data saved successfully!");
       }
 
       // Update parent component if needed
       if (updateFormData) {
-        updateFormData(data);
+        updateFormData({
+          ...data,
+          submissionId:
+            submissionId ||
+            (typeof window !== "undefined" &&
+              window.formData &&
+              window.formData.submissionId),
+        });
       }
     } catch (error) {
       console.error("Error saving form data:", error);
@@ -443,6 +513,14 @@ export default function IncomeSourceTab({
       }
     }
 
+    // Get the submission ID if it exists
+    const submissionId =
+      typeof window !== "undefined" &&
+      window.formData &&
+      window.formData.submissionId
+        ? window.formData.submissionId
+        : null;
+
     // Update parent component's state with form data
     if (updateFormData) {
       const data: any = { files };
@@ -466,7 +544,19 @@ export default function IncomeSourceTab({
         data.businessKYCData = { ...businessKYCData };
       }
 
-      updateFormData(data);
+      // Append tab2 data if available
+      if (tab2Data) {
+        data.permanentInfo = tab2Data.permanentInfo;
+        data.identification = tab2Data.identification;
+        data.address = tab2Data.address;
+        data.bankDetails = tab2Data.bankDetails;
+        data.placeOfBusiness = tab2Data.placeOfBusiness;
+      }
+
+      updateFormData({
+        ...data,
+        submissionId: submissionId,
+      });
     }
 
     // Move to next tab

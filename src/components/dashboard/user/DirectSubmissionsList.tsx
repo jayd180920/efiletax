@@ -90,7 +90,7 @@ const DirectSubmissionsList = () => {
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && newPage <= pagination.pages) {
+    if (newPage > 0 && pagination.pages && newPage <= pagination.pages) {
       setPagination({ ...pagination, page: newPage });
     }
   };
@@ -201,32 +201,42 @@ const DirectSubmissionsList = () => {
                         </Link>
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
-                        Submitted on {formatDate(submission.createdAt)}
+                        Submitted on{" "}
+                        {submission.createdAt
+                          ? formatDate(submission.createdAt)
+                          : "N/A"}
                       </p>
                     </div>
                     <div className="flex items-center space-x-2">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.status
+                          submission.status || "pending"
                         )}`}
                       >
-                        {submission.status.charAt(0).toUpperCase() +
-                          submission.status.slice(1)}
+                        {submission.status
+                          ? submission.status.charAt(0).toUpperCase() +
+                            submission.status.slice(1)
+                          : "Pending"}
                       </span>
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.paymentStatus
+                          submission.paymentStatus || "pending"
                         )}`}
                       >
-                        {submission.paymentStatus.charAt(0).toUpperCase() +
-                          submission.paymentStatus.slice(1)}
+                        {submission.paymentStatus
+                          ? submission.paymentStatus.charAt(0).toUpperCase() +
+                            submission.paymentStatus.slice(1)
+                          : "Pending"}
                       </span>
                     </div>
                   </div>
                   <div className="mt-2 sm:flex sm:justify-between">
                     <div className="sm:flex">
                       <p className="flex items-center text-sm text-gray-500">
-                        Amount: {formatCurrency(submission.amount)}
+                        Amount:{" "}
+                        {typeof submission.amount === "number"
+                          ? formatCurrency(submission.amount)
+                          : "N/A"}
                       </p>
                     </div>
                     <div className="mt-2 flex items-center text-sm sm:mt-0">
@@ -238,7 +248,8 @@ const DirectSubmissionsList = () => {
                       </Link>
                       {submission.status === "rejected" && (
                         <div className="ml-4 text-sm text-red-600">
-                          Reason: {submission.rejectionReason}
+                          Reason:{" "}
+                          {submission.rejectionReason || "No reason provided"}
                         </div>
                       )}
                     </div>
@@ -249,7 +260,7 @@ const DirectSubmissionsList = () => {
           </ul>
 
           {/* Pagination */}
-          {pagination.pages > 1 && (
+          {pagination.pages && pagination.pages > 1 && (
             <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
@@ -265,9 +276,13 @@ const DirectSubmissionsList = () => {
                 </button>
                 <button
                   onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={pagination.page === pagination.pages}
+                  disabled={Boolean(
+                    pagination.pages && pagination.page === pagination.pages
+                  )}
                   className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    pagination.page === pagination.pages
+                    Boolean(
+                      pagination.pages && pagination.page === pagination.pages
+                    )
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
@@ -280,16 +295,21 @@ const DirectSubmissionsList = () => {
                   <p className="text-sm text-gray-700">
                     Showing{" "}
                     <span className="font-medium">
-                      {(pagination.page - 1) * pagination.limit + 1}
+                      {pagination.page && pagination.limit
+                        ? (pagination.page - 1) * pagination.limit + 1
+                        : 0}
                     </span>{" "}
                     to{" "}
                     <span className="font-medium">
-                      {Math.min(
-                        pagination.page * pagination.limit,
-                        pagination.total
-                      )}
+                      {pagination.page && pagination.limit && pagination.total
+                        ? Math.min(
+                            pagination.page * pagination.limit,
+                            pagination.total
+                          )
+                        : 0}
                     </span>{" "}
-                    of <span className="font-medium">{pagination.total}</span>{" "}
+                    of{" "}
+                    <span className="font-medium">{pagination.total || 0}</span>{" "}
                     results
                   </p>
                 </div>
@@ -322,7 +342,13 @@ const DirectSubmissionsList = () => {
                         />
                       </svg>
                     </button>
-                    {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+                    {Array.from(
+                      {
+                        length:
+                          pagination.pages !== undefined ? pagination.pages : 0,
+                      },
+                      (_, i) => i + 1
+                    )
                       .filter(
                         (page) =>
                           page === 1 ||
@@ -354,9 +380,14 @@ const DirectSubmissionsList = () => {
                       })}
                     <button
                       onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={pagination.page === pagination.pages}
+                      disabled={Boolean(
+                        pagination.pages && pagination.page === pagination.pages
+                      )}
                       className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                        pagination.page === pagination.pages
+                        Boolean(
+                          pagination.pages &&
+                            pagination.page === pagination.pages
+                        )
                           ? "text-gray-300 cursor-not-allowed"
                           : "text-gray-500 hover:bg-gray-50"
                       }`}

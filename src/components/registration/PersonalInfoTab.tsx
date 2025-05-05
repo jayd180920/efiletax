@@ -253,29 +253,73 @@ export default function PersonalInfoTab({
       };
 
       try {
-        const response = await fetch("/api/submissions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            formData,
-            serviceUniqueId,
-            status: "draft",
-          }),
-        });
+        // Check if we have a submission ID from a previous save
+        const submissionId =
+          typeof window !== "undefined" &&
+          window.formData &&
+          window.formData.submissionId
+            ? window.formData.submissionId
+            : null;
 
-        if (!response.ok) {
-          throw new Error("Failed to save form data");
+        let response;
+        let result;
+
+        if (submissionId) {
+          // Update existing submission
+          response = await fetch(`/api/submissions/${submissionId}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              formData,
+              status: "draft",
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to update form data");
+          }
+
+          result = await response.json();
+          console.log("Updated existing submission:", submissionId);
+        } else {
+          // Create new submission
+          response = await fetch("/api/submissions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              formData,
+              serviceUniqueId,
+              status: "draft",
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to save form data");
+          }
+
+          result = await response.json();
+
+          // Initialize window.formData if it doesn't exist
+          if (typeof window !== "undefined") {
+            if (!window.formData) {
+              window.formData = {};
+            }
+            // Store the submission ID for future updates
+            window.formData.submissionId = result.id;
+          }
+
+          console.log("Created new submission:", result.id);
         }
-
-        const result = await response.json();
 
         // Update parent component's state with form data and submission ID
         if (updateFormData) {
           updateFormData({
             ...formData,
-            submissionId: result.id,
+            submissionId: submissionId || (result && result.id),
           });
         }
 
@@ -296,69 +340,43 @@ export default function PersonalInfoTab({
 
       if (shouldSave) {
         await handleSave();
-
-        // Update parent component's state with form data and submission ID
-        if (
-          updateFormData &&
-          typeof window !== "undefined" &&
-          window.formData &&
-          window.formData.submissionId
-        ) {
-          updateFormData({
-            permanentInfo,
-            identification: {
-              ...identification,
-              mobileNumber: permanentInfo.mobileNumber,
-              email: permanentInfo.email,
-            },
-            address,
-            bankDetails,
-            placeOfBusiness,
-            files,
-            submissionId: window.formData.submissionId,
-          });
-        } else if (updateFormData) {
-          updateFormData({
-            permanentInfo,
-            identification: {
-              ...identification,
-              mobileNumber: permanentInfo.mobileNumber,
-              email: permanentInfo.email,
-            },
-            address,
-            bankDetails,
-            placeOfBusiness,
-            files,
-          });
-        }
-
-        setActiveTab("income-source");
       } else {
         // If user doesn't want to save, ask for confirmation to proceed without saving
         const shouldProceed = window.confirm(
           "Are you sure you want to proceed without saving your changes? Your data may be lost."
         );
 
-        if (shouldProceed) {
-          // Update parent component's state with form data
-          if (updateFormData) {
-            updateFormData({
-              permanentInfo,
-              identification: {
-                ...identification,
-                mobileNumber: permanentInfo.mobileNumber,
-                email: permanentInfo.email,
-              },
-              address,
-              bankDetails,
-              placeOfBusiness,
-              files,
-            });
-          }
-
-          setActiveTab("income-source");
+        if (!shouldProceed) {
+          return; // Don't proceed if user cancels
         }
       }
+
+      // Get the submission ID if it exists
+      const submissionId =
+        typeof window !== "undefined" &&
+        window.formData &&
+        window.formData.submissionId
+          ? window.formData.submissionId
+          : null;
+
+      // Update parent component's state with form data and submission ID
+      if (updateFormData) {
+        updateFormData({
+          permanentInfo,
+          identification: {
+            ...identification,
+            mobileNumber: permanentInfo.mobileNumber,
+            email: permanentInfo.email,
+          },
+          address,
+          bankDetails,
+          placeOfBusiness,
+          files,
+          submissionId: submissionId,
+        });
+      }
+
+      setActiveTab("income-source");
     }
   };
 

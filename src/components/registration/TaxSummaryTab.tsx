@@ -62,7 +62,6 @@ export default function TaxSummaryTab({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: submissionId,
           formData: formData || {},
           status: "draft",
         }),
@@ -72,6 +71,7 @@ export default function TaxSummaryTab({
         throw new Error("Failed to update form data");
       }
 
+      console.log("Updated existing submission:", submissionId);
       alert("Form data saved successfully!");
     } catch (error) {
       console.error("Error saving form data:", error);
@@ -125,7 +125,6 @@ export default function TaxSummaryTab({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: submissionId,
           formData: formData || {},
           status: "completed",
         }),
@@ -135,6 +134,7 @@ export default function TaxSummaryTab({
         throw new Error("Failed to update form data");
       }
 
+      console.log("Completed submission:", submissionId);
       alert("Form completed successfully! Redirecting to dashboard...");
 
       // Redirect to dashboard

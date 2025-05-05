@@ -4,6 +4,8 @@ import Region from "@/models/Region";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticate } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import { isValidObjectId } from "mongoose";
 
 // GET /api/admin/regions/[id] - Get a specific region (admin only)
@@ -12,11 +14,78 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if user is authenticated and is an admin
+    console.log("GET /api/admin/regions/[id]: Starting authentication check");
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("GET /api/admin/regions/[id]: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log(
+      "GET /api/admin/regions/[id]: Session:",
+      JSON.stringify(session, null, 2)
+    );
+
+    if (session?.user) {
+      console.log("GET /api/admin/regions/[id]: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/regions/[id]: Checking NextAuth JWT token");
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("GET /api/admin/regions/[id]: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/regions/[id]: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("GET /api/admin/regions/[id]: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/regions/[id]: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    if (userRole !== "admin") {
+      console.log(
+        `GET /api/admin/regions/[id]: User role '${userRole}' is not admin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("GET /api/admin/regions/[id]: Authentication successful");
 
     // Connect to the database
     await dbConnect();
@@ -53,11 +122,78 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if user is authenticated and is an admin
+    console.log("PUT /api/admin/regions/[id]: Starting authentication check");
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("PUT /api/admin/regions/[id]: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log(
+      "PUT /api/admin/regions/[id]: Session:",
+      JSON.stringify(session, null, 2)
+    );
+
+    if (session?.user) {
+      console.log("PUT /api/admin/regions/[id]: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log("PUT /api/admin/regions/[id]: Checking NextAuth JWT token");
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("PUT /api/admin/regions/[id]: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("PUT /api/admin/regions/[id]: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("PUT /api/admin/regions/[id]: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("PUT /api/admin/regions/[id]: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    if (userRole !== "admin") {
+      console.log(
+        `PUT /api/admin/regions/[id]: User role '${userRole}' is not admin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("PUT /api/admin/regions/[id]: Authentication successful");
 
     // Connect to the database
     await dbConnect();
@@ -156,11 +292,82 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if user is authenticated and is an admin
+    console.log(
+      "DELETE /api/admin/regions/[id]: Starting authentication check"
+    );
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("DELETE /api/admin/regions/[id]: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log(
+      "DELETE /api/admin/regions/[id]: Session:",
+      JSON.stringify(session, null, 2)
+    );
+
+    if (session?.user) {
+      console.log("DELETE /api/admin/regions/[id]: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log(
+        "DELETE /api/admin/regions/[id]: Checking NextAuth JWT token"
+      );
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("DELETE /api/admin/regions/[id]: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("DELETE /api/admin/regions/[id]: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("DELETE /api/admin/regions/[id]: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("DELETE /api/admin/regions/[id]: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    if (userRole !== "admin") {
+      console.log(
+        `DELETE /api/admin/regions/[id]: User role '${userRole}' is not admin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("DELETE /api/admin/regions/[id]: Authentication successful");
 
     // Connect to the database
     await dbConnect();

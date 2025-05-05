@@ -269,6 +269,7 @@ export async function getSubmissions(
     serviceId?: string;
     page?: number;
     limit?: number;
+    isAdmin?: boolean; // New parameter to indicate if the request is from an admin
   } = {}
 ): Promise<{
   submissions: any[];
@@ -279,9 +280,13 @@ export async function getSubmissions(
     pages: number;
   };
 }> {
-  const { status, serviceId, page = 1, limit = 10 } = options;
+  const { status, serviceId, page = 1, limit = 10, isAdmin = false } = options;
 
-  let url = `/api/submissions?page=${page}&limit=${limit}`;
+  // Use the admin-specific API route if isAdmin is true
+  let url = isAdmin
+    ? `/api/admin/submissions?page=${page}&limit=${limit}`
+    : `/api/submissions?page=${page}&limit=${limit}`;
+
   if (status) url += `&status=${status}`;
   if (serviceId) url += `&serviceId=${serviceId}`;
 
@@ -294,14 +299,28 @@ export async function getSubmissions(
 
   const data = await response.json();
   return {
-    submissions: data.submissions,
-    pagination: data.pagination,
+    submissions:
+      data.submissions ||
+      (data.submissions === undefined ? [] : data.submissions),
+    pagination: data.pagination || {
+      total: 0,
+      page: page,
+      limit: limit,
+      pages: 0,
+    },
   };
 }
 
 // Get submission by ID
-export async function getSubmission(id: string): Promise<any> {
-  const response = await fetch(`/api/submissions/${id}`);
+export async function getSubmission(
+  id: string,
+  isAdmin: boolean = false
+): Promise<any> {
+  // Use the admin-specific API route if isAdmin is true
+  const url = isAdmin
+    ? `/api/admin/submissions/${id}`
+    : `/api/submissions/${id}`;
+  const response = await fetch(url);
 
   if (!response.ok) {
     const error = await response.json();
@@ -309,7 +328,7 @@ export async function getSubmission(id: string): Promise<any> {
   }
 
   const data = await response.json();
-  return data.submission;
+  return data.submission || data; // Handle different response formats
 }
 
 // Update submission status (admin only)
@@ -323,8 +342,9 @@ export async function updateSubmissionStatus(
     body.rejectionReason = rejectionReason;
   }
 
-  const response = await fetch(`/api/submissions/${id}`, {
-    method: "PATCH",
+  // Always use the admin-specific API route for updating submission status
+  const response = await fetch(`/api/admin/submissions/${id}`, {
+    method: "PUT", // Changed from PATCH to PUT to match the admin API route
     headers: {
       "Content-Type": "application/json",
     },
@@ -337,5 +357,227 @@ export async function updateSubmissionStatus(
   }
 
   const data = await response.json();
-  return data.submission;
+  return data.submission || data; // Handle different response formats
+}
+
+// Get users (admin only)
+export async function getUsers(
+  options: {
+    role?: string;
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<{
+  users: any[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}> {
+  const { role, search, page = 1, limit = 10 } = options;
+
+  let url = `/api/admin/users?page=${page}&limit=${limit}`;
+  if (role) url += `&role=${role}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch users");
+  }
+
+  const data = await response.json();
+  return {
+    users: data.users || [],
+    pagination: data.pagination || {
+      total: 0,
+      page: page,
+      limit: limit,
+      pages: 0,
+    },
+  };
+}
+
+// Get user by ID (admin only)
+export async function getUser(id: string): Promise<any> {
+  const response = await fetch(`/api/admin/users/${id}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch user");
+  }
+
+  const data = await response.json();
+  return data.user;
+}
+
+// Create user (admin only)
+export async function createUser(userData: {
+  name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  region?: string;
+}): Promise<any> {
+  const response = await fetch(`/api/admin/users`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to create user");
+  }
+
+  const data = await response.json();
+  return data.user;
+}
+
+// Update user (admin only)
+export async function updateUser(
+  id: string,
+  userData: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+    region?: string;
+  }
+): Promise<any> {
+  const response = await fetch(`/api/admin/users/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to update user");
+  }
+
+  const data = await response.json();
+  return data.user;
+}
+
+// Get regions (admin only)
+export async function getRegions(
+  options: {
+    search?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<{
+  regions: any[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}> {
+  const { search, page = 1, limit = 10 } = options;
+
+  let url = `/api/admin/regions?page=${page}&limit=${limit}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch regions");
+  }
+
+  const data = await response.json();
+  return {
+    regions: data.regions || [],
+    pagination: data.pagination || {
+      total: 0,
+      page: page,
+      limit: limit,
+      pages: 0,
+    },
+  };
+}
+
+// Get region by ID (admin only)
+export async function getRegion(id: string): Promise<any> {
+  const response = await fetch(`/api/admin/regions/${id}`);
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to fetch region");
+  }
+
+  const data = await response.json();
+  return data.region;
+}
+
+// Create region (admin only)
+export async function createRegion(regionData: {
+  name: string;
+  adminId?: string;
+}): Promise<any> {
+  const response = await fetch(`/api/admin/regions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(regionData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to create region");
+  }
+
+  const data = await response.json();
+  return data.region;
+}
+
+// Update region (admin only)
+export async function updateRegion(
+  id: string,
+  regionData: {
+    name?: string;
+    adminId?: string;
+  }
+): Promise<any> {
+  const response = await fetch(`/api/admin/regions/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(regionData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to update region");
+  }
+
+  const data = await response.json();
+  return data.region;
+}
+
+// Delete region (admin only)
+export async function deleteRegion(id: string): Promise<any> {
+  const response = await fetch(`/api/admin/regions/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || "Failed to delete region");
+  }
+
+  return { success: true };
 }

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout/Layout";
+import { getUsers, createUser } from "@/lib/auth-client";
 
 interface User {
   _id: string;
@@ -62,23 +63,21 @@ const UsersPage = () => {
       setIsLoading(true);
       setError(null);
 
-      let url = `/api/admin/users?page=${pagination.page}&limit=${pagination.limit}`;
+      const options: any = {
+        page: pagination.page,
+        limit: pagination.limit,
+      };
+
       if (roleFilter) {
-        url += `&role=${roleFilter}`;
+        options.role = roleFilter;
       }
       if (searchTerm) {
-        url += `&search=${encodeURIComponent(searchTerm)}`;
+        options.search = searchTerm;
       }
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to fetch users");
-      }
-
-      const data = await response.json();
-      setUsers(data.users);
-      setPagination(data.pagination);
+      const result = await getUsers(options);
+      setUsers(result.users);
+      setPagination(result.pagination);
     } catch (error: any) {
       setError(error.message);
       console.error("Error fetching users:", error);
@@ -136,19 +135,8 @@ const UsersPage = () => {
         return;
       }
 
-      // Submit form
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newUser),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create user");
-      }
+      // Submit form using the createUser function
+      await createUser(newUser);
 
       // Reset form and close modal
       setNewUser({

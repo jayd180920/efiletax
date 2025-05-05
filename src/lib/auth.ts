@@ -30,10 +30,14 @@ interface UserForToken {
 declare module "next-auth" {
   interface User {
     id: string;
+    role?: string;
+    email?: string;
   }
   interface Session {
     user: User & {
       id: string;
+      role?: string;
+      email?: string;
     };
   }
 }

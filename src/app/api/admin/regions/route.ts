@@ -4,15 +4,84 @@ import Region from "@/models/Region";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticate } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 
 // GET /api/admin/regions - Get all regions (admin only)
 export async function GET(req: NextRequest) {
   try {
-    // Check if user is authenticated and is an admin
+    console.log("GET /api/admin/regions: Starting authentication check");
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("GET /api/admin/regions: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log(
+      "ABCD GET /api/admin/regions: Session:",
+      JSON.stringify(session, null, 2)
+    );
+
+    if (session?.user) {
+      console.log("GET /api/admin/regions: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/regions: Checking NextAuth JWT token");
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("GET /api/admin/regions: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/regions: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("GET /api/admin/regions: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/regions: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    if (userRole !== "admin") {
+      console.log(
+        `GET /api/admin/regions: User role '${userRole}' is not admin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("GET /api/admin/regions: Authentication successful");
 
     // Connect to the database
     await dbConnect();
@@ -63,11 +132,78 @@ export async function GET(req: NextRequest) {
 // POST /api/admin/regions - Create a new region (admin only)
 export async function POST(req: NextRequest) {
   try {
-    // Check if user is authenticated and is an admin
+    console.log("POST /api/admin/regions: Starting authentication check");
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("POST /api/admin/regions: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log(
+      "POST /api/admin/regions: Session:",
+      JSON.stringify(session, null, 2)
+    );
+
+    if (session?.user) {
+      console.log("POST /api/admin/regions: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log("POST /api/admin/regions: Checking NextAuth JWT token");
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("POST /api/admin/regions: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("POST /api/admin/regions: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("POST /api/admin/regions: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("POST /api/admin/regions: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    if (userRole !== "admin") {
+      console.log(
+        `POST /api/admin/regions: User role '${userRole}' is not admin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("POST /api/admin/regions: Authentication successful");
 
     // Connect to the database
     await dbConnect();

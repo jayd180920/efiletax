@@ -60,6 +60,8 @@ const SubmissionsList = () => {
         options.status = statusFilter;
       }
 
+      // Set isAdmin to true for admin dashboard
+      options.isAdmin = true;
       const result = await getSubmissions(options);
       setSubmissions(result.submissions);
       setPagination(result.pagination);

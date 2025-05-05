@@ -3,7 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { isValidObjectId } from "mongoose";
 
 // GET /api/admin/submissions/[id] - Get a specific submission (admin or regionAdmin only)

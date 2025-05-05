@@ -4,6 +4,12 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout/Layout";
+import {
+  getRegions,
+  createRegion,
+  deleteRegion,
+  getUsers,
+} from "@/lib/auth-client";
 
 interface Region {
   _id: string;
@@ -71,20 +77,15 @@ const RegionsPage = () => {
       setIsLoading(true);
       setError(null);
 
-      let url = `/api/admin/regions?page=${pagination.page}&limit=${pagination.limit}`;
-      if (searchTerm) {
-        url += `&search=${encodeURIComponent(searchTerm)}`;
-      }
+      const options = {
+        page: pagination.page,
+        limit: pagination.limit,
+        search: searchTerm || undefined,
+      };
 
-      const response = await fetch(url);
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to fetch regions");
-      }
-
-      const data = await response.json();
-      setRegions(data.regions);
-      setPagination(data.pagination);
+      const result = await getRegions(options);
+      setRegions(result.regions);
+      setPagination(result.pagination);
     } catch (error: any) {
       setError(error.message);
       console.error("Error fetching regions:", error);
@@ -96,14 +97,8 @@ const RegionsPage = () => {
   // Fetch users for admin selection
   const fetchUsers = async () => {
     try {
-      const response = await fetch("/api/admin/users?limit=100");
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to fetch users");
-      }
-
-      const data = await response.json();
-      setUsers(data.users);
+      const result = await getUsers({ limit: 100 });
+      setUsers(result.users);
     } catch (error: any) {
       console.error("Error fetching users:", error);
     }
@@ -152,19 +147,8 @@ const RegionsPage = () => {
         return;
       }
 
-      // Submit form
-      const response = await fetch("/api/admin/regions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newRegion),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to create region");
-      }
+      // Submit form using the createRegion function
+      await createRegion(newRegion);
 
       // Reset form and close modal
       setNewRegion({
@@ -345,20 +329,9 @@ const RegionsPage = () => {
                                   "Are you sure you want to delete this region?"
                                 )
                               ) {
-                                fetch(`/api/admin/regions/${region._id}`, {
-                                  method: "DELETE",
-                                })
-                                  .then((response) => {
-                                    if (response.ok) {
-                                      fetchRegions();
-                                    } else {
-                                      return response.json().then((data) => {
-                                        throw new Error(
-                                          data.error ||
-                                            "Failed to delete region"
-                                        );
-                                      });
-                                    }
+                                deleteRegion(region._id)
+                                  .then(() => {
+                                    fetchRegions();
                                   })
                                   .catch((error) => {
                                     setError(error.message);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import PermanentInfoSection from "./PermanentInfoSection";
 // import IdentificationSection from "./IdentificationSection";
 import AddressSection from "./AddressSection";
@@ -143,6 +143,62 @@ export default function PersonalInfoTab({
       consentLetter: null,
     }
   );
+
+  // Function to fetch submission data using submissionId
+  const fetchSubmissionData = useCallback(async (submissionId: string) => {
+    try {
+      const response = await fetch(`/api/submissions/${submissionId}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch submission data");
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("Error fetching submission data:", error);
+      return null;
+    }
+  }, []);
+
+  // Effect to fetch submission data when component mounts or activeTab changes
+  useEffect(() => {
+    const getSubmissionData = async () => {
+      // Check if we have a submission ID
+      const submissionId =
+        typeof window !== "undefined" &&
+        window.formData &&
+        window.formData.submissionId
+          ? window.formData.submissionId
+          : null;
+
+      if (submissionId && activeTab === "personal-info") {
+        console.log("Fetching submission data for PersonalInfoTab...");
+        const data = await fetchSubmissionData(submissionId);
+        if (data && data.formData) {
+          // Update state with data from the database
+          if (data.formData.permanentInfo) {
+            setPermanentInfo(data.formData.permanentInfo);
+          }
+          if (data.formData.identification) {
+            setIdentification(data.formData.identification);
+          }
+          if (data.formData.address) {
+            setAddress(data.formData.address);
+          }
+          if (data.formData.bankDetails) {
+            setBankDetails(data.formData.bankDetails);
+          }
+          if (data.formData.placeOfBusiness) {
+            setPlaceOfBusiness(data.formData.placeOfBusiness);
+          }
+          if (data.formData.files) {
+            setFiles(data.formData.files);
+          }
+        }
+      }
+    };
+
+    getSubmissionData();
+  }, [activeTab, fetchSubmissionData]);
 
   // Update local state when formData props change
   useEffect(() => {

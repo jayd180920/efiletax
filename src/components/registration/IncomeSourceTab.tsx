@@ -249,7 +249,7 @@ export default function IncomeSourceTab({
     }
   }, []);
 
-  // Effect to fetch submission data when component mounts
+  // Effect to fetch submission data when component mounts or activeTab changes
   useEffect(() => {
     const getSubmissionData = async () => {
       // Check if we have a submission ID
@@ -260,7 +260,8 @@ export default function IncomeSourceTab({
           ? window.formData.submissionId
           : null;
 
-      if (submissionId) {
+      if (submissionId && activeTab === "income-source") {
+        console.log("Fetching submission data for IncomeSourceTab...");
         const data = await fetchSubmissionData(submissionId);
         if (data && data.formData) {
           // Extract tab2 data (PersonalInfoTab data)
@@ -271,14 +272,66 @@ export default function IncomeSourceTab({
             bankDetails: data.formData.bankDetails || {},
             placeOfBusiness: data.formData.placeOfBusiness || {},
           };
-
           setTab2Data(personalInfoData);
+
+          // Update service-specific data based on serviceUniqueId
+          if (
+            data.formData.businessKYCData &&
+            serviceUniqueId === "new_registration"
+          ) {
+            setBusinessKYCData(data.formData.businessKYCData);
+          }
+          if (
+            data.formData.monthlyFilingData &&
+            serviceUniqueId === "monthly_filing"
+          ) {
+            setMonthlyFilingData(data.formData.monthlyFilingData);
+          }
+          if (
+            data.formData.annualReturnData &&
+            serviceUniqueId === "annual_return"
+          ) {
+            setAnnualReturnData(data.formData.annualReturnData);
+          }
+          if (
+            data.formData.gstEInvoiceData &&
+            serviceUniqueId === "gst_e_invoice"
+          ) {
+            setGstEInvoiceData(data.formData.gstEInvoiceData);
+          }
+          if (
+            data.formData.claimGSTRefundData &&
+            serviceUniqueId === "claim_gst_refund"
+          ) {
+            setClaimGSTRefundData(data.formData.claimGSTRefundData);
+          }
+          if (
+            data.formData.gstClosureData &&
+            serviceUniqueId === "gst_closure"
+          ) {
+            setGSTClosureData(data.formData.gstClosureData);
+          }
+          if (
+            data.formData.gstAmendmentData &&
+            serviceUniqueId === "gst_amendment"
+          ) {
+            setGSTAmendmentData(data.formData.gstAmendmentData);
+          }
+          if (
+            data.formData.gstEWaybillData &&
+            serviceUniqueId === "gst_e_waybill"
+          ) {
+            setGSTEWaybillData(data.formData.gstEWaybillData);
+          }
+          if (data.formData.files) {
+            setFiles(data.formData.files);
+          }
         }
       }
     };
 
     getSubmissionData();
-  }, [fetchSubmissionData]);
+  }, [activeTab, fetchSubmissionData, serviceUniqueId]);
 
   // Update local state when formData props change
   useEffect(() => {

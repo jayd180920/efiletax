@@ -175,7 +175,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   // If service is paid, show the children (service content)
 
   // This is where you would render the actual service content - UPENDRA
-  if (!isPaid) {
+  if (isPaid) {
     return <>{children}</>;
   }
 

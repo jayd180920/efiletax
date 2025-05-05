@@ -714,7 +714,7 @@ export default function IncomeSourceTab({
             onClick={handleNext}
             className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium"
           >
-            Next
+            Finish
           </button>
         </div>
       </div>

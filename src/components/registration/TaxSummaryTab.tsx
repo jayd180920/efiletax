@@ -201,7 +201,7 @@ export default function TaxSummaryTab({
         </div>
       </div>
 
-      <div className="flex justify-between mt-6">
+      {/* <div className="flex justify-between mt-6">
         <button
           type="button"
           onClick={handleBack}
@@ -225,7 +225,7 @@ export default function TaxSummaryTab({
             Finish
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

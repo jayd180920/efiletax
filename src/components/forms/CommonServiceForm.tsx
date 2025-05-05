@@ -484,7 +484,7 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
             })}
 
             {/* Common fields */}
-            <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+            {/* <div className="mt-6 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
                 <label
                   htmlFor="currentStatus"
@@ -530,7 +530,7 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
                   Payment status will be updated after payment processing
                 </p>
               </div>
-            </div>
+            </div> */}
 
             {errors.form && (
               <div className="mt-4 rounded-md bg-red-50 p-4">
@@ -561,7 +561,7 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
             )}
           </div>
 
-          <div className="bg-gray-50 px-4 py-3 text-right sm:px-6 flex justify-end space-x-4">
+          {/* <div className="bg-gray-50 px-4 py-3 text-right sm:px-6 flex justify-end space-x-4">
             <button
               type="button"
               onClick={handleSave}
@@ -581,7 +581,7 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
             >
               {isSubmitting ? "Submitting..." : "Submit"}
             </button>
-          </div>
+          </div> */}
         </form>
       )}
     </div>

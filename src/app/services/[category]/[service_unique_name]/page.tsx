@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
+import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PersonalInfoTab from "@/components/registration/PersonalInfoTab";
 import IncomeSourceTab from "@/components/registration/IncomeSourceTab";
@@ -23,8 +24,9 @@ export default function ServicePage() {
     isLoading: true,
     error: null as string | null,
   });
+  const [paymentDetails, setPaymentDetails] = useState<any>(null);
 
-  // Fetch service details on component mount
+  // Fetch service details and payment details on component mount
   useEffect(() => {
     const fetchServiceDetails = async () => {
       try {
@@ -39,8 +41,22 @@ export default function ServicePage() {
 
         const data = await response.json();
 
+        console.log("Service details data:", data);
+        // filter the services based on the unique name
+
         if (data && data.services && data.services.length > 0) {
-          const service = data.services[0];
+          let service;
+          const filteredServices = data.services.filter(
+            (service: any) =>
+              service.service_unique_name === service_unique_name
+          );
+          console.log(
+            "Service details filteredServices data:",
+            filteredServices
+          );
+          if (filteredServices.length > 0) {
+            service = filteredServices[0];
+          }
           setServiceDetails({
             id: service._id,
             name: service.name,
@@ -50,6 +66,9 @@ export default function ServicePage() {
             isLoading: false,
             error: null,
           });
+
+          // Fetch payment details after getting service details
+          fetchPaymentDetails(service._id);
         } else {
           setServiceDetails({
             id: "",
@@ -67,6 +86,49 @@ export default function ServicePage() {
           isLoading: false,
           error: "Failed to load service details",
         }));
+      }
+    };
+
+    // Function to fetch payment details
+    const fetchPaymentDetails = async (serviceId: string) => {
+      try {
+        const response = await fetch(
+          `/api/payment/check?serviceId=${serviceId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch payment details");
+        }
+
+        const data = await response.json();
+
+        // If payment is successful, fetch the transaction details
+        if (data.isPaid) {
+          const transactionResponse = await fetch(
+            `/api/payment/transaction?serviceId=${serviceId}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              credentials: "include",
+            }
+          );
+
+          if (transactionResponse.ok) {
+            const transactionData = await transactionResponse.json();
+            setPaymentDetails(transactionData.transaction);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching payment details:", error);
       }
     };
 
@@ -174,11 +236,105 @@ export default function ServicePage() {
     </div>
   );
 
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+    }).format(amount);
+  };
+
+  // Format date
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "dd MMM yyyy, hh:mm a");
+    } catch (error) {
+      return dateString;
+    }
+  };
+
+  // Payment details card component
+  const PaymentDetailsCard = () => {
+    if (!paymentDetails) return null;
+
+    return (
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+        <div className="px-4 py-5 sm:px-6 bg-green-50">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2 text-green-500"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+            Payment Successful
+          </h3>
+          <p className="mt-1 max-w-2xl text-sm text-gray-500">
+            Your payment for this service has been processed successfully.
+          </p>
+        </div>
+        <div className="border-t border-gray-200">
+          <dl>
+            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt className="text-sm font-medium text-gray-500">
+                Transaction ID
+              </dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                {paymentDetails.payuTxnId || paymentDetails.mihpayid || "N/A"}
+              </dd>
+            </div>
+            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt className="text-sm font-medium text-gray-500">Amount Paid</dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                {formatCurrency(paymentDetails.amount)}
+              </dd>
+            </div>
+            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt className="text-sm font-medium text-gray-500">
+                Payment Method
+              </dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                {paymentDetails.paymentMode || "Online"}
+              </dd>
+            </div>
+            <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt className="text-sm font-medium text-gray-500">
+                Payment Date
+              </dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                {paymentDetails.createdAt
+                  ? formatDate(paymentDetails.createdAt)
+                  : "N/A"}
+              </dd>
+            </div>
+            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+              <dt className="text-sm font-medium text-gray-500">Status</dt>
+              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                  {paymentDetails.status || "Success"}
+                </span>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+    );
+  };
+
   // Render the service form wrapped in payment gateway
   return (
     <Layout>
       <div className="container mx-auto py-8 px-4">
         <h1 className="text-2xl font-bold mb-6">{serviceDetails.name}</h1>
+
+        {/* Show payment details if available */}
+        {paymentDetails && <PaymentDetailsCard />}
 
         <PaymentGateway
           serviceId={serviceDetails.id}

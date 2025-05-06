@@ -33,17 +33,22 @@ export async function PUT(
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
-    // Get the existing submission to merge fileUrls
+    // Get the existing submission to merge formData and fileUrls
     const existingSubmission = await submissions.findOne({
       _id: new ObjectId(id),
       userId: userId,
     });
 
     const updateData: any = {
-      formData,
       status,
       updatedAt: new Date(),
     };
+
+    // Merge new formData with existing formData
+    if (formData) {
+      const existingFormData = existingSubmission?.formData || {};
+      updateData.formData = { ...existingFormData, ...formData };
+    }
 
     // Only include fileUrls in the update if they are provided
     if (fileUrls) {

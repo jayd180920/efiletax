@@ -42,6 +42,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   const [fileToRemove, setFileToRemove] = useState<string | null>(null);
   const [fileUrl, setFileUrl] = useState<string>(existingFileUrl);
   const [fileKey, setFileKey] = useState<string>(existingFileKey);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   // Update fileUrl and fileKey when uploadStatus changes
   useEffect(() => {
@@ -65,9 +66,21 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onFileChange(name, e.target.files[0]);
+      const selectedFile = e.target.files[0];
+      onFileChange(name, selectedFile);
+
       // Reset file removal state when a new file is selected
       setFileToRemove(null);
+
+      // Create a local preview URL for the file
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && event.target.result) {
+          setLocalPreviewUrl(event.target.result as string);
+          setShowPreview(true);
+        }
+      };
+      reader.readAsDataURL(selectedFile);
     }
   };
 
@@ -93,17 +106,48 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
         fileInputRef.current.value = "";
       }
 
+      // Reset file state and local preview
+      setLocalPreviewUrl(null);
+      onFileChange(name, null);
+    } else if (localPreviewUrl) {
+      // If we only have a local preview (not yet uploaded to S3)
+      setShowPreview(false);
+      setLocalPreviewUrl(null);
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
       // Reset file state
       onFileChange(name, null);
     }
   };
 
   const getFileExtension = (url: string) => {
+    // For data URLs, extract the MIME type
+    if (url.startsWith("data:")) {
+      const mimeType = url.split(";")[0].split(":")[1];
+      if (mimeType.startsWith("image/")) {
+        return mimeType.split("/")[1]; // Returns 'jpeg', 'png', etc.
+      } else if (mimeType === "application/pdf") {
+        return "pdf";
+      }
+      return "";
+    }
+
+    // For regular URLs, extract the extension from the filename
     const extension = url.split(".").pop()?.toLowerCase();
-    return extension;
+    return extension || "";
   };
 
   const isImage = (url: string) => {
+    // For data URLs, check the MIME type directly
+    if (url.startsWith("data:")) {
+      return url.startsWith("data:image/");
+    }
+
+    // For regular URLs, check the extension
     const extension = getFileExtension(url);
     return (
       extension === "jpg" ||
@@ -114,6 +158,12 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   };
 
   const isPdf = (url: string) => {
+    // For data URLs, check the MIME type directly
+    if (url.startsWith("data:")) {
+      return url.startsWith("data:application/pdf");
+    }
+
+    // For regular URLs, check the extension
     const extension = getFileExtension(url);
     return extension === "pdf";
   };
@@ -140,7 +190,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
           onClick={handleBrowseClick}
           className="px-3 py-2 bg-gray-200 text-gray-800 rounded-l-md hover:bg-gray-300 focus:outline-none"
         >
-          {fileUrl && !fileToRemove ? "Update" : "Browse"}
+          {(fileUrl || localPreviewUrl) && !fileToRemove ? "Update" : "Browse"}
         </button>
 
         <div className="flex-1 border border-gray-300 rounded-r-md px-3 py-2 bg-white">
@@ -148,6 +198,8 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
             ? file.name
             : fileUrl && !fileToRemove
             ? "File uploaded"
+            : localPreviewUrl && !fileToRemove
+            ? "File selected (not yet uploaded)"
             : "No file selected"}
         </div>
 
@@ -157,7 +209,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
           </div>
         )}
 
-        {fileUrl && !fileToRemove && (
+        {(fileUrl || localPreviewUrl) && !fileToRemove && (
           <button
             type="button"
             onClick={handleRemoveFile}
@@ -191,30 +243,35 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
       )}
 
       {/* File Preview */}
-      {showPreview && fileUrl && !fileToRemove && (
+      {showPreview && (fileUrl || localPreviewUrl) && !fileToRemove && (
         <div className="mt-3 border rounded-md p-3">
           <div className="flex justify-between items-center mb-2">
             <h4 className="text-sm font-medium">File Preview</h4>
-            <a
-              href={fileUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-800 text-sm"
-            >
-              View Full Size
-            </a>
+            {fileUrl ? (
+              <a
+                href={fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-800 text-sm"
+              >
+                View Full Size
+              </a>
+            ) : localPreviewUrl ? (
+              <span className="text-gray-500 text-sm">Preview Only</span>
+            ) : null}
           </div>
 
           <div className="bg-gray-100 rounded-md p-2 overflow-hidden">
-            {isImage(fileUrl) ? (
+            {/* Use localPreviewUrl if available, otherwise use fileUrl */}
+            {isImage(localPreviewUrl || fileUrl) ? (
               <div className="flex justify-center">
                 <img
-                  src={fileUrl}
+                  src={localPreviewUrl || fileUrl}
                   alt="File preview"
                   className="max-h-40 object-contain"
                 />
               </div>
-            ) : isPdf(fileUrl) ? (
+            ) : isPdf(localPreviewUrl || fileUrl) ? (
               <div className="flex items-center justify-center p-4">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -249,9 +306,18 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
             )}
           </div>
 
-          <div className="mt-2 text-xs text-gray-500 truncate">
-            <span className="font-medium">URL:</span> {fileUrl}
-          </div>
+          {fileUrl && (
+            <div className="mt-2 text-xs text-gray-500 truncate">
+              <span className="font-medium">URL:</span> {fileUrl}
+            </div>
+          )}
+
+          {localPreviewUrl && !fileUrl && (
+            <div className="mt-2 text-xs text-gray-500">
+              <span className="font-medium">Status:</span> File selected but not
+              yet uploaded to server
+            </div>
+          )}
         </div>
       )}
 

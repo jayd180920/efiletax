@@ -195,7 +195,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   }
 
   // If service is paid, show the children (service content)
-  if (isPaid) {
+  if (!isPaid) {
     return <>{children}</>;
   }
 

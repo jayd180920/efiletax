@@ -8,6 +8,7 @@ declare global {
 }
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { uploadMultipleFilesToS3 } from "@/lib/s3-client";
 import BusinessKYC from "./BusinessKYC";
 import MonthlyFiling from "./MonthlyFiling";
 import AnnualReturn from "./AnnualReturn";
@@ -437,6 +438,14 @@ export default function IncomeSourceTab({
     console.log(`Updated local state with file ${name}`);
   };
 
+  // State for tracking file upload status
+  const [uploadStatus, setUploadStatus] = useState<
+    Record<string, { success: boolean; message: string }>
+  >({});
+
+  // State for tracking if files are being uploaded
+  const [isUploading, setIsUploading] = useState(false);
+
   // Handle save functionality
   const handleSave = async () => {
     try {
@@ -470,6 +479,58 @@ export default function IncomeSourceTab({
         data.placeOfBusiness = tab2Data.placeOfBusiness;
       }
 
+      // Check if there are any files to upload
+      const hasFiles = Object.values(files).some((file) => file !== null);
+
+      // File upload results
+      let fileUploadResults: Record<string, { key?: string; url?: string }> =
+        {};
+
+      // Upload files if there are any
+      if (hasFiles) {
+        setIsUploading(true);
+
+        try {
+          // Get service ID for organizing files
+          const serviceId = serviceUniqueId || "default";
+
+          // Upload all files at once
+          const results = await uploadMultipleFilesToS3(files, serviceId);
+          console.log("File upload results:", results);
+
+          // Update upload status
+          setUploadStatus(results);
+
+          // Extract keys and URLs for successful uploads
+          Object.entries(results).forEach(([fieldName, result]) => {
+            if (result.success && result.key && result.url) {
+              fileUploadResults[fieldName] = {
+                key: result.key,
+                url: result.url,
+              };
+            }
+          });
+
+          // Check if any uploads failed
+          const hasFailures = Object.values(results).some(
+            (result) => !result.success
+          );
+
+          if (hasFailures) {
+            console.warn(
+              "Some file uploads failed. Proceeding with form submission anyway."
+            );
+          }
+        } catch (error) {
+          console.error("Error uploading files:", error);
+          alert(
+            "Some files could not be uploaded. You can try again or proceed without them."
+          );
+        } finally {
+          setIsUploading(false);
+        }
+      }
+
       // Check if we have a submission ID from a previous save
       const submissionId =
         typeof window !== "undefined" &&
@@ -488,6 +549,7 @@ export default function IncomeSourceTab({
           body: JSON.stringify({
             formData: data,
             status: "draft",
+            fileUrls: fileUploadResults, // Include file URLs in the submission
           }),
         });
 
@@ -509,6 +571,7 @@ export default function IncomeSourceTab({
             formData: data,
             serviceUniqueId,
             status: "draft",
+            fileUrls: fileUploadResults, // Include file URLs in the submission
           }),
         });
 
@@ -535,6 +598,7 @@ export default function IncomeSourceTab({
       if (updateFormData) {
         updateFormData({
           ...data,
+          fileUrls: fileUploadResults,
           submissionId:
             submissionId ||
             (typeof window !== "undefined" &&
@@ -555,6 +619,9 @@ export default function IncomeSourceTab({
 
     if (shouldSave) {
       await handleSave();
+      // If we saved successfully, we can proceed to the next tab
+      setActiveTab("tax-savings");
+      return;
     } else {
       // If user doesn't want to save, ask for confirmation to proceed without saving
       const shouldProceed = window.confirm(
@@ -564,56 +631,165 @@ export default function IncomeSourceTab({
       if (!shouldProceed) {
         return; // Don't proceed if user cancels
       }
-    }
 
-    // Get the submission ID if it exists
-    const submissionId =
-      typeof window !== "undefined" &&
-      window.formData &&
-      window.formData.submissionId
-        ? window.formData.submissionId
-        : null;
+      // If there are files, we should still upload them even if we're not saving the form
+      const hasFiles = Object.values(files).some((file) => file !== null);
 
-    // Update parent component's state with form data
-    if (updateFormData) {
-      const data: any = { files };
+      if (hasFiles) {
+        setIsUploading(true);
 
-      // Add service-specific data based on serviceUniqueId
-      if (serviceUniqueId === "gst_amendment") {
-        data.gstAmendmentData = { ...gstAmendmentData };
-      } else if (serviceUniqueId === "gst_e_waybill") {
-        data.gstEWaybillData = { ...gstEWaybillData };
-      } else if (serviceUniqueId === "gst_closure") {
-        data.gstClosureData = { ...gstClosureData };
-      } else if (serviceUniqueId === "monthly_filing") {
-        data.monthlyFilingData = { ...monthlyFilingData };
-      } else if (serviceUniqueId === "annual_return") {
-        data.annualReturnData = { ...annualReturnData };
-      } else if (serviceUniqueId === "gst_e_invoice") {
-        data.gstEInvoiceData = { ...gstEInvoiceData };
-      } else if (serviceUniqueId === "claim_gst_refund") {
-        data.claimGSTRefundData = { ...claimGSTRefundData };
-      } else if (serviceUniqueId === "new_registration") {
-        data.businessKYCData = { ...businessKYCData };
+        try {
+          // Get service ID for organizing files
+          const serviceId = serviceUniqueId || "default";
+
+          // Upload all files at once
+          const results = await uploadMultipleFilesToS3(files, serviceId);
+          console.log("File upload results:", results);
+
+          // Update upload status
+          setUploadStatus(results);
+
+          // Extract keys and URLs for successful uploads
+          const fileUploadResults: Record<
+            string,
+            { key?: string; url?: string }
+          > = {};
+
+          Object.entries(results).forEach(([fieldName, result]) => {
+            if (result.success && result.key && result.url) {
+              fileUploadResults[fieldName] = {
+                key: result.key,
+                url: result.url,
+              };
+            }
+          });
+
+          // Get the submission ID if it exists
+          const submissionId =
+            typeof window !== "undefined" &&
+            window.formData &&
+            window.formData.submissionId
+              ? window.formData.submissionId
+              : null;
+
+          // If we have a submission ID, update the submission with file URLs
+          if (submissionId) {
+            try {
+              await fetch(`/api/submissions/${submissionId}`, {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  fileUrls: fileUploadResults,
+                  status: "draft",
+                }),
+              });
+              console.log("Updated submission with file URLs:", submissionId);
+            } catch (error) {
+              console.error("Error updating submission with file URLs:", error);
+            }
+          }
+
+          // Get the data to update parent component
+          const data: any = { files };
+
+          // Add service-specific data based on serviceUniqueId
+          if (serviceUniqueId === "gst_amendment") {
+            data.gstAmendmentData = { ...gstAmendmentData };
+          } else if (serviceUniqueId === "gst_e_waybill") {
+            data.gstEWaybillData = { ...gstEWaybillData };
+          } else if (serviceUniqueId === "gst_closure") {
+            data.gstClosureData = { ...gstClosureData };
+          } else if (serviceUniqueId === "monthly_filing") {
+            data.monthlyFilingData = { ...monthlyFilingData };
+          } else if (serviceUniqueId === "annual_return") {
+            data.annualReturnData = { ...annualReturnData };
+          } else if (serviceUniqueId === "gst_e_invoice") {
+            data.gstEInvoiceData = { ...gstEInvoiceData };
+          } else if (serviceUniqueId === "claim_gst_refund") {
+            data.claimGSTRefundData = { ...claimGSTRefundData };
+          } else if (serviceUniqueId === "new_registration") {
+            data.businessKYCData = { ...businessKYCData };
+          }
+
+          // Append tab2 data if available
+          if (tab2Data) {
+            data.permanentInfo = tab2Data.permanentInfo;
+            data.identification = tab2Data.identification;
+            data.address = tab2Data.address;
+            data.bankDetails = tab2Data.bankDetails;
+            data.placeOfBusiness = tab2Data.placeOfBusiness;
+          }
+
+          // Update parent component's state with form data, file upload results, and submission ID
+          if (updateFormData) {
+            updateFormData({
+              ...data,
+              fileUrls: fileUploadResults,
+              submissionId: submissionId,
+            });
+          }
+        } catch (error) {
+          console.error("Error uploading files:", error);
+          alert(
+            "Some files could not be uploaded. You can try again or proceed without them."
+          );
+        } finally {
+          setIsUploading(false);
+        }
+      } else {
+        // No files to upload, just update parent component's state
+        const data: any = { files };
+
+        // Add service-specific data based on serviceUniqueId
+        if (serviceUniqueId === "gst_amendment") {
+          data.gstAmendmentData = { ...gstAmendmentData };
+        } else if (serviceUniqueId === "gst_e_waybill") {
+          data.gstEWaybillData = { ...gstEWaybillData };
+        } else if (serviceUniqueId === "gst_closure") {
+          data.gstClosureData = { ...gstClosureData };
+        } else if (serviceUniqueId === "monthly_filing") {
+          data.monthlyFilingData = { ...monthlyFilingData };
+        } else if (serviceUniqueId === "annual_return") {
+          data.annualReturnData = { ...annualReturnData };
+        } else if (serviceUniqueId === "gst_e_invoice") {
+          data.gstEInvoiceData = { ...gstEInvoiceData };
+        } else if (serviceUniqueId === "claim_gst_refund") {
+          data.claimGSTRefundData = { ...claimGSTRefundData };
+        } else if (serviceUniqueId === "new_registration") {
+          data.businessKYCData = { ...businessKYCData };
+        }
+
+        // Append tab2 data if available
+        if (tab2Data) {
+          data.permanentInfo = tab2Data.permanentInfo;
+          data.identification = tab2Data.identification;
+          data.address = tab2Data.address;
+          data.bankDetails = tab2Data.bankDetails;
+          data.placeOfBusiness = tab2Data.placeOfBusiness;
+        }
+
+        // Get the submission ID if it exists
+        const submissionId =
+          typeof window !== "undefined" &&
+          window.formData &&
+          window.formData.submissionId
+            ? window.formData.submissionId
+            : null;
+
+        // Update parent component's state with form data and submission ID
+        if (updateFormData) {
+          updateFormData({
+            ...data,
+            submissionId: submissionId,
+          });
+        }
       }
 
-      // Append tab2 data if available
-      if (tab2Data) {
-        data.permanentInfo = tab2Data.permanentInfo;
-        data.identification = tab2Data.identification;
-        data.address = tab2Data.address;
-        data.bankDetails = tab2Data.bankDetails;
-        data.placeOfBusiness = tab2Data.placeOfBusiness;
-      }
-
-      updateFormData({
-        ...data,
-        submissionId: submissionId,
-      });
+      // Move to next tab
+      setActiveTab("tax-savings");
     }
-
-    // Move to next tab
-    setActiveTab("tax-savings");
   };
 
   const handleBack = async () => {

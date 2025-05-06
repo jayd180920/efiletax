@@ -25,7 +25,7 @@ export async function GET(
     await dbConnect();
 
     // Validate ID
-    const { id } = params;
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json(
         { error: "Invalid submission ID" },
@@ -98,7 +98,7 @@ export async function PUT(
     await dbConnect();
 
     // Validate ID
-    const { id } = params;
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json(
         { error: "Invalid submission ID" },

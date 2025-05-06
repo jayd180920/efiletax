@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import FormSection from "./FormSection";
 import FileUploadField from "./FileUploadField";
 
@@ -14,11 +14,15 @@ interface PlaceOfBusinessData {
 interface PlaceOfBusinessSectionProps {
   data: PlaceOfBusinessData;
   onFileChange: (name: string, file: File | null) => void;
+  uploadStatus?: Record<string, { success: boolean; message: string }>;
+  isUploading?: boolean;
 }
 
 export default function PlaceOfBusinessSection({
   data,
   onFileChange,
+  uploadStatus = {},
+  isUploading = false,
 }: PlaceOfBusinessSectionProps) {
   // Icon for the section
   const icon = (
@@ -53,6 +57,8 @@ export default function PlaceOfBusinessSection({
           label="Rental Agreement"
           file={data.rentalAgreement}
           onFileChange={onFileChange}
+          uploadStatus={uploadStatus?.rentalAgreement}
+          isUploading={isUploading}
         />
 
         <FileUploadField
@@ -61,6 +67,8 @@ export default function PlaceOfBusinessSection({
           label="EB Bill / Property Tax"
           file={data.ebBillPropertyTax}
           onFileChange={onFileChange}
+          uploadStatus={uploadStatus?.ebBillPropertyTax}
+          isUploading={isUploading}
         />
 
         <FileUploadField
@@ -69,6 +77,8 @@ export default function PlaceOfBusinessSection({
           label="Sale Deed / Concerned"
           file={data.saleDeedConcerned}
           onFileChange={onFileChange}
+          uploadStatus={uploadStatus?.saleDeedConcerned}
+          isUploading={isUploading}
         />
 
         <FileUploadField
@@ -77,6 +87,8 @@ export default function PlaceOfBusinessSection({
           label="Consent Letter"
           file={data.consentLetter}
           onFileChange={onFileChange}
+          uploadStatus={uploadStatus?.consentLetter}
+          isUploading={isUploading}
         />
       </div>
     </FormSection>

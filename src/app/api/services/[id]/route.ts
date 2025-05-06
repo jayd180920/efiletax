@@ -13,7 +13,7 @@ export async function GET(
   try {
     await dbConnect();
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID format
     if (!isValidObjectId(id)) {
@@ -54,7 +54,7 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID format
     if (!isValidObjectId(id)) {
@@ -154,7 +154,7 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Validate ID format
     if (!isValidObjectId(id)) {

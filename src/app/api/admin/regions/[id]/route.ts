@@ -91,7 +91,7 @@ export async function GET(
     await dbConnect();
 
     // Validate ID
-    const { id } = params;
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({ error: "Invalid region ID" }, { status: 400 });
     }
@@ -199,7 +199,7 @@ export async function PUT(
     await dbConnect();
 
     // Validate ID
-    const { id } = params;
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({ error: "Invalid region ID" }, { status: 400 });
     }
@@ -373,7 +373,7 @@ export async function DELETE(
     await dbConnect();
 
     // Validate ID
-    const { id } = params;
+    const { id } = await params;
     if (!isValidObjectId(id)) {
       return NextResponse.json({ error: "Invalid region ID" }, { status: 400 });
     }

@@ -6,6 +6,7 @@ import PermanentInfoSection from "./PermanentInfoSection";
 import AddressSection from "./AddressSection";
 import BankDetailsSection from "./BankDetailsSection";
 import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
+import { uploadMultipleFilesToS3 } from "@/lib/s3-client";
 
 interface PersonalInfoTabProps {
   activeTab: string;
@@ -61,6 +62,7 @@ interface PersonalInfoTabProps {
     bankDetails: any;
     placeOfBusiness: any;
     files: Record<string, File | null>;
+    fileUrls?: Record<string, { key?: string; url?: string }>;
     submissionId?: string;
   }) => void;
 }
@@ -143,6 +145,14 @@ export default function PersonalInfoTab({
       consentLetter: null,
     }
   );
+
+  // State for tracking file upload status
+  const [uploadStatus, setUploadStatus] = useState<
+    Record<string, { success: boolean; message: string }>
+  >({});
+
+  // State for tracking if files are being uploaded
+  const [isUploading, setIsUploading] = useState(false);
 
   // Function to fetch submission data using submissionId
   const fetchSubmissionData = useCallback(async (submissionId: string) => {
@@ -294,21 +304,77 @@ export default function PersonalInfoTab({
 
   // Handle save button click
   const handleSave = async () => {
+    console.log("Saving form data...");
+    alert("Saving form data...");
     if (isFormValid()) {
-      const formData = {
-        permanentInfo,
-        identification: {
-          ...identification,
-          mobileNumber: permanentInfo.mobileNumber,
-          email: permanentInfo.email,
-        },
-        address,
-        bankDetails,
-        placeOfBusiness,
-        files,
-      };
-
+      console.log("Form data is valid. Proceeding to save...");
       try {
+        // Check if there are any files to upload
+        const hasFiles = Object.values(files).some((file) => file !== null);
+
+        // File upload results
+        let fileUploadResults: Record<string, { key?: string; url?: string }> =
+          {};
+
+        // Upload files if there are any
+        if (hasFiles) {
+          setIsUploading(true);
+
+          try {
+            // Get service ID for organizing files
+            const serviceId = serviceUniqueId || "default";
+
+            // Upload all files at once
+            const results = await uploadMultipleFilesToS3(files, serviceId);
+            console.log("File upload results:", results);
+
+            // Update upload status
+            setUploadStatus(results);
+
+            // Extract keys and URLs for successful uploads
+            Object.entries(results).forEach(([fieldName, result]) => {
+              if (result.success && result.key && result.url) {
+                fileUploadResults[fieldName] = {
+                  key: result.key,
+                  url: result.url,
+                };
+              }
+            });
+
+            // Check if any uploads failed
+            const hasFailures = Object.values(results).some(
+              (result) => !result.success
+            );
+
+            if (hasFailures) {
+              console.warn(
+                "Some file uploads failed. Proceeding with form submission anyway."
+              );
+            }
+          } catch (error) {
+            console.error("Error uploading files:", error);
+            alert(
+              "Some files could not be uploaded. You can try again or proceed without them."
+            );
+          } finally {
+            setIsUploading(false);
+          }
+        }
+
+        // Prepare form data with file upload results
+        const formDataToSubmit = {
+          permanentInfo,
+          identification: {
+            ...identification,
+            mobileNumber: permanentInfo.mobileNumber,
+            email: permanentInfo.email,
+          },
+          address,
+          bankDetails,
+          placeOfBusiness,
+          files,
+        };
+
         // Check if we have a submission ID from a previous save
         const submissionId =
           typeof window !== "undefined" &&
@@ -328,8 +394,9 @@ export default function PersonalInfoTab({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              formData,
+              formData: formDataToSubmit,
               status: "draft",
+              fileUrls: fileUploadResults, // Include file URLs in the submission
             }),
           });
 
@@ -347,9 +414,10 @@ export default function PersonalInfoTab({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              formData,
+              formData: formDataToSubmit,
               serviceUniqueId,
               status: "draft",
+              fileUrls: fileUploadResults, // Include file URLs in the submission
             }),
           });
 
@@ -374,7 +442,8 @@ export default function PersonalInfoTab({
         // Update parent component's state with form data and submission ID
         if (updateFormData) {
           updateFormData({
-            ...formData,
+            ...formDataToSubmit,
+            fileUrls: fileUploadResults,
             submissionId: submissionId || (result && result.id),
           });
         }
@@ -389,6 +458,7 @@ export default function PersonalInfoTab({
 
   // Handle next button click
   const handleNext = async () => {
+    alert("Next button clicked!");
     if (isFormValid()) {
       const shouldSave = window.confirm(
         "Do you want to save your changes before proceeding to the next tab?"
@@ -396,6 +466,9 @@ export default function PersonalInfoTab({
 
       if (shouldSave) {
         await handleSave();
+        // If we saved successfully, we can proceed to the next tab
+        setActiveTab("income-source");
+        return;
       } else {
         // If user doesn't want to save, ask for confirmation to proceed without saving
         const shouldProceed = window.confirm(
@@ -405,34 +478,125 @@ export default function PersonalInfoTab({
         if (!shouldProceed) {
           return; // Don't proceed if user cancels
         }
+
+        // If there are files, we should still upload them even if we're not saving the form
+        const hasFiles = Object.values(files).some((file) => file !== null);
+
+        if (hasFiles) {
+          setIsUploading(true);
+
+          try {
+            // Get service ID for organizing files
+            const serviceId = serviceUniqueId || "default";
+
+            // Upload all files at once
+            const results = await uploadMultipleFilesToS3(files, serviceId);
+            console.log("File upload results:", results);
+
+            // Update upload status
+            setUploadStatus(results);
+
+            // Extract keys and URLs for successful uploads
+            const fileUploadResults: Record<
+              string,
+              { key?: string; url?: string }
+            > = {};
+
+            Object.entries(results).forEach(([fieldName, result]) => {
+              if (result.success && result.key && result.url) {
+                fileUploadResults[fieldName] = {
+                  key: result.key,
+                  url: result.url,
+                };
+              }
+            });
+
+            // Get the submission ID if it exists
+            const submissionId =
+              typeof window !== "undefined" &&
+              window.formData &&
+              window.formData.submissionId
+                ? window.formData.submissionId
+                : null;
+
+            // If we have a submission ID, update the submission with file URLs
+            if (submissionId) {
+              try {
+                await fetch(`/api/submissions/${submissionId}`, {
+                  method: "PUT",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    fileUrls: fileUploadResults,
+                    status: "draft",
+                  }),
+                });
+                console.log("Updated submission with file URLs:", submissionId);
+              } catch (error) {
+                console.error(
+                  "Error updating submission with file URLs:",
+                  error
+                );
+              }
+            }
+
+            // Update parent component's state with form data, file upload results, and submission ID
+            if (updateFormData) {
+              updateFormData({
+                permanentInfo,
+                identification: {
+                  ...identification,
+                  mobileNumber: permanentInfo.mobileNumber,
+                  email: permanentInfo.email,
+                },
+                address,
+                bankDetails,
+                placeOfBusiness,
+                files,
+                fileUrls: fileUploadResults,
+                submissionId: submissionId,
+              });
+            }
+          } catch (error) {
+            console.error("Error uploading files:", error);
+            alert(
+              "Some files could not be uploaded. You can try again or proceed without them."
+            );
+          } finally {
+            setIsUploading(false);
+          }
+        } else {
+          // No files to upload, just update parent component's state
+          // Get the submission ID if it exists
+          const submissionId =
+            typeof window !== "undefined" &&
+            window.formData &&
+            window.formData.submissionId
+              ? window.formData.submissionId
+              : null;
+
+          // Update parent component's state with form data and submission ID
+          if (updateFormData) {
+            updateFormData({
+              permanentInfo,
+              identification: {
+                ...identification,
+                mobileNumber: permanentInfo.mobileNumber,
+                email: permanentInfo.email,
+              },
+              address,
+              bankDetails,
+              placeOfBusiness,
+              files,
+              submissionId: submissionId,
+            });
+          }
+        }
+
+        // Proceed to the next tab
+        setActiveTab("income-source");
       }
-
-      // Get the submission ID if it exists
-      const submissionId =
-        typeof window !== "undefined" &&
-        window.formData &&
-        window.formData.submissionId
-          ? window.formData.submissionId
-          : null;
-
-      // Update parent component's state with form data and submission ID
-      if (updateFormData) {
-        updateFormData({
-          permanentInfo,
-          identification: {
-            ...identification,
-            mobileNumber: permanentInfo.mobileNumber,
-            email: permanentInfo.email,
-          },
-          address,
-          bankDetails,
-          placeOfBusiness,
-          files,
-          submissionId: submissionId,
-        });
-      }
-
-      setActiveTab("income-source");
     }
   };
 
@@ -458,6 +622,8 @@ export default function PersonalInfoTab({
         <PlaceOfBusinessSection
           data={placeOfBusiness}
           onFileChange={handleFileChange}
+          uploadStatus={uploadStatus}
+          isUploading={isUploading}
         />
       )}
 

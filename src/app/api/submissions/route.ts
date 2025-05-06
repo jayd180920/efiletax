@@ -78,21 +78,53 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userId = null;
+
+    // 1. Try NextAuth session first
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    if (session?.user) {
+      isAuthenticated = true;
+      userId = session.user.id;
+    } else {
+      // 2. If no session, try custom authentication
+      const auth = await authenticate(request);
+      if (auth) {
+        isAuthenticated = true;
+        userId = auth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { formData, serviceUniqueId, status } = await request.json();
+    const {
+      formData,
+      serviceUniqueId,
+      status,
+      files,
+      fileUrls,
+      serviceId,
+      serviceName,
+      amount,
+    } = await request.json();
 
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
     const result = await submissions.insertOne({
-      userId: session.user.id,
+      userId,
       formData,
-      serviceUniqueId,
-      status,
+      serviceId: serviceId || serviceUniqueId,
+      serviceName: serviceName || serviceUniqueId,
+      status: status || "pending",
+      files: files || {},
+      fileUrls: fileUrls || {},
+      amount: amount || 0,
+      paymentStatus: "pending",
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -109,24 +141,54 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userId = null;
+
+    // 1. Try NextAuth session first
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    if (session?.user) {
+      isAuthenticated = true;
+      userId = session.user.id;
+    } else {
+      // 2. If no session, try custom authentication
+      const auth = await authenticate(request);
+      if (auth) {
+        isAuthenticated = true;
+        userId = auth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id, formData, status } = await request.json();
+    const { id, formData, status, files, fileUrls } = await request.json();
 
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
+    const updateData: any = {
+      formData,
+      status,
+      updatedAt: new Date(),
+    };
+
+    // Only include files in the update if they are provided
+    if (files) {
+      updateData.files = files;
+    }
+
+    // Only include fileUrls in the update if they are provided
+    if (fileUrls) {
+      updateData.fileUrls = fileUrls;
+    }
+
     const result = await submissions.updateOne(
-      { _id: new ObjectId(id), userId: session.user.id },
+      { _id: new ObjectId(id), userId },
       {
-        $set: {
-          formData,
-          status,
-          updatedAt: new Date(),
-        },
+        $set: updateData,
       }
     );
 

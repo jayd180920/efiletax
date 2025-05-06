@@ -7,6 +7,22 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { randomUUID } from "crypto";
 
+// Debug log for environment variables
+console.log("S3 Environment Variables Check:");
+console.log("AWS_REGION:", process.env.AWS_REGION ? "Set" : "Not set");
+console.log(
+  "AWS_ACCESS_KEY_ID:",
+  process.env.AWS_ACCESS_KEY_ID ? "Set" : "Not set"
+);
+console.log(
+  "AWS_SECRET_ACCESS_KEY:",
+  process.env.AWS_SECRET_ACCESS_KEY ? "Set" : "Not set"
+);
+console.log(
+  "AWS_BUCKET_NAME:",
+  process.env.AWS_BUCKET_NAME ? "Set" : "Not set"
+);
+
 // Initialize S3 client
 const s3Client = new S3Client({
   region: process.env.AWS_REGION || "us-east-1",
@@ -17,6 +33,11 @@ const s3Client = new S3Client({
 });
 
 const bucketName = process.env.AWS_BUCKET_NAME || "";
+
+// Log if bucket name is empty
+if (!bucketName) {
+  console.warn("WARNING: AWS_BUCKET_NAME is not set or empty");
+}
 
 /**
  * Upload a file to S3
@@ -34,6 +55,23 @@ export async function uploadFileToS3(
   userId: string,
   serviceId: string
 ): Promise<{ key: string; url: string }> {
+  // Validate inputs
+  if (!file || file.length === 0) {
+    throw new Error("File buffer is empty or invalid");
+  }
+
+  if (!fileName) {
+    throw new Error("File name is required");
+  }
+
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  if (!serviceId) {
+    throw new Error("Service ID is required");
+  }
+
   // Generate a unique file name to prevent collisions
   const fileExtension = fileName.split(".").pop();
   const uniqueFileName = `${randomUUID()}.${fileExtension}`;
@@ -41,25 +79,51 @@ export async function uploadFileToS3(
   // Create a path structure: userId/serviceId/uniqueFileName
   const key = `uploads/${userId}/${serviceId}/${uniqueFileName}`;
 
-  // Upload the file to S3
-  const command = new PutObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-    Body: file,
-    ContentType: contentType,
-    Metadata: {
-      originalFileName: fileName,
-      userId,
-      serviceId,
-    },
-  });
+  try {
+    console.log("S3 Upload: Starting upload process", {
+      fileName,
+      contentType,
+      fileSize: file.length,
+      key,
+    });
 
-  await s3Client.send(command);
+    // Upload the file to S3
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: file,
+      ContentType: contentType,
+      Metadata: {
+        originalFileName: fileName,
+        userId,
+        serviceId,
+      },
+    });
 
-  // Generate a URL for the uploaded file
-  const url = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    const response = await s3Client.send(command);
 
-  return { key, url };
+    console.log("S3 Upload: Upload successful", {
+      key,
+      response: {
+        $metadata: {
+          httpStatusCode: response.$metadata.httpStatusCode,
+          requestId: response.$metadata.requestId,
+        },
+      },
+    });
+
+    // Generate a URL for the uploaded file
+    const url = `https://${bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+
+    return { key, url };
+  } catch (error) {
+    console.error("S3 Upload: Error uploading file to S3", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      fileName,
+      key,
+    });
+    throw error;
+  }
 }
 
 /**
@@ -72,12 +136,24 @@ export async function getSignedDownloadUrl(
   key: string,
   expiresIn = 3600
 ): Promise<string> {
-  const command = new GetObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-  });
+  if (!key) {
+    throw new Error("S3 object key is required");
+  }
 
-  return await getSignedUrl(s3Client, command, { expiresIn });
+  try {
+    const command = new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    return await getSignedUrl(s3Client, command, { expiresIn });
+  } catch (error) {
+    console.error("S3 Download: Error generating signed URL", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      key,
+    });
+    throw error;
+  }
 }
 
 /**
@@ -85,10 +161,23 @@ export async function getSignedDownloadUrl(
  * @param key S3 object key
  */
 export async function deleteFileFromS3(key: string): Promise<void> {
-  const command = new DeleteObjectCommand({
-    Bucket: bucketName,
-    Key: key,
-  });
+  if (!key) {
+    throw new Error("S3 object key is required");
+  }
 
-  await s3Client.send(command);
+  try {
+    const command = new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    });
+
+    await s3Client.send(command);
+    console.log("S3 Delete: File deleted successfully", { key });
+  } catch (error) {
+    console.error("S3 Delete: Error deleting file", {
+      error: error instanceof Error ? error.message : "Unknown error",
+      key,
+    });
+    throw error;
+  }
 }

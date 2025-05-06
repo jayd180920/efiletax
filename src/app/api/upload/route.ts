@@ -5,10 +5,6 @@ import { apiHandler, UnauthorizedError } from "@/lib/api-utils";
 import { getToken } from "next-auth/jwt";
 import User from "@/models/User";
 import dbConnect from "@/lib/mongodb";
-import { promises as fs } from "fs";
-import { randomUUID } from "crypto";
-import * as path from "path";
-import * as os from "os";
 
 /**
  * Parse multipart form data in Next.js App Router
@@ -80,10 +76,18 @@ export async function POST(req: NextRequest) {
     }
 
     try {
+      console.log("UPLOAD API: Starting file upload process");
+
       // Parse the multipart form data
       const { fields, files } = await parseMultipartFormData(
         req as unknown as Request
       );
+
+      console.log("UPLOAD API: Parsed form data", {
+        fieldKeys: Object.keys(fields),
+        fileKeys: Object.keys(files),
+        serviceId: fields.serviceId,
+      });
 
       // Get the service ID from the form data
       const serviceId = fields.serviceId;
@@ -99,24 +103,38 @@ export async function POST(req: NextRequest) {
 
       for (const fieldName in files) {
         const file = files[fieldName];
-
-        // Upload to S3
-        const result = await uploadFileToS3(
-          file.buffer,
-          file.originalFilename,
-          file.mimetype,
-          userId,
-          serviceId
-        );
-
-        // Add to results
-        uploadResults.push({
+        console.log("UPLOAD API: Processing file", {
           fieldName,
-          originalName: file.originalFilename,
-          key: result.key,
-          url: result.url,
-          contentType: file.mimetype,
+          filename: file.originalFilename,
+          size: file.buffer.length,
+          type: file.mimetype,
         });
+
+        try {
+          // Upload to S3
+          console.log("UPLOAD API: Uploading to S3...");
+          const result = await uploadFileToS3(
+            file.buffer,
+            file.originalFilename,
+            file.mimetype,
+            userId,
+            serviceId
+          );
+
+          console.log("UPLOAD API: Upload successful", result);
+
+          // Add to results
+          uploadResults.push({
+            fieldName,
+            originalName: file.originalFilename,
+            key: result.key,
+            url: result.url,
+            contentType: file.mimetype,
+          });
+        } catch (error) {
+          console.error("UPLOAD API: S3 upload error:", error);
+          throw error;
+        }
       }
 
       // Return the upload results
@@ -125,7 +143,7 @@ export async function POST(req: NextRequest) {
         files: uploadResults,
       });
     } catch (error) {
-      console.error("File upload error:", error);
+      console.error("UPLOAD API: File upload error:", error);
       return NextResponse.json(
         { error: "File upload failed", details: (error as Error).message },
         { status: 500 }

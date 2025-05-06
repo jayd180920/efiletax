@@ -27,20 +27,27 @@ export async function PUT(
       userId = auth.userId;
     }
 
-    const { formData, status } = await request.json();
-    const id = params.id;
+    const { formData, status, fileUrls } = await request.json();
+    const { id } = await params;
 
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
+    const updateData: any = {
+      formData,
+      status,
+      updatedAt: new Date(),
+    };
+
+    // Only include fileUrls in the update if they are provided
+    if (fileUrls) {
+      updateData.fileUrls = fileUrls;
+    }
+
     const result = await submissions.updateOne(
       { _id: new ObjectId(id), userId: userId },
       {
-        $set: {
-          formData,
-          status,
-          updatedAt: new Date(),
-        },
+        $set: updateData,
       }
     );
 
@@ -83,7 +90,7 @@ export async function GET(
       userId = auth.userId;
     }
 
-    const id = params.id;
+    const { id } = await params;
 
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
@@ -132,7 +139,7 @@ export async function DELETE(
       userId = auth.userId;
     }
 
-    const id = params.id;
+    const { id } = await params;
 
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");

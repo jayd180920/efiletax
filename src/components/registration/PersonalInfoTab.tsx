@@ -6,7 +6,7 @@ import PermanentInfoSection from "./PermanentInfoSection";
 import AddressSection from "./AddressSection";
 import BankDetailsSection from "./BankDetailsSection";
 import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
-import { uploadMultipleFilesToS3 } from "@/lib/s3-client";
+import { uploadMultipleFilesToS3, deleteFileFromS3 } from "@/lib/s3-client";
 
 interface PersonalInfoTabProps {
   activeTab: string;
@@ -54,6 +54,7 @@ interface PersonalInfoTabProps {
       consentLetter: File | null;
     };
     files: Record<string, File | null>;
+    fileUrls?: Record<string, { key: string; url: string }>;
   };
   updateFormData?: (data: {
     permanentInfo: any;
@@ -145,6 +146,14 @@ export default function PersonalInfoTab({
       consentLetter: null,
     }
   );
+
+  // State for tracking files to be removed
+  const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
+
+  // State for file URLs
+  const [fileUrls, setFileUrls] = useState<
+    Record<string, { key: string; url: string }>
+  >(formData?.fileUrls || {});
 
   // State for tracking file upload status
   const [uploadStatus, setUploadStatus] = useState<
@@ -241,6 +250,19 @@ export default function PersonalInfoTab({
     };
   }, []);
 
+  // Handle file removal
+  const handleFileRemove = (name: string, key: string) => {
+    // Add the file key to the filesToRemove array
+    setFilesToRemove([...filesToRemove, key]);
+
+    // Remove the file from fileUrls
+    const updatedFileUrls = { ...fileUrls };
+    delete updatedFileUrls[name];
+    setFileUrls(updatedFileUrls);
+
+    console.log(`Marked file ${name} with key ${key} for removal`);
+  };
+
   // Handle file changes
   const handleFileChange = (name: string, file: File | null) => {
     setFiles({
@@ -309,6 +331,25 @@ export default function PersonalInfoTab({
     if (isFormValid()) {
       console.log("Form data is valid. Proceeding to save...");
       try {
+        // Delete files marked for removal
+        if (filesToRemove.length > 0) {
+          try {
+            // Process each file to remove
+            for (const fileKey of filesToRemove) {
+              await deleteFileFromS3(fileKey);
+              console.log(`Deleted file with key: ${fileKey}`);
+            }
+
+            // Clear the filesToRemove array
+            setFilesToRemove([]);
+
+            console.log("Successfully deleted files marked for removal");
+          } catch (error) {
+            console.error("Error deleting files:", error);
+            alert("Some files could not be deleted. You can try again later.");
+          }
+        }
+
         // Check if there are any files to upload
         const hasFiles = Object.values(files).some((file) => file !== null);
 
@@ -660,6 +701,8 @@ export default function PersonalInfoTab({
           onFileChange={handleFileChange}
           uploadStatus={uploadStatus}
           isUploading={isUploading}
+          fileUrls={fileUrls}
+          onFileRemove={handleFileRemove}
         />
       )}
 

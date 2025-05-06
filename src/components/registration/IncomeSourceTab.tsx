@@ -8,7 +8,7 @@ declare global {
 }
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { uploadMultipleFilesToS3 } from "@/lib/s3-client";
+import { uploadMultipleFilesToS3, deleteFileFromS3 } from "@/lib/s3-client";
 import BusinessKYC from "./BusinessKYC";
 import MonthlyFiling from "./MonthlyFiling";
 import AnnualReturn from "./AnnualReturn";
@@ -98,6 +98,7 @@ interface IncomeSourceTabProps {
       eWaybillDocFile: File | null;
     };
     files?: Record<string, File | null>;
+    fileUrls?: Record<string, { key: string; url: string }>;
   };
   updateFormData?: (data: any) => void;
 }
@@ -231,6 +232,14 @@ export default function IncomeSourceTab({
   const [files, setFiles] = useState<Record<string, File | null>>(
     formData?.files || {}
   );
+
+  // State for tracking files to be removed
+  const [filesToRemove, setFilesToRemove] = useState<string[]>([]);
+
+  // State for file URLs
+  const [fileUrls, setFileUrls] = useState<
+    Record<string, { key: string; url: string }>
+  >(formData?.fileUrls || {});
 
   // State for tab2 data (from PersonalInfoTab)
   const [tab2Data, setTab2Data] = useState<any>(null);
@@ -376,6 +385,19 @@ export default function IncomeSourceTab({
       isMounted.current = false;
     };
   }, []);
+
+  // Handle file removal
+  const handleFileRemove = (name: string, key: string) => {
+    // Add the file key to the filesToRemove array
+    setFilesToRemove([...filesToRemove, key]);
+
+    // Remove the file from fileUrls
+    const updatedFileUrls = { ...fileUrls };
+    delete updatedFileUrls[name];
+    setFileUrls(updatedFileUrls);
+
+    console.log(`Marked file ${name} with key ${key} for removal`);
+  };
 
   // Handle file changes - only update local state, not window.formData
   const handleFileChange = (name: string, file: File | null) => {
@@ -528,6 +550,25 @@ export default function IncomeSourceTab({
           );
         } finally {
           setIsUploading(false);
+        }
+      }
+
+      // Delete files marked for removal
+      if (filesToRemove.length > 0) {
+        try {
+          // Process each file to remove
+          for (const fileKey of filesToRemove) {
+            await deleteFileFromS3(fileKey);
+            console.log(`Deleted file with key: ${fileKey}`);
+          }
+
+          // Clear the filesToRemove array
+          setFilesToRemove([]);
+
+          console.log("Successfully deleted files marked for removal");
+        } catch (error) {
+          console.error("Error deleting files:", error);
+          alert("Some files could not be deleted. You can try again later.");
         }
       }
 

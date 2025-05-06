@@ -14,8 +14,13 @@ interface PlaceOfBusinessData {
 interface PlaceOfBusinessSectionProps {
   data: PlaceOfBusinessData;
   onFileChange: (name: string, file: File | null) => void;
-  uploadStatus?: Record<string, { success: boolean; message: string }>;
+  uploadStatus?: Record<
+    string,
+    { success: boolean; message: string; key?: string; url?: string }
+  >;
   isUploading?: boolean;
+  fileUrls?: Record<string, { key: string; url: string }>;
+  onFileRemove?: (name: string, key: string) => void;
 }
 
 export default function PlaceOfBusinessSection({
@@ -23,6 +28,8 @@ export default function PlaceOfBusinessSection({
   onFileChange,
   uploadStatus = {},
   isUploading = false,
+  fileUrls = {},
+  onFileRemove,
 }: PlaceOfBusinessSectionProps) {
   // Icon for the section
   const icon = (
@@ -59,6 +66,9 @@ export default function PlaceOfBusinessSection({
           onFileChange={onFileChange}
           uploadStatus={uploadStatus?.rentalAgreement}
           isUploading={isUploading}
+          existingFileUrl={fileUrls?.rentalAgreement?.url || ""}
+          existingFileKey={fileUrls?.rentalAgreement?.key || ""}
+          onFileRemove={onFileRemove}
         />
 
         <FileUploadField
@@ -69,6 +79,9 @@ export default function PlaceOfBusinessSection({
           onFileChange={onFileChange}
           uploadStatus={uploadStatus?.ebBillPropertyTax}
           isUploading={isUploading}
+          existingFileUrl={fileUrls?.ebBillPropertyTax?.url || ""}
+          existingFileKey={fileUrls?.ebBillPropertyTax?.key || ""}
+          onFileRemove={onFileRemove}
         />
 
         <FileUploadField
@@ -79,6 +92,9 @@ export default function PlaceOfBusinessSection({
           onFileChange={onFileChange}
           uploadStatus={uploadStatus?.saleDeedConcerned}
           isUploading={isUploading}
+          existingFileUrl={fileUrls?.saleDeedConcerned?.url || ""}
+          existingFileKey={fileUrls?.saleDeedConcerned?.key || ""}
+          onFileRemove={onFileRemove}
         />
 
         <FileUploadField
@@ -89,6 +105,9 @@ export default function PlaceOfBusinessSection({
           onFileChange={onFileChange}
           uploadStatus={uploadStatus?.consentLetter}
           isUploading={isUploading}
+          existingFileUrl={fileUrls?.consentLetter?.url || ""}
+          existingFileKey={fileUrls?.consentLetter?.key || ""}
+          onFileRemove={onFileRemove}
         />
       </div>
     </FormSection>

@@ -522,17 +522,53 @@ export default function PersonalInfoTab({
             // If we have a submission ID, update the submission with file URLs
             if (submissionId) {
               try {
-                await fetch(`/api/submissions/${submissionId}`, {
-                  method: "PUT",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    fileUrls: fileUploadResults,
-                    status: "draft",
-                  }),
-                });
-                console.log("Updated submission with file URLs:", submissionId);
+                // First fetch the existing submission to get current fileUrls
+                const existingSubmissionResponse = await fetch(
+                  `/api/submissions/${submissionId}`
+                );
+                if (existingSubmissionResponse.ok) {
+                  const existingSubmission =
+                    await existingSubmissionResponse.json();
+                  const existingFileUrls = existingSubmission.fileUrls || {};
+
+                  // Merge existing fileUrls with new ones
+                  const mergedFileUrls = {
+                    ...existingFileUrls,
+                    ...fileUploadResults,
+                  };
+
+                  // Update the submission with merged fileUrls
+                  await fetch(`/api/submissions/${submissionId}`, {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      fileUrls: mergedFileUrls,
+                      status: "draft",
+                    }),
+                  });
+                  console.log(
+                    "Updated submission with merged file URLs:",
+                    submissionId
+                  );
+                } else {
+                  // If we can't fetch the existing submission, just update with new fileUrls
+                  await fetch(`/api/submissions/${submissionId}`, {
+                    method: "PUT",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      fileUrls: fileUploadResults,
+                      status: "draft",
+                    }),
+                  });
+                  console.log(
+                    "Updated submission with file URLs:",
+                    submissionId
+                  );
+                }
               } catch (error) {
                 console.error(
                   "Error updating submission with file URLs:",

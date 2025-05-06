@@ -182,7 +182,15 @@ export async function PUT(request: NextRequest) {
 
     // Only include fileUrls in the update if they are provided
     if (fileUrls) {
-      updateData.fileUrls = fileUrls;
+      // Get the existing submission to merge fileUrls
+      const existingSubmission = await submissions.findOne({
+        _id: new ObjectId(id),
+        userId,
+      });
+
+      // Merge new fileUrls with existing ones (if any)
+      const existingFileUrls = existingSubmission?.fileUrls || {};
+      updateData.fileUrls = { ...existingFileUrls, ...fileUrls };
     }
 
     const result = await submissions.updateOne(

@@ -51,6 +51,7 @@ export default function EditSubmissionPage() {
 
   // Fetch submission details
   const fetchSubmission = async () => {
+    console.log("XYZ Fetched submission data:", submissionId);
     try {
       setIsLoading(true);
       setError(null);
@@ -128,6 +129,7 @@ export default function EditSubmissionPage() {
 
   // Handle save
   const handleSave = async () => {
+    alert("XYZ Submission updated successfully!");
     try {
       // Validate form data
       if (!validateForm()) {
@@ -144,6 +146,7 @@ export default function EditSubmissionPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          id: submissionId, // Include the ID in the request body
           formData: formData,
           fileUrls: formData.fileUrls, // Explicitly include fileUrls
         }),

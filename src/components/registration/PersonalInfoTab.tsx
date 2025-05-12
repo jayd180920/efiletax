@@ -9,6 +9,8 @@ import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
 import IndividualFilePreview from "./IndividualFilePreview";
 import { uploadMultipleFilesToS3, deleteFileFromS3 } from "@/lib/s3-client";
 
+import { useRouter, useParams } from "next/navigation";
+
 interface PersonalInfoTabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
@@ -76,6 +78,7 @@ export default function PersonalInfoTab({
   formData,
   updateFormData,
 }: PersonalInfoTabProps) {
+  const params = useParams();
   console.log(" Rendering PersonalInfoTab...", serviceUniqueId);
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
@@ -169,6 +172,10 @@ export default function PersonalInfoTab({
   const fetchSubmissionData = useCallback(async (submissionId: string) => {
     try {
       const response = await fetch(`/api/submissions/${submissionId}`);
+      console.log(
+        " abcd Fetching submission data for PersonalInfoTab... response",
+        response
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch submission data");
       }
@@ -184,16 +191,19 @@ export default function PersonalInfoTab({
   useEffect(() => {
     const getSubmissionData = async () => {
       // Check if we have a submission ID
-      const submissionId =
-        typeof window !== "undefined" &&
-        window.formData &&
-        window.formData.submissionId
-          ? window.formData.submissionId
-          : null;
-
+      const submissionId: any = params.id || null;
+      console.log("123456 Fetching submission data for PersonalInfoTab...");
+      console.log(
+        "123456 Fetching submission data for PersonalInfoTab...",
+        window.formData,
+        submissionId
+      );
       if (submissionId && activeTab === "personal-info") {
-        console.log("Fetching submission data for PersonalInfoTab...");
         const data = await fetchSubmissionData(submissionId);
+        console.log(
+          "jbdkjbDKJsdb Fetching submission data for PersonalInfoTab...",
+          data
+        );
         if (data && data.formData) {
           // Update state with data from the database
           if (data.formData.permanentInfo) {
@@ -419,16 +429,11 @@ export default function PersonalInfoTab({
         };
 
         // Check if we have a submission ID from a previous save
-        const submissionId =
-          typeof window !== "undefined" &&
-          window.formData &&
-          window.formData.submissionId
-            ? window.formData.submissionId
-            : null;
+        const submissionId = params.id || null;
 
         let response;
         let result;
-
+        console.log("XYZ Submission ID:", submissionId);
         if (submissionId) {
           // Update existing submission
           response = await fetch(`/api/submissions/${submissionId}`, {
@@ -437,6 +442,7 @@ export default function PersonalInfoTab({
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
+              id: submissionId, // Include the ID in the request body
               formData: formDataToSubmit,
               status: "draft",
               fileUrls: fileUploadResults, // Include file URLs in the submission
@@ -450,6 +456,7 @@ export default function PersonalInfoTab({
           result = await response.json();
           console.log("Updated existing submission:", submissionId);
         } else {
+          console.log("XYZ Create NEW", submissionId);
           // Create new submission
           response = await fetch("/api/submissions", {
             method: "POST",
@@ -484,6 +491,7 @@ export default function PersonalInfoTab({
 
         // Update parent component's state with form data and submission ID
         if (updateFormData) {
+          console.log("Updating the  submission:", result.id);
           updateFormData({
             ...formDataToSubmit,
             fileUrls: fileUploadResults,
@@ -491,7 +499,7 @@ export default function PersonalInfoTab({
           });
         }
 
-        alert("Form data saved successfully!");
+        alert("Form data saved successfully! 5555");
       } catch (error) {
         console.error("Error saving form data:", error);
         alert("Failed to save form data. Please try again.");
@@ -555,12 +563,7 @@ export default function PersonalInfoTab({
             });
 
             // Get the submission ID if it exists
-            const submissionId =
-              typeof window !== "undefined" &&
-              window.formData &&
-              window.formData.submissionId
-                ? window.formData.submissionId
-                : null;
+            const submissionId: any = params.id || null;
 
             // If we have a submission ID, update the submission with file URLs
             if (submissionId) {
@@ -587,6 +590,7 @@ export default function PersonalInfoTab({
                       "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
+                      id: submissionId, // Include the ID in the request body
                       fileUrls: mergedFileUrls,
                       status: "draft",
                     }),
@@ -603,6 +607,7 @@ export default function PersonalInfoTab({
                       "Content-Type": "application/json",
                     },
                     body: JSON.stringify({
+                      id: submissionId, // Include the ID in the request body
                       fileUrls: fileUploadResults,
                       status: "draft",
                     }),

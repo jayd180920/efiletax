@@ -62,6 +62,7 @@ export default function TaxSummaryTab({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          id: submissionId, // Include the ID in the request body
           formData: formData || {},
           status: "draft",
         }),
@@ -72,7 +73,7 @@ export default function TaxSummaryTab({
       }
 
       console.log("Updated existing submission:", submissionId);
-      alert("Form data saved successfully!");
+      alert("Form data saved successfully! 6666");
     } catch (error) {
       console.error("Error saving form data:", error);
       alert("Failed to save form data. Please try again.");
@@ -125,6 +126,7 @@ export default function TaxSummaryTab({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
+          id: submissionId, // Include the ID in the request body
           formData: formData || {},
           status: "completed",
         }),

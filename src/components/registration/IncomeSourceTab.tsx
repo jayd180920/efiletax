@@ -9,6 +9,7 @@ declare global {
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { uploadMultipleFilesToS3, deleteFileFromS3 } from "@/lib/s3-client";
+import { useRouter, useParams } from "next/navigation";
 import BusinessKYC from "./BusinessKYC";
 import MonthlyFiling from "./MonthlyFiling";
 import AnnualReturn from "./AnnualReturn";
@@ -117,6 +118,7 @@ export default function IncomeSourceTab({
   formData,
   updateFormData,
 }: IncomeSourceTabProps) {
+  const params = useParams();
   console.log(
     " Rendering IncomeSourceTab with serviceUniqueId:",
     serviceUniqueId
@@ -274,12 +276,7 @@ export default function IncomeSourceTab({
   useEffect(() => {
     const getSubmissionData = async () => {
       // Check if we have a submission ID
-      const submissionId =
-        typeof window !== "undefined" &&
-        window.formData &&
-        window.formData.submissionId
-          ? window.formData.submissionId
-          : null;
+      const submissionId: any = params.id || null;
 
       if (submissionId && activeTab === "income-source") {
         console.log("Fetching submission data for IncomeSourceTab...");
@@ -660,12 +657,7 @@ export default function IncomeSourceTab({
       }
 
       // Check if we have a submission ID from a previous save
-      const submissionId =
-        typeof window !== "undefined" &&
-        window.formData &&
-        window.formData.submissionId
-          ? window.formData.submissionId
-          : null;
+      const submissionId = params.id || null;
 
       if (submissionId) {
         // Update existing submission
@@ -675,6 +667,7 @@ export default function IncomeSourceTab({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
+            id: submissionId, // Include the ID in the request body
             formData: data,
             status: "draft",
             fileUrls: fileUploadResults, // Include file URLs in the submission
@@ -687,7 +680,7 @@ export default function IncomeSourceTab({
 
         const result = await response.json();
         console.log("Updated existing submission:", submissionId);
-        alert("Form data saved successfully!");
+        alert("Form data saved successfully! 3333");
       } else {
         // Create new submission
         const response = await fetch("/api/submissions", {
@@ -719,7 +712,7 @@ export default function IncomeSourceTab({
         }
 
         console.log("Created new submission:", result.id);
-        alert("Form data saved successfully!");
+        alert("Form data saved successfully! 4444");
       }
 
       // Update parent component if needed
@@ -793,12 +786,7 @@ export default function IncomeSourceTab({
           });
 
           // Get the submission ID if it exists
-          const submissionId =
-            typeof window !== "undefined" &&
-            window.formData &&
-            window.formData.submissionId
-              ? window.formData.submissionId
-              : null;
+          const submissionId = params.id || null;
 
           // If we have a submission ID, update the submission with file URLs
           if (submissionId) {
@@ -825,6 +813,7 @@ export default function IncomeSourceTab({
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
+                    id: submissionId, // Include the ID in the request body
                     fileUrls: mergedFileUrls,
                     status: "draft",
                   }),
@@ -841,6 +830,7 @@ export default function IncomeSourceTab({
                     "Content-Type": "application/json",
                   },
                   body: JSON.stringify({
+                    id: submissionId, // Include the ID in the request body
                     fileUrls: fileUploadResults,
                     status: "draft",
                   }),
@@ -932,12 +922,7 @@ export default function IncomeSourceTab({
         }
 
         // Get the submission ID if it exists
-        const submissionId =
-          typeof window !== "undefined" &&
-          window.formData &&
-          window.formData.submissionId
-            ? window.formData.submissionId
-            : null;
+        const submissionId = params.id || null;
 
         // Update parent component's state with form data and submission ID
         if (updateFormData) {

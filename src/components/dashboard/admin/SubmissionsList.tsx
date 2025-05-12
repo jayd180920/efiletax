@@ -263,22 +263,30 @@ const SubmissionsList = () => {
                       Amount: {formatCurrency(submission.amount)}
                     </p>
                   </div>
-                  {submission.status === "pending" && (
-                    <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-2">
-                      <button
-                        onClick={() => openActionModal(submission, "approve")}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => openActionModal(submission, "reject")}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-2">
+                    {submission.status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => openActionModal(submission, "approve")}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => openActionModal(submission, "reject")}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    <Link
+                      href={`/dashboard/admin/submissions/${submission._id}/edit`}
+                      className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                      Edit
+                    </Link>
+                  </div>
                 </div>
               </div>
             </li>

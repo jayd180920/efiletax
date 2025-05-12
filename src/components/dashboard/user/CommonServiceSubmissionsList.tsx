@@ -266,7 +266,7 @@ const CommonServiceSubmissionsList = () => {
                       href={`/dashboard/user/submissions/${submission._id}`}
                       className="text-blue-600 hover:text-blue-900"
                     >
-                      View Details
+                      View Details 123
                     </Link>
                   </td>
                 </tr>

@@ -100,7 +100,7 @@ export default function PlaceOfBusinessSection({
         <FileUploadField
           id="consentLetter"
           name="consentLetter"
-          label="Consent Letter"
+          label="Consent Letter 123"
           file={data.consentLetter}
           onFileChange={onFileChange}
           uploadStatus={uploadStatus?.consentLetter}

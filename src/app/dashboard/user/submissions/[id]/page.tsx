@@ -37,18 +37,9 @@ export default function SubmissionDetailsPage() {
         const data = await getSubmission(submissionId);
         setSubmission(data);
 
-        // Generate signed URLs for files if they exist
+        // Set file URLs directly from submission data
         if (data.files && Object.keys(data.files).length > 0) {
-          const urls: Record<string, string[]> = {};
-
-          for (const [fieldName, fileUrls] of Object.entries(data.files)) {
-            // Ensure fileUrls is an array of strings
-            urls[fieldName] = Array.isArray(fileUrls)
-              ? fileUrls.map((url) => String(url))
-              : [String(fileUrls)];
-          }
-
-          setFileUrls(urls);
+          setFileUrls(data.files);
         }
       } catch (err: any) {
         setError(err.message || "Failed to fetch submission details");
@@ -276,9 +267,49 @@ export default function SubmissionDetailsPage() {
               <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
                 <ul className="border border-gray-200 rounded-md divide-y divide-gray-200">
                   {Object.entries(fileUrls).map(([fieldName, urls]) =>
-                    urls.map((url, index) => (
+                    Array.isArray(urls) ? (
+                      // Handle array of URLs
+                      urls.map((url, index) => (
+                        <li
+                          key={`${fieldName}-${index}`}
+                          className="pl-3 pr-4 py-3 flex items-center justify-between text-sm"
+                        >
+                          <div className="w-0 flex-1 flex items-center">
+                            <svg
+                              className="flex-shrink-0 h-5 w-5 text-gray-400"
+                              xmlns="http://www.w3.org/2000/svg"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                              aria-hidden="true"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <span className="ml-2 flex-1 w-0 truncate">
+                              {`${fieldName} - ${getFilenameFromUrl(url)}`}
+                            </span>
+                          </div>
+                          <div className="ml-4 flex-shrink-0">
+                            <a
+                              href={`/api/s3/download?key=${encodeURIComponent(
+                                url
+                              )}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-medium text-blue-600 hover:text-blue-500"
+                            >
+                              Download
+                            </a>
+                          </div>
+                        </li>
+                      ))
+                    ) : (
+                      // Handle object with key and url properties
                       <li
-                        key={`${fieldName}-${index}`}
+                        key={fieldName}
                         className="pl-3 pr-4 py-3 flex items-center justify-between text-sm"
                       >
                         <div className="w-0 flex-1 flex items-center">
@@ -296,12 +327,16 @@ export default function SubmissionDetailsPage() {
                             />
                           </svg>
                           <span className="ml-2 flex-1 w-0 truncate">
-                            {`${fieldName} - ${getFilenameFromUrl(url)}`}
+                            {`${fieldName} - ${getFilenameFromUrl(
+                              (urls as any).url || ""
+                            )}`}
                           </span>
                         </div>
                         <div className="ml-4 flex-shrink-0">
                           <a
-                            href={url}
+                            href={`/api/s3/download?key=${encodeURIComponent(
+                              (urls as any).key || ""
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-medium text-blue-600 hover:text-blue-500"
@@ -310,7 +345,7 @@ export default function SubmissionDetailsPage() {
                           </a>
                         </div>
                       </li>
-                    ))
+                    )
                   )}
                 </ul>
               </dd>

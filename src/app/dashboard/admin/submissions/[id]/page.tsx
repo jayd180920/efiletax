@@ -429,37 +429,77 @@ export default function SubmissionDetailPage({
                                 .replace(/^\w/, (c) => c.toUpperCase())}
                             </h4>
                             <ul className="space-y-2">
-                              {files.map((file, index) => {
-                                const fileName = file.split("/").pop() || file;
-                                return (
-                                  <li key={index} className="flex items-center">
-                                    <svg
-                                      className="h-5 w-5 text-gray-400 mr-2"
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
+                              {Array.isArray(files) ? (
+                                // Handle array of file paths or URLs
+                                files.map((file, index) => {
+                                  const fileName =
+                                    file.split("/").pop() || file;
+                                  return (
+                                    <li
+                                      key={index}
+                                      className="flex items-center"
                                     >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                      />
-                                    </svg>
-                                    <a
-                                      href={`/api/s3/download?key=${encodeURIComponent(
-                                        file
-                                      )}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-sm text-blue-600 hover:text-blue-800"
-                                    >
-                                      {fileName}
-                                    </a>
-                                  </li>
-                                );
-                              })}
+                                      <svg
+                                        className="h-5 w-5 text-gray-400 mr-2"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                        />
+                                      </svg>
+                                      <a
+                                        href={`/api/s3/download?key=${encodeURIComponent(
+                                          file
+                                        )}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-blue-600 hover:text-blue-800"
+                                      >
+                                        {fileName}
+                                      </a>
+                                    </li>
+                                  );
+                                })
+                              ) : (
+                                // Handle object with key and url properties
+                                <li className="flex items-center">
+                                  <svg
+                                    className="h-5 w-5 text-gray-400 mr-2"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                                    />
+                                  </svg>
+                                  <a
+                                    href={
+                                      (files as any).url ||
+                                      `/api/s3/download?key=${encodeURIComponent(
+                                        (files as any).key || ""
+                                      )}`
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:text-blue-800"
+                                  >
+                                    {((files as any).key || "")
+                                      .split("/")
+                                      .pop() || "File"}
+                                  </a>
+                                </li>
+                              )}
                             </ul>
                           </div>
                         )

@@ -6,6 +6,7 @@ import PermanentInfoSection from "./PermanentInfoSection";
 import AddressSection from "./AddressSection";
 import BankDetailsSection from "./BankDetailsSection";
 import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
+import IndividualFilePreview from "./IndividualFilePreview";
 import { uploadMultipleFilesToS3, deleteFileFromS3 } from "@/lib/s3-client";
 
 interface PersonalInfoTabProps {
@@ -75,6 +76,7 @@ export default function PersonalInfoTab({
   formData,
   updateFormData,
 }: PersonalInfoTabProps) {
+  console.log(" Rendering PersonalInfoTab...", serviceUniqueId);
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
 
@@ -695,16 +697,85 @@ export default function PersonalInfoTab({
       /> */}
 
       {/* Only show PlaceOfBusinessSection for new_registration service */}
+      {JSON.stringify(fileUrls)}
       {serviceUniqueId === "new_registration" && (
-        <PlaceOfBusinessSection
-          data={placeOfBusiness}
-          onFileChange={handleFileChange}
-          uploadStatus={uploadStatus}
-          isUploading={isUploading}
-          fileUrls={fileUrls}
-          onFileRemove={handleFileRemove}
-        />
+        <>
+          <PlaceOfBusinessSection
+            data={placeOfBusiness}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+
+          {/* Individual file previews for Place of Business files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["rentalAgreement"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Rental Agreement
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["rentalAgreement"].url}
+                  fileName={
+                    fileUrls["rentalAgreement"].key.split("/").pop() ||
+                    "Rental Agreement"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["ebBillPropertyTax"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  EB Bill / Property Tax
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["ebBillPropertyTax"].url}
+                  fileName={
+                    fileUrls["ebBillPropertyTax"].key.split("/").pop() ||
+                    "EB Bill / Property Tax"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["saleDeedConcerned"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Sale Deed
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["saleDeedConcerned"].url}
+                  fileName={
+                    fileUrls["saleDeedConcerned"].key.split("/").pop() ||
+                    "Sale Deed"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["consentLetter"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Consent Letter 123 {fileUrls["consentLetter"].url}
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["consentLetter"].url}
+                  fileName={
+                    fileUrls["consentLetter"].key.split("/").pop() ||
+                    "Consent Letter"
+                  }
+                  fileType=""
+                />
+              </div>
+            )}
+          </div>
+        </>
       )}
+
+      {/* Removed separate section for uploaded files preview as per requirements */}
 
       <div className="flex justify-end space-x-4 mt-6">
         <button

@@ -17,6 +17,8 @@ import ClaimGSTRefund from "./ClaimGSTRefund";
 import GSTClosure from "./GSTClosure";
 import GSTAmendment from "./GSTAmendment";
 import GSTEWaybill from "./GSTEWaybill";
+import FilePreviewSection from "./FilePreviewSection";
+import IndividualFilePreview from "./IndividualFilePreview";
 
 interface IncomeSourceTabProps {
   activeTab: string;
@@ -97,6 +99,11 @@ interface IncomeSourceTabProps {
     gstEWaybillData?: {
       eWaybillDocFile: File | null;
     };
+    // Additional fields for general financial details
+    annualIncome?: string;
+    incomeSource?: string;
+    financialYear?: string;
+    additionalNotes?: string;
     files?: Record<string, File | null>;
     fileUrls?: Record<string, { key: string; url: string }>;
   };
@@ -110,6 +117,10 @@ export default function IncomeSourceTab({
   formData,
   updateFormData,
 }: IncomeSourceTabProps) {
+  console.log(
+    " Rendering IncomeSourceTab with serviceUniqueId:",
+    serviceUniqueId
+  );
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
   // State for MonthlyFiling component
@@ -285,56 +296,82 @@ export default function IncomeSourceTab({
           setTab2Data(personalInfoData);
 
           // Update service-specific data based on serviceUniqueId
-          if (
-            data.formData.businessKYCData &&
-            serviceUniqueId === "new_registration"
-          ) {
-            setBusinessKYCData(data.formData.businessKYCData);
+          if (serviceUniqueId === "new_registration") {
+            if (data.formData.businessKYCData) {
+              console.log(
+                "Setting businessKYCData:",
+                data.formData.businessKYCData
+              );
+              setBusinessKYCData(data.formData.businessKYCData);
+            }
+          } else if (serviceUniqueId === "monthly_filing") {
+            if (data.formData.monthlyFilingData) {
+              console.log(
+                "Setting monthlyFilingData:",
+                data.formData.monthlyFilingData
+              );
+              setMonthlyFilingData(data.formData.monthlyFilingData);
+            }
+          } else if (serviceUniqueId === "annual_return") {
+            if (data.formData.annualReturnData) {
+              console.log(
+                "Setting annualReturnData:",
+                data.formData.annualReturnData
+              );
+              setAnnualReturnData(data.formData.annualReturnData);
+            }
+          } else if (serviceUniqueId === "gst_e_invoice") {
+            if (data.formData.gstEInvoiceData) {
+              console.log(
+                "Setting gstEInvoiceData:",
+                data.formData.gstEInvoiceData
+              );
+              setGstEInvoiceData(data.formData.gstEInvoiceData);
+            }
+          } else if (serviceUniqueId === "claim_gst_refund") {
+            if (data.formData.claimGSTRefundData) {
+              console.log(
+                "Setting claimGSTRefundData:",
+                data.formData.claimGSTRefundData
+              );
+              setClaimGSTRefundData(data.formData.claimGSTRefundData);
+            }
+          } else if (serviceUniqueId === "gst_closure") {
+            if (data.formData.gstClosureData) {
+              console.log(
+                "Setting gstClosureData:",
+                data.formData.gstClosureData
+              );
+              setGSTClosureData(data.formData.gstClosureData);
+            }
+          } else if (serviceUniqueId === "gst_amendment") {
+            if (data.formData.gstAmendmentData) {
+              console.log(
+                "Setting gstAmendmentData:",
+                data.formData.gstAmendmentData
+              );
+              setGSTAmendmentData(data.formData.gstAmendmentData);
+            }
+          } else if (serviceUniqueId === "gst_e_waybill") {
+            if (data.formData.gstEWaybillData) {
+              console.log(
+                "Setting gstEWaybillData:",
+                data.formData.gstEWaybillData
+              );
+              setGSTEWaybillData(data.formData.gstEWaybillData);
+            }
           }
-          if (
-            data.formData.monthlyFilingData &&
-            serviceUniqueId === "monthly_filing"
-          ) {
-            setMonthlyFilingData(data.formData.monthlyFilingData);
-          }
-          if (
-            data.formData.annualReturnData &&
-            serviceUniqueId === "annual_return"
-          ) {
-            setAnnualReturnData(data.formData.annualReturnData);
-          }
-          if (
-            data.formData.gstEInvoiceData &&
-            serviceUniqueId === "gst_e_invoice"
-          ) {
-            setGstEInvoiceData(data.formData.gstEInvoiceData);
-          }
-          if (
-            data.formData.claimGSTRefundData &&
-            serviceUniqueId === "claim_gst_refund"
-          ) {
-            setClaimGSTRefundData(data.formData.claimGSTRefundData);
-          }
-          if (
-            data.formData.gstClosureData &&
-            serviceUniqueId === "gst_closure"
-          ) {
-            setGSTClosureData(data.formData.gstClosureData);
-          }
-          if (
-            data.formData.gstAmendmentData &&
-            serviceUniqueId === "gst_amendment"
-          ) {
-            setGSTAmendmentData(data.formData.gstAmendmentData);
-          }
-          if (
-            data.formData.gstEWaybillData &&
-            serviceUniqueId === "gst_e_waybill"
-          ) {
-            setGSTEWaybillData(data.formData.gstEWaybillData);
-          }
+
+          // Set files data if available
           if (data.formData.files) {
+            console.log("Setting files data:", data.formData.files);
             setFiles(data.formData.files);
+          }
+
+          // Set file URLs if available
+          if (data.fileUrls) {
+            console.log("Setting file URLs:", data.fileUrls);
+            setFileUrls(data.fileUrls);
           }
         }
       }
@@ -346,35 +383,85 @@ export default function IncomeSourceTab({
   // Update local state when formData props change
   useEffect(() => {
     if (isMounted.current && formData) {
-      if (formData.businessKYCData && serviceUniqueId === "new_registration") {
-        setBusinessKYCData(formData.businessKYCData);
+      console.log("formData props changed:", formData);
+      console.log("Current serviceUniqueId:", serviceUniqueId);
+
+      if (serviceUniqueId === "new_registration") {
+        if (formData.businessKYCData) {
+          console.log(
+            "Setting businessKYCData from props:",
+            formData.businessKYCData
+          );
+          setBusinessKYCData(formData.businessKYCData);
+        }
+      } else if (serviceUniqueId === "monthly_filing") {
+        if (formData.monthlyFilingData) {
+          console.log(
+            "Setting monthlyFilingData from props:",
+            formData.monthlyFilingData
+          );
+          setMonthlyFilingData(formData.monthlyFilingData);
+        }
+      } else if (serviceUniqueId === "annual_return") {
+        if (formData.annualReturnData) {
+          console.log(
+            "Setting annualReturnData from props:",
+            formData.annualReturnData
+          );
+          setAnnualReturnData(formData.annualReturnData);
+        }
+      } else if (serviceUniqueId === "gst_e_invoice") {
+        if (formData.gstEInvoiceData) {
+          console.log(
+            "Setting gstEInvoiceData from props:",
+            formData.gstEInvoiceData
+          );
+          setGstEInvoiceData(formData.gstEInvoiceData);
+        }
+      } else if (serviceUniqueId === "claim_gst_refund") {
+        if (formData.claimGSTRefundData) {
+          console.log(
+            "Setting claimGSTRefundData from props:",
+            formData.claimGSTRefundData
+          );
+          setClaimGSTRefundData(formData.claimGSTRefundData);
+        }
+      } else if (serviceUniqueId === "gst_closure") {
+        if (formData.gstClosureData) {
+          console.log(
+            "Setting gstClosureData from props:",
+            formData.gstClosureData
+          );
+          setGSTClosureData(formData.gstClosureData);
+        }
+      } else if (serviceUniqueId === "gst_amendment") {
+        if (formData.gstAmendmentData) {
+          console.log(
+            "Setting gstAmendmentData from props:",
+            formData.gstAmendmentData
+          );
+          setGSTAmendmentData(formData.gstAmendmentData);
+        }
+      } else if (serviceUniqueId === "gst_e_waybill") {
+        if (formData.gstEWaybillData) {
+          console.log(
+            "Setting gstEWaybillData from props:",
+            formData.gstEWaybillData
+          );
+          setGSTEWaybillData(formData.gstEWaybillData);
+        }
       }
-      if (formData.monthlyFilingData && serviceUniqueId === "monthly_filing") {
-        setMonthlyFilingData(formData.monthlyFilingData);
-      }
-      if (formData.annualReturnData && serviceUniqueId === "annual_return") {
-        setAnnualReturnData(formData.annualReturnData);
-      }
-      if (formData.gstEInvoiceData && serviceUniqueId === "gst_e_invoice") {
-        setGstEInvoiceData(formData.gstEInvoiceData);
-      }
-      if (
-        formData.claimGSTRefundData &&
-        serviceUniqueId === "claim_gst_refund"
-      ) {
-        setClaimGSTRefundData(formData.claimGSTRefundData);
-      }
-      if (formData.gstClosureData && serviceUniqueId === "gst_closure") {
-        setGSTClosureData(formData.gstClosureData);
-      }
-      if (formData.gstAmendmentData && serviceUniqueId === "gst_amendment") {
-        setGSTAmendmentData(formData.gstAmendmentData);
-      }
-      if (formData.gstEWaybillData && serviceUniqueId === "gst_e_waybill") {
-        setGSTEWaybillData(formData.gstEWaybillData);
-      }
+
+      // Set files data if available
       if (formData.files) {
+        console.log("Setting files from props:", formData.files);
         setFiles(formData.files);
+      }
+
+      // Set file URLs if available
+      if (formData.fileUrls) {
+        console.log("Setting fileUrls from props:", formData.fileUrls);
+        setFileUrls(formData.fileUrls);
       }
     }
   }, [formData, serviceUniqueId]);
@@ -891,56 +978,559 @@ export default function IncomeSourceTab({
     <div className="space-y-6">
       {serviceUniqueId === "new_registration" ? (
         // Show BusinessKYC for new_registration service
-        <BusinessKYC
-          data={businessKYCData}
-          onChange={setBusinessKYCData}
-          onFileChange={handleFileChange}
-        />
+        <>
+          <BusinessKYC
+            data={businessKYCData}
+            onChange={setBusinessKYCData}
+            onFileChange={handleFileChange}
+          />
+
+          {/* Individual file previews for BusinessKYC files */}
+          <div className="mt-4 space-y-4">
+            {businessKYCData.businessType === "proprietor" && (
+              <>
+                {fileUrls["proprietorAadharFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Proprietor Aadhar
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["proprietorAadharFile"].url}
+                      fileName={
+                        fileUrls["proprietorAadharFile"].key.split("/").pop() ||
+                        "Proprietor Aadhar"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["proprietorPanFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Proprietor PAN
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["proprietorPanFile"].url}
+                      fileName={
+                        fileUrls["proprietorPanFile"].key.split("/").pop() ||
+                        "Proprietor PAN"
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
+
+            {businessKYCData.businessType === "partnership" && (
+              <>
+                {fileUrls["authorizationLetterFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Authorization Letter
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["authorizationLetterFile"].url}
+                      fileName={
+                        fileUrls["authorizationLetterFile"].key
+                          .split("/")
+                          .pop() || "Authorization Letter"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["partnershipDeedFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Partnership Deed
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["partnershipDeedFile"].url}
+                      fileName={
+                        fileUrls["partnershipDeedFile"].key.split("/").pop() ||
+                        "Partnership Deed"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["firmPanFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Firm PAN
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["firmPanFile"].url}
+                      fileName={
+                        fileUrls["firmPanFile"].key.split("/").pop() ||
+                        "Firm PAN"
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "monthly_filing" ? (
         // Show MonthlyFiling for monthly_filing service
-        <MonthlyFiling
-          data={monthlyFilingData}
-          onFileChange={handleFileChange}
-        />
+        <>
+          <MonthlyFiling
+            data={monthlyFilingData}
+            onFileChange={handleFileChange}
+          />
+
+          {/* Individual file previews for MonthlyFiling files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["salesInvoiceFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Sales Invoice
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["salesInvoiceFile"].url}
+                  fileName={
+                    fileUrls["salesInvoiceFile"].key.split("/").pop() ||
+                    "Sales Invoice"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["purchaseInvoiceFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Purchase Invoice
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["purchaseInvoiceFile"].url}
+                  fileName={
+                    fileUrls["purchaseInvoiceFile"].key.split("/").pop() ||
+                    "Purchase Invoice"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["bankStatementFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Bank Statement
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["bankStatementFile"].url}
+                  fileName={
+                    fileUrls["bankStatementFile"].key.split("/").pop() ||
+                    "Bank Statement"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "annual_return" ? (
         // Show AnnualReturn for annual_return service
-        <AnnualReturn
-          data={annualReturnData}
-          onChange={setAnnualReturnData}
-          onFileChange={handleFileChange}
-        />
+        <>
+          <AnnualReturn
+            data={annualReturnData}
+            onChange={setAnnualReturnData}
+            onFileChange={handleFileChange}
+          />
+
+          {/* Individual file previews for AnnualReturn files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["outwardInwardSupplyFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Outward/Inward Supply
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["outwardInwardSupplyFile"].url}
+                  fileName={
+                    fileUrls["outwardInwardSupplyFile"].key.split("/").pop() ||
+                    "Outward/Inward Supply"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["taxPaymentDetailsFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Tax Payment Details
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["taxPaymentDetailsFile"].url}
+                  fileName={
+                    fileUrls["taxPaymentDetailsFile"].key.split("/").pop() ||
+                    "Tax Payment Details"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["inputTaxCreditFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Input Tax Credit
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["inputTaxCreditFile"].url}
+                  fileName={
+                    fileUrls["inputTaxCreditFile"].key.split("/").pop() ||
+                    "Input Tax Credit"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["previousYearReturnFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Previous Year Return
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["previousYearReturnFile"].url}
+                  fileName={
+                    fileUrls["previousYearReturnFile"].key.split("/").pop() ||
+                    "Previous Year Return"
+                  }
+                />
+              </div>
+            )}
+
+            {annualReturnData.gstrType === "GSTR-9C" && (
+              <>
+                {fileUrls["auditedFinancialStatementsFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Audited Financial Statements
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["auditedFinancialStatementsFile"].url}
+                      fileName={
+                        fileUrls["auditedFinancialStatementsFile"].key
+                          .split("/")
+                          .pop() || "Audited Financial Statements"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["reconciliationStatementFile"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Reconciliation Statement
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["reconciliationStatementFile"].url}
+                      fileName={
+                        fileUrls["reconciliationStatementFile"].key
+                          .split("/")
+                          .pop() || "Reconciliation Statement"
+                      }
+                    />
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "gst_e_invoice" ? (
         // Show GSTEInvoice for gst_e_invoice service
-        <GSTEInvoice data={gstEInvoiceData} onFileChange={handleFileChange} />
+        <>
+          <GSTEInvoice data={gstEInvoiceData} onFileChange={handleFileChange} />
+
+          {/* Individual file previews for GSTEInvoice files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["eInvoiceDocumentsFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  E-Invoice Documents
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["eInvoiceDocumentsFile"].url}
+                  fileName={
+                    fileUrls["eInvoiceDocumentsFile"].key.split("/").pop() ||
+                    "E-Invoice Documents"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "claim_gst_refund" ? (
         // Show ClaimGSTRefund for claim_gst_refund service
-        <ClaimGSTRefund
-          data={claimGSTRefundData}
-          onFileChange={handleFileChange}
-        />
+        <>
+          <ClaimGSTRefund
+            data={claimGSTRefundData}
+            onFileChange={handleFileChange}
+          />
+
+          {/* Individual file previews for ClaimGSTRefund files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["salesInvoiceFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Sales Invoice
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["salesInvoiceFile"].url}
+                  fileName={
+                    fileUrls["salesInvoiceFile"].key.split("/").pop() ||
+                    "Sales Invoice"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["purchaseInvoiceFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Purchase Invoice
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["purchaseInvoiceFile"].url}
+                  fileName={
+                    fileUrls["purchaseInvoiceFile"].key.split("/").pop() ||
+                    "Purchase Invoice"
+                  }
+                />
+              </div>
+            )}
+
+            {fileUrls["annexureBFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Annexure B
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["annexureBFile"].url}
+                  fileName={
+                    fileUrls["annexureBFile"].key.split("/").pop() ||
+                    "Annexure B"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "gst_closure" ? (
         // Show GSTClosure for gst_closure service
-        <GSTClosure data={gstClosureData} onFileChange={handleFileChange} />
+        <>
+          <GSTClosure data={gstClosureData} onFileChange={handleFileChange} />
+
+          {/* Individual file previews for GSTClosure files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["closureDocFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Closure Document
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["closureDocFile"].url}
+                  fileName={
+                    fileUrls["closureDocFile"].key.split("/").pop() ||
+                    "Closure Document"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "gst_amendment" ? (
         // Show GSTAmendment for gst_amendment service
-        <GSTAmendment data={gstAmendmentData} onFileChange={handleFileChange} />
+        <>
+          <GSTAmendment
+            data={gstAmendmentData}
+            onFileChange={handleFileChange}
+          />
+
+          {/* Individual file previews for GSTAmendment files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["amendmentDocFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  Amendment Document
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["amendmentDocFile"].url}
+                  fileName={
+                    fileUrls["amendmentDocFile"].key.split("/").pop() ||
+                    "Amendment Document"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </>
       ) : serviceUniqueId === "gst_e_waybill" ? (
         // Show GSTEWaybill for gst_e_waybill service
-        <GSTEWaybill data={gstEWaybillData} onFileChange={handleFileChange} />
-      ) : (
-        // Show Financial Details for other services
+        <>
+          <GSTEWaybill data={gstEWaybillData} onFileChange={handleFileChange} />
+
+          {/* Individual file previews for GSTEWaybill files */}
+          <div className="mt-4 space-y-4">
+            {fileUrls["eWaybillDocFile"] && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">
+                  E-Waybill Document
+                </h4>
+                <IndividualFilePreview
+                  fileUrl={fileUrls["eWaybillDocFile"].url}
+                  fileName={
+                    fileUrls["eWaybillDocFile"].key.split("/").pop() ||
+                    "E-Waybill Document"
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </>
+      ) : serviceUniqueId ? (
+        // For any other service with a serviceUniqueId, show appropriate component based on service type
         <div className="p-6 border rounded-md">
           <h3 className="text-lg font-medium mb-4">Financial Details</h3>
           <p className="text-gray-500 mb-4">
-            This section will contain financial details.
+            Please provide the financial details required for this service. 1234
           </p>
-          <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-md">
-            <p className="text-yellow-800">
-              This tab is a placeholder. The actual implementation will be done
-              in the next phase.
-            </p>
+
+          {/* Financial details form with common fields */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Annual Income
+              </label>
+              <input
+                type="number"
+                className="w-full p-2 border rounded-md"
+                placeholder="Enter your annual income"
+                value={formData?.annualIncome || ""}
+                onChange={(e) => {
+                  if (updateFormData) {
+                    updateFormData({ annualIncome: e.target.value });
+                  }
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Income Source
+              </label>
+              <select
+                className="w-full p-2 border rounded-md"
+                value={formData?.incomeSource || ""}
+                onChange={(e) => {
+                  if (updateFormData) {
+                    updateFormData({ incomeSource: e.target.value });
+                  }
+                }}
+              >
+                <option value="">Select Income Source</option>
+                <option value="salary">Salary</option>
+                <option value="business">Business</option>
+                <option value="profession">Profession</option>
+                <option value="capital_gains">Capital Gains</option>
+                <option value="house_property">House Property</option>
+                <option value="other_sources">Other Sources</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Financial Year
+              </label>
+              <select
+                className="w-full p-2 border rounded-md"
+                value={formData?.financialYear || ""}
+                onChange={(e) => {
+                  if (updateFormData) {
+                    updateFormData({ financialYear: e.target.value });
+                  }
+                }}
+              >
+                <option value="">Select Financial Year</option>
+                <option value="2024-2025">2024-2025</option>
+                <option value="2023-2024">2023-2024</option>
+                <option value="2022-2023">2022-2023</option>
+                <option value="2021-2022">2021-2022</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Upload Income Proof
+              </label>
+              <div className="mt-1 flex items-center">
+                <input
+                  type="file"
+                  className="w-full p-2 border rounded-md"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    handleFileChange("incomeProofFile", file);
+                  }}
+                />
+              </div>
+              {fileUrls && fileUrls["incomeProofFile"] && (
+                <div className="mt-2 flex items-center">
+                  <span className="text-sm text-gray-500 mr-2">
+                    File uploaded:
+                  </span>
+                  <span className="text-sm text-blue-500">
+                    {fileUrls["incomeProofFile"].key.split("/").pop()}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      handleFileRemove(
+                        "incomeProofFile",
+                        fileUrls["incomeProofFile"].key
+                      )
+                    }
+                    className="ml-2 text-red-500 text-sm"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Additional Notes
+              </label>
+              <textarea
+                className="w-full p-2 border rounded-md"
+                rows={3}
+                placeholder="Any additional information about your income"
+                value={formData?.additionalNotes || ""}
+                onChange={(e) => {
+                  if (updateFormData) {
+                    updateFormData({ additionalNotes: e.target.value });
+                  }
+                }}
+              ></textarea>
+            </div>
           </div>
         </div>
+      ) : (
+        // Fallback for when no serviceUniqueId is provided
+        <div className="p-6 border rounded-md">
+          <h3 className="text-lg font-medium mb-4">Financial Details</h3>
+          <p className="text-gray-500">
+            Please select a service to view the appropriate financial details
+            5678 form. {serviceUniqueId}
+          </p>
+        </div>
+      )}
+
+      {/* Display file previews if there are any uploaded files */}
+      {Object.keys(fileUrls).length > 0 && (
+        <FilePreviewSection
+          fileUrls={fileUrls}
+          onFileRemove={handleFileRemove}
+        />
       )}
 
       <div className="flex justify-between mt-6">

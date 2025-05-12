@@ -245,7 +245,7 @@ export default function UserDashboard() {
             {/* Submissions */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                My Submissions
+                My Submissions 123
               </h2>
 
               <div className="mb-4 flex justify-between items-center">

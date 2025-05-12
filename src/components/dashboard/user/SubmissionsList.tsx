@@ -125,7 +125,7 @@ const UserSubmissionsList = () => {
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
-          My Submissions
+          My Submissions 1234
         </h3>
         <div className="flex items-center">
           <label htmlFor="status-filter" className="mr-2 text-sm text-gray-700">
@@ -169,7 +169,7 @@ const UserSubmissionsList = () => {
         <>
           <ul className="divide-y divide-gray-200">
             {submissions.map((submission) => (
-              <li key={submission._id}>
+              <li className="ajhdvajhda" key={submission._id}>
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
@@ -206,15 +206,21 @@ const UserSubmissionsList = () => {
                   <div className="mt-2 sm:flex sm:justify-between">
                     <div className="sm:flex">
                       <p className="flex items-center text-sm text-gray-500">
-                        Amount: {formatCurrency(submission.amount)}
+                        Amount: 124{formatCurrency(submission.amount)}
                       </p>
                     </div>
-                    <div className="mt-2 flex items-center text-sm sm:mt-0">
+                    <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-3">
                       <Link
                         href={`/dashboard/user/submissions/${submission._id}`}
-                        className="text-primary hover:text-primary-700"
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                       >
-                        View Details
+                        View Details - 123
+                      </Link>
+                      <Link
+                        href={`/dashboard/user/submissions/${submission._id}/edit`}
+                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Edit
                       </Link>
                       {submission.status === "rejected" && (
                         <div className="ml-4 text-sm text-red-600">

@@ -6,10 +6,45 @@ import PermanentInfoSection from "./PermanentInfoSection";
 import AddressSection from "./AddressSection";
 import BankDetailsSection from "./BankDetailsSection";
 import PlaceOfBusinessSection from "./PlaceOfBusinessSection";
+import AadharGSTSection from "./AadharGSTSection";
 import IndividualFilePreview from "./IndividualFilePreview";
+import DirectorPartnerSection from "./DirectorPartnerSection";
+import NomineeSection from "./NomineeSection";
+import AlterationDetailsSection from "./AlterationDetailsSection";
 import { uploadMultipleFilesToS3, deleteFileFromS3 } from "@/lib/s3-client";
 
 import { useRouter, useParams } from "next/navigation";
+
+interface Person {
+  name: string;
+  phone: string;
+  panFile: File | null;
+  addressProofFile: File | null;
+  residenceProofFile: File | null;
+  passportPhotoFile: File | null;
+  passportFile: File | null;
+  idProofFile: File | null;
+}
+
+interface NomineeData {
+  name: string;
+  phone: string;
+  panNumber: string;
+  panFile: File | null;
+  aadhaarNumber: string;
+  aadhaarFile: File | null;
+  idProofFile: File | null;
+  addressProofFile: File | null;
+  passportPhotoFiles: File[];
+}
+
+interface AlterationData {
+  boardResolution: string;
+  ordinarySpecialResolution: File | null;
+  alteredMemorandum: File | null;
+  formSH7: File | null;
+  otherDocuments: File[];
+}
 
 interface PersonalInfoTabProps {
   activeTab: string;
@@ -35,6 +70,11 @@ interface PersonalInfoTabProps {
       panNumber: string;
       panAttachment: File | null;
     };
+    aadharGST?: {
+      aadhaarNumber?: string;
+      aadhaarFile?: File | null;
+      gstDetailsFile?: File | null;
+    };
     address: {
       flatNumber: string;
       premiseName: string;
@@ -56,6 +96,11 @@ interface PersonalInfoTabProps {
       saleDeedConcerned: File | null;
       consentLetter: File | null;
     };
+    companyName?: string;
+    directors?: Person[];
+    partners?: Person[];
+    nominee?: NomineeData;
+    alterationDetails?: AlterationData;
     files: Record<string, File | null>;
     fileUrls?: Record<string, { key: string; url: string }>;
   };
@@ -109,6 +154,15 @@ export default function PersonalInfoTab({
     }
   );
 
+  // State for Aadhar and GST details
+  const [aadharGST, setAadharGST] = useState(
+    formData?.aadharGST || {
+      aadhaarNumber: "",
+      aadhaarFile: null as File | null,
+      gstDetailsFile: null as File | null,
+    }
+  );
+
   const [address, setAddress] = useState(
     formData?.address || {
       flatNumber: "",
@@ -137,6 +191,67 @@ export default function PersonalInfoTab({
       ebBillPropertyTax: null as File | null,
       saleDeedConcerned: null as File | null,
       consentLetter: null as File | null,
+    }
+  );
+
+  // State for company name
+  const [companyName, setCompanyName] = useState(formData?.companyName || "");
+
+  // State for directors
+  const [directors, setDirectors] = useState<Person[]>(
+    formData?.directors || [
+      {
+        name: "",
+        phone: "",
+        panFile: null,
+        addressProofFile: null,
+        residenceProofFile: null,
+        passportPhotoFile: null,
+        passportFile: null,
+        idProofFile: null,
+      },
+    ]
+  );
+
+  // State for partners
+  const [partners, setPartners] = useState<Person[]>(
+    formData?.partners || [
+      {
+        name: "",
+        phone: "",
+        panFile: null,
+        addressProofFile: null,
+        residenceProofFile: null,
+        passportPhotoFile: null,
+        passportFile: null,
+        idProofFile: null,
+      },
+    ]
+  );
+
+  // State for nominee
+  const [nominee, setNominee] = useState<NomineeData>(
+    formData?.nominee || {
+      name: "",
+      phone: "",
+      panNumber: "",
+      panFile: null,
+      aadhaarNumber: "",
+      aadhaarFile: null,
+      idProofFile: null,
+      addressProofFile: null,
+      passportPhotoFiles: [],
+    }
+  );
+
+  // State for alteration details
+  const [alterationDetails, setAlterationDetails] = useState<AlterationData>(
+    formData?.alterationDetails || {
+      boardResolution: "",
+      ordinarySpecialResolution: null,
+      alteredMemorandum: null,
+      formSH7: null,
+      otherDocuments: [],
     }
   );
 
@@ -330,7 +445,7 @@ export default function PersonalInfoTab({
 
   // Check if all required fields are filled
   const isFormValid = () => {
-    // Check permanent info required fields
+    // Basic validation for all service types
     if (
       !permanentInfo.firstName ||
       !permanentInfo.lastName ||
@@ -343,29 +458,351 @@ export default function PersonalInfoTab({
       return false;
     }
 
-    // Check identification required fields
-    // if (
-    //   (identification.aadhaarType === "number" &&
-    //     !identification.aadhaarNumber) ||
-    //   (identification.aadhaarType === "enrollment" &&
-    //     !identification.aadhaarEnrollment) ||
-    //   !identification.panNumber
-    // ) {
-    //   return false;
-    // }
-
-    // // Check address required fields
-    // if (
-    //   !address.flatNumber ||
-    //   !address.areaLocality ||
-    //   !address.pincode ||
-    //   !address.state ||
-    //   !address.city
-    // ) {
-    //   return false;
-    // }
+    // Service-specific validation
+    if (
+      serviceUniqueId === "private_limited" ||
+      serviceUniqueId === "appointment_of_directors" ||
+      serviceUniqueId === "removal_of_directors"
+    ) {
+      // Validate company name and at least one director
+      if (
+        !companyName ||
+        directors.length === 0 ||
+        !directors[0].name ||
+        !directors[0].phone
+      ) {
+        return false;
+      }
+    } else if (serviceUniqueId === "roc_filing_llp") {
+      // Validate company name and at least one partner
+      if (
+        !companyName ||
+        partners.length === 0 ||
+        !partners[0].name ||
+        !partners[0].phone
+      ) {
+        return false;
+      }
+    } else if (
+      serviceUniqueId === "one_person_company" ||
+      serviceUniqueId === "company_name_change" ||
+      serviceUniqueId === "section_8_company" ||
+      serviceUniqueId === "nidhi_company"
+    ) {
+      // Validate company name, director, and nominee
+      if (
+        !companyName ||
+        !directors[0].name ||
+        !directors[0].phone ||
+        !nominee.name ||
+        !nominee.phone
+      ) {
+        return false;
+      }
+    } else if (serviceUniqueId === "alteration_of_share_capital") {
+      // Validate alteration details
+      if (!alterationDetails.boardResolution) {
+        return false;
+      }
+    } else if (
+      serviceUniqueId === "winding_up_private_company" ||
+      serviceUniqueId === "strike_off_company" ||
+      serviceUniqueId === "changing_company_objective"
+    ) {
+      // Validate company name and at least one director
+      if (
+        !companyName ||
+        directors.length === 0 ||
+        !directors[0].name ||
+        !directors[0].phone
+      ) {
+        return false;
+      }
+    }
 
     return true;
+  };
+
+  // Render the appropriate form based on serviceUniqueId
+  const renderServiceSpecificFields = () => {
+    if (
+      serviceUniqueId === "private_limited" ||
+      serviceUniqueId === "appointment_of_directors" ||
+      serviceUniqueId === "removal_of_directors"
+    ) {
+      return (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+          <DirectorPartnerSection
+            type="Director"
+            persons={directors}
+            onChange={setDirectors}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+        </>
+      );
+    } else if (serviceUniqueId === "roc_filing_llp") {
+      return (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+          <DirectorPartnerSection
+            type="Partner"
+            persons={partners}
+            onChange={setPartners}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+        </>
+      );
+    } else if (
+      serviceUniqueId === "one_person_company" ||
+      serviceUniqueId === "company_name_change" ||
+      serviceUniqueId === "section_8_company" ||
+      serviceUniqueId === "nidhi_company"
+    ) {
+      return (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+          <DirectorPartnerSection
+            type="Director"
+            persons={directors}
+            onChange={setDirectors}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+          <NomineeSection
+            data={nominee}
+            onChange={setNominee}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+        </>
+      );
+    } else if (serviceUniqueId === "alteration_of_share_capital") {
+      return (
+        <AlterationDetailsSection
+          data={alterationDetails}
+          onChange={setAlterationDetails}
+          onFileChange={handleFileChange}
+          uploadStatus={uploadStatus}
+          isUploading={isUploading}
+          fileUrls={fileUrls}
+          onFileRemove={handleFileRemove}
+        />
+      );
+    } else if (
+      serviceUniqueId === "winding_up_private_company" ||
+      serviceUniqueId === "strike_off_company" ||
+      serviceUniqueId === "changing_company_objective"
+    ) {
+      return (
+        <>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Company Address <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={address.areaLocality}
+              onChange={(e) =>
+                setAddress({ ...address, areaLocality: e.target.value })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              rows={3}
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Contact No <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={permanentInfo.mobileNumber}
+              onChange={(e) =>
+                setPermanentInfo({
+                  ...permanentInfo,
+                  mobileNumber: e.target.value,
+                })
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
+          </div>
+          <DirectorPartnerSection
+            type="Director"
+            persons={directors}
+            onChange={setDirectors}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+        </>
+      );
+    } else {
+      // Default case - show standard fields
+      return (
+        <>
+          <PermanentInfoSection
+            data={permanentInfo}
+            onChange={setPermanentInfo}
+            addressData={address}
+            onAddressChange={setAddress}
+            bankDetails={bankDetails}
+            onBankDetailsChange={setBankDetails}
+          />
+
+          {/* Show AadharGSTSection based on serviceUniqueId */}
+          <AadharGSTSection
+            serviceUniqueId={serviceUniqueId || ""}
+            data={aadharGST}
+            onChange={setAadharGST}
+            onFileChange={handleFileChange}
+            uploadStatus={uploadStatus}
+            isUploading={isUploading}
+            fileUrls={fileUrls}
+            onFileRemove={handleFileRemove}
+          />
+
+          {/* Only show PlaceOfBusinessSection for new_registration service */}
+          {serviceUniqueId === "new_registration" && (
+            <>
+              <PlaceOfBusinessSection
+                data={placeOfBusiness}
+                onFileChange={handleFileChange}
+                uploadStatus={uploadStatus}
+                isUploading={isUploading}
+                fileUrls={fileUrls}
+                onFileRemove={handleFileRemove}
+              />
+
+              {/* Individual file previews for Place of Business files */}
+              <div className="mt-4 space-y-4">
+                {fileUrls["rentalAgreement"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Rental Agreement
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["rentalAgreement"].url}
+                      fileName={
+                        fileUrls["rentalAgreement"].key.split("/").pop() ||
+                        "Rental Agreement"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["ebBillPropertyTax"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      EB Bill / Property Tax
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["ebBillPropertyTax"].url}
+                      fileName={
+                        fileUrls["ebBillPropertyTax"].key.split("/").pop() ||
+                        "EB Bill / Property Tax"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["saleDeedConcerned"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Sale Deed
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["saleDeedConcerned"].url}
+                      fileName={
+                        fileUrls["saleDeedConcerned"].key.split("/").pop() ||
+                        "Sale Deed"
+                      }
+                    />
+                  </div>
+                )}
+
+                {fileUrls["consentLetter"] && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">
+                      Consent Letter
+                    </h4>
+                    <IndividualFilePreview
+                      fileUrl={fileUrls["consentLetter"].url}
+                      fileName={
+                        fileUrls["consentLetter"].key.split("/").pop() ||
+                        "Consent Letter"
+                      }
+                      fileType=""
+                    />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </>
+      );
+    }
   };
 
   // Handle save button click
@@ -718,128 +1155,55 @@ export default function PersonalInfoTab({
 
   return (
     <div className="space-y-6">
-      <PermanentInfoSection
-        data={permanentInfo}
-        onChange={setPermanentInfo}
-        addressData={address}
-        onAddressChange={setAddress}
-        bankDetails={bankDetails}
-        onBankDetailsChange={setBankDetails}
-      />
+      {renderServiceSpecificFields()}
 
-      {/* <IdentificationSection
-        data={identification}
-        onChange={setIdentification}
-        onFileChange={handleFileChange}
-      /> */}
-
-      {/* Only show PlaceOfBusinessSection for new_registration service */}
-      {JSON.stringify(fileUrls)}
-      {serviceUniqueId === "new_registration" && (
-        <>
-          <PlaceOfBusinessSection
-            data={placeOfBusiness}
-            onFileChange={handleFileChange}
-            uploadStatus={uploadStatus}
-            isUploading={isUploading}
-            fileUrls={fileUrls}
-            onFileRemove={handleFileRemove}
-          />
-
-          {/* Individual file previews for Place of Business files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["rentalAgreement"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Rental Agreement
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["rentalAgreement"].url}
-                  fileName={
-                    fileUrls["rentalAgreement"].key.split("/").pop() ||
-                    "Rental Agreement"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["ebBillPropertyTax"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  EB Bill / Property Tax
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["ebBillPropertyTax"].url}
-                  fileName={
-                    fileUrls["ebBillPropertyTax"].key.split("/").pop() ||
-                    "EB Bill / Property Tax"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["saleDeedConcerned"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Sale Deed
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["saleDeedConcerned"].url}
-                  fileName={
-                    fileUrls["saleDeedConcerned"].key.split("/").pop() ||
-                    "Sale Deed"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["consentLetter"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Consent Letter 123 {fileUrls["consentLetter"].url}
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["consentLetter"].url}
-                  fileName={
-                    fileUrls["consentLetter"].key.split("/").pop() ||
-                    "Consent Letter"
-                  }
-                  fileType=""
-                />
-              </div>
-            )}
-          </div>
-        </>
+      {/* Hide save button for alteration_of_share_capital */}
+      {serviceUniqueId !== "alteration_of_share_capital" && (
+        <div className="flex justify-end space-x-4 mt-6">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!isFormValid()}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              isFormValid()
+                ? "bg-green-600 hover:bg-green-700"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+          >
+            Save
+          </button>
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!isFormValid()}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              isFormValid()
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+          >
+            Next
+          </button>
+        </div>
       )}
 
-      {/* Removed separate section for uploaded files preview as per requirements */}
-
-      <div className="flex justify-end space-x-4 mt-6">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!isFormValid()}
-          className={`px-4 py-2 rounded-md text-white font-medium ${
-            isFormValid()
-              ? "bg-green-600 hover:bg-green-700"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
-        >
-          Save
-        </button>
-        <button
-          type="button"
-          onClick={handleNext}
-          disabled={!isFormValid()}
-          className={`px-4 py-2 rounded-md text-white font-medium ${
-            isFormValid()
-              ? "bg-blue-600 hover:bg-blue-700"
-              : "bg-gray-400 cursor-not-allowed"
-          }`}
-        >
-          Next
-        </button>
-      </div>
+      {/* Only show Next button for alteration_of_share_capital */}
+      {serviceUniqueId === "alteration_of_share_capital" && (
+        <div className="flex justify-end space-x-4 mt-6">
+          <button
+            type="button"
+            onClick={handleNext}
+            disabled={!isFormValid()}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              isFormValid()
+                ? "bg-blue-600 hover:bg-blue-700"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

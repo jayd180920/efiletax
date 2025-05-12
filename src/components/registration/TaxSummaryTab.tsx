@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import FilePreviewSection from "./FilePreviewSection";
 
 // Extend Window interface to include our custom formData property
 declare global {
@@ -14,6 +15,8 @@ interface TaxSummaryTabProps {
   setActiveTab: (tab: string) => void;
   formData?: any;
   serviceUniqueId?: string;
+  fileUrls?: Record<string, { key: string; url: string }>;
+  onFileRemove?: (name: string, key: string) => void;
 }
 
 export default function TaxSummaryTab({
@@ -21,6 +24,8 @@ export default function TaxSummaryTab({
   setActiveTab,
   formData,
   serviceUniqueId,
+  fileUrls,
+  onFileRemove,
 }: TaxSummaryTabProps) {
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
@@ -173,33 +178,24 @@ export default function TaxSummaryTab({
       <div className="p-6 border rounded-md">
         <h3 className="text-lg font-medium mb-4">Tax Summary</h3>
         <p className="text-gray-500 mb-4">
-          View your tax summary details below.
+          Review your submission details below.
         </p>
 
-        <div className="flex items-center justify-center p-8 border border-gray-200 rounded-md bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors">
-          <div className="text-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="mx-auto mb-4 text-blue-500"
-            >
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            <p className="text-lg font-medium text-blue-600">
-              Click Here to view the Tax summary
+        <div className="space-y-4">
+          <div className="p-4 border rounded-md bg-gray-50">
+            <h4 className="font-medium text-gray-800 mb-2">Service Type</h4>
+            <p className="text-gray-700">
+              {serviceUniqueId || "Not specified"}
             </p>
           </div>
+
+          {/* Display file previews if there are any uploaded files */}
+          {fileUrls && Object.keys(fileUrls).length > 0 && (
+            <FilePreviewSection
+              fileUrls={fileUrls}
+              onFileRemove={onFileRemove}
+            />
+          )}
         </div>
       </div>
 

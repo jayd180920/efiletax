@@ -20,6 +20,9 @@ import GSTAmendment from "./GSTAmendment";
 import GSTEWaybill from "./GSTEWaybill";
 import FilePreviewSection from "./FilePreviewSection";
 import IndividualFilePreview from "./IndividualFilePreview";
+import IncomeDetailsSection from "./IncomeDetailsSection";
+import TaxSavingsSection from "./TaxSavingsSection";
+import CompanyDetailsSection from "./CompanyDetailsSection";
 
 interface IncomeSourceTabProps {
   activeTab: string;
@@ -100,6 +103,35 @@ interface IncomeSourceTabProps {
     gstEWaybillData?: {
       eWaybillDocFile: File | null;
     };
+    // Income details fields
+    incomeDetails?: {
+      form16PartA?: File | null;
+      form16PartB?: File | null;
+      bankInterestCertificate?: File | null;
+      financialRecords?: File | null;
+      incomeRecords?: File | null;
+      saleAgreements?: File | null;
+      buyerSellerKYC?: File | null;
+      draftedSaleDeed?: File | null;
+      purchaseInvoice?: File | null;
+      incomeTaxDetails?: File | null;
+      investmentTaxSaving?: File | null;
+      noticeCopy?: File | null;
+      tdsCertificates?: File | null;
+      incomeInvestmentProofs?: File | null;
+      form35?: File | null;
+      assessmentOrder?: File | null;
+      originalDemandNotice?: File | null;
+    };
+    // Tax savings fields
+    taxSavings?: {
+      homeLoanInterestCertificate?: File | null;
+      assetLiabilityDetails?: File | null;
+      foreignAccountDetails?: File | null;
+      investmentDetails80C?: File | null;
+      expenseClaimsRecords?: File | null;
+      purchaseAgreements?: File | null;
+    };
     // Additional fields for general financial details
     annualIncome?: string;
     incomeSource?: string;
@@ -125,6 +157,41 @@ export default function IncomeSourceTab({
   );
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
+  // State for Income Details
+  const [incomeDetails, setIncomeDetails] = useState(
+    formData?.incomeDetails || {
+      form16PartA: null as File | null,
+      form16PartB: null as File | null,
+      bankInterestCertificate: null as File | null,
+      financialRecords: null as File | null,
+      incomeRecords: null as File | null,
+      saleAgreements: null as File | null,
+      buyerSellerKYC: null as File | null,
+      draftedSaleDeed: null as File | null,
+      purchaseInvoice: null as File | null,
+      incomeTaxDetails: null as File | null,
+      investmentTaxSaving: null as File | null,
+      noticeCopy: null as File | null,
+      tdsCertificates: null as File | null,
+      incomeInvestmentProofs: null as File | null,
+      form35: null as File | null,
+      assessmentOrder: null as File | null,
+      originalDemandNotice: null as File | null,
+    }
+  );
+
+  // State for Tax Savings
+  const [taxSavings, setTaxSavings] = useState(
+    formData?.taxSavings || {
+      homeLoanInterestCertificate: null as File | null,
+      assetLiabilityDetails: null as File | null,
+      foreignAccountDetails: null as File | null,
+      investmentDetails80C: null as File | null,
+      expenseClaimsRecords: null as File | null,
+      purchaseAgreements: null as File | null,
+    }
+  );
+
   // State for MonthlyFiling component
   const [monthlyFilingData, setMonthlyFilingData] = useState(
     formData?.monthlyFilingData || {
@@ -553,6 +620,38 @@ export default function IncomeSourceTab({
       setClaimGSTRefundData({
         ...claimGSTRefundData,
         [name]: file,
+      });
+    } else if (
+      (serviceUniqueId === "salaried" ||
+        serviceUniqueId === "itr_business" ||
+        serviceUniqueId === "itr_self_employee" ||
+        serviceUniqueId === "itr_capital_gain" ||
+        serviceUniqueId === "nri_tax_returns" ||
+        serviceUniqueId === "sale_of_property" ||
+        serviceUniqueId === "tax_planning" ||
+        serviceUniqueId === "income_tax_notices" ||
+        serviceUniqueId === "tax_appeal") &&
+      name.startsWith("income_")
+    ) {
+      // Extract the field name without the prefix
+      const fieldName = name.replace("income_", "");
+      setIncomeDetails({
+        ...incomeDetails,
+        [fieldName]: file,
+      });
+    } else if (
+      (serviceUniqueId === "salaried" ||
+        serviceUniqueId === "itr_business" ||
+        serviceUniqueId === "itr_self_employee" ||
+        serviceUniqueId === "itr_capital_gain" ||
+        serviceUniqueId === "nri_tax_returns") &&
+      name.startsWith("taxSavings_")
+    ) {
+      // Extract the field name without the prefix
+      const fieldName = name.replace("taxSavings_", "");
+      setTaxSavings({
+        ...taxSavings,
+        [fieldName]: file,
       });
     }
 
@@ -993,200 +1092,179 @@ export default function IncomeSourceTab({
 
   return (
     <div className="space-y-6">
-      {serviceUniqueId === "new_registration" ? (
-        // Show BusinessKYC for new_registration service
+      {/* Show Company Details Section for ROC filing services */}
+      {(serviceUniqueId === "private_limited" ||
+        serviceUniqueId === "roc_filing_llp" ||
+        serviceUniqueId === "one_person_company" ||
+        serviceUniqueId === "company_name_change" ||
+        serviceUniqueId === "section_8_company" ||
+        serviceUniqueId === "nidhi_company" ||
+        serviceUniqueId === "appointment_of_directors" ||
+        serviceUniqueId === "removal_of_directors" ||
+        serviceUniqueId === "winding_up_private_company" ||
+        serviceUniqueId === "strike_off_company" ||
+        serviceUniqueId === "changing_company_objective") && (
+        <CompanyDetailsSection
+          serviceUniqueId={serviceUniqueId}
+          data={{
+            companyNameApprovalDoc: files?.companyNameApprovalDoc || null,
+            digitalSignatureCertificate:
+              files?.digitalSignatureCertificate || null,
+            directorIdentificationNumber: "",
+            llpProofOfRegisteredOffice:
+              files?.llpProofOfRegisteredOffice || null,
+            contributionDetailsAndLLPAgreement:
+              files?.contributionDetailsAndLLPAgreement || null,
+            moaAndAoa: files?.moaAndAoa || null,
+            proofOfRegisteredOfficeAddress:
+              files?.proofOfRegisteredOfficeAddress || null,
+            resolutionPassedByPromoters:
+              files?.resolutionPassedByPromoters || null,
+            consentFormsDIR1: files?.consentFormsDIR1 || null,
+            consentFormsDIR2: files?.consentFormsDIR2 || null,
+            dscForElectronicDocumentSigning:
+              files?.dscForElectronicDocumentSigning || null,
+            incorporationCertificate: files?.incorporationCertificate || null,
+            auditedFinancialStatements:
+              files?.auditedFinancialStatements || null,
+            statementOfCompanyAffairs: files?.statementOfCompanyAffairs || null,
+            indemnityBond: files?.indemnityBond || null,
+            statementOfLiabilitiesAndAssets:
+              files?.statementOfLiabilitiesAndAssets || null,
+            specialResolutionConsent: files?.specialResolutionConsent || null,
+            affidavit: files?.affidavit || null,
+            regulatoryAuthorityApproval:
+              files?.regulatoryAuthorityApproval || null,
+            egmNoticeAndSpecialResolutionCopy:
+              files?.egmNoticeAndSpecialResolutionCopy || null,
+            alteredMOA: files?.alteredMOA || null,
+            attendanceSheetsOfMeetings:
+              files?.attendanceSheetsOfMeetings || null,
+            boardAndEGMMinutes: "",
+            companyPAN: "",
+            directorPAN: "",
+          }}
+          onChange={(data) => {
+            // Update files state with the new data
+            const updatedFiles = { ...files };
+            Object.entries(data).forEach(([key, value]) => {
+              if (value instanceof File) {
+                updatedFiles[`company_${key}`] = value;
+              }
+            });
+            setFiles(updatedFiles);
+          }}
+          onFileChange={handleFileChange}
+          uploadStatus={uploadStatus}
+          isUploading={isUploading}
+          fileUrls={fileUrls}
+          onFileRemove={handleFileRemove}
+        />
+      )}
+
+      {/* Show Income Details Section based on serviceUniqueId */}
+      {(serviceUniqueId === "salaried" ||
+        serviceUniqueId === "itr_business" ||
+        serviceUniqueId === "itr_self_employee" ||
+        serviceUniqueId === "itr_capital_gain" ||
+        serviceUniqueId === "nri_tax_returns" ||
+        serviceUniqueId === "sale_of_property" ||
+        serviceUniqueId === "tax_planning" ||
+        serviceUniqueId === "income_tax_notices" ||
+        serviceUniqueId === "tax_appeal") && (
+        <IncomeDetailsSection
+          serviceUniqueId={serviceUniqueId}
+          data={incomeDetails}
+          onFileChange={handleFileChange}
+          uploadStatus={uploadStatus}
+          isUploading={isUploading}
+          fileUrls={fileUrls}
+          onFileRemove={handleFileRemove}
+        />
+      )}
+
+      {/* Show Tax Savings Section based on serviceUniqueId */}
+      {(serviceUniqueId === "salaried" ||
+        serviceUniqueId === "itr_business" ||
+        serviceUniqueId === "itr_self_employee" ||
+        serviceUniqueId === "itr_capital_gain" ||
+        serviceUniqueId === "nri_tax_returns") && (
+        <TaxSavingsSection
+          serviceUniqueId={serviceUniqueId}
+          data={taxSavings}
+          onFileChange={handleFileChange}
+          uploadStatus={uploadStatus}
+          isUploading={isUploading}
+          fileUrls={fileUrls}
+          onFileRemove={handleFileRemove}
+        />
+      )}
+
+      {/* Legacy components - keep for backward compatibility */}
+      {serviceUniqueId === "new_registration" && (
         <BusinessKYC
           data={businessKYCData}
           onChange={setBusinessKYCData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "monthly_filing" ? (
-        // Show MonthlyFiling for monthly_filing service
+      )}
+
+      {serviceUniqueId === "monthly_filing" && (
         <MonthlyFiling
           data={monthlyFilingData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "annual_return" ? (
-        // Show AnnualReturn for annual_return service
+      )}
+
+      {serviceUniqueId === "annual_return" && (
         <AnnualReturn
           data={annualReturnData}
           onChange={setAnnualReturnData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "gst_e_invoice" ? (
-        // Show GSTEInvoice for gst_e_invoice service
+      )}
+
+      {serviceUniqueId === "gst_e_invoice" && (
         <GSTEInvoice
           data={gstEInvoiceData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "claim_gst_refund" ? (
-        // Show ClaimGSTRefund for claim_gst_refund service
+      )}
+
+      {serviceUniqueId === "claim_gst_refund" && (
         <ClaimGSTRefund
           data={claimGSTRefundData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "gst_closure" ? (
-        // Show GSTClosure for gst_closure service
+      )}
+
+      {serviceUniqueId === "gst_closure" && (
         <GSTClosure
           data={gstClosureData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "gst_amendment" ? (
-        // Show GSTAmendment for gst_amendment service
+      )}
+
+      {serviceUniqueId === "gst_amendment" && (
         <GSTAmendment
           data={gstAmendmentData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId === "gst_e_waybill" ? (
-        // Show GSTEWaybill for gst_e_waybill service
+      )}
+
+      {serviceUniqueId === "gst_e_waybill" && (
         <GSTEWaybill
           data={gstEWaybillData}
           onFileChange={handleFileChange}
           fileUrls={fileUrls}
         />
-      ) : serviceUniqueId ? (
-        // For any other service with a serviceUniqueId, show appropriate component based on service type
-        <div className="p-6 border rounded-md">
-          <h3 className="text-lg font-medium mb-4">Financial Details</h3>
-          <p className="text-gray-500 mb-4">
-            Please provide the financial details required for this service. 1234
-          </p>
-
-          {/* Financial details form with common fields */}
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Annual Income
-              </label>
-              <input
-                type="number"
-                className="w-full p-2 border rounded-md"
-                placeholder="Enter your annual income"
-                value={formData?.annualIncome || ""}
-                onChange={(e) => {
-                  if (updateFormData) {
-                    updateFormData({ annualIncome: e.target.value });
-                  }
-                }}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Income Source
-              </label>
-              <select
-                className="w-full p-2 border rounded-md"
-                value={formData?.incomeSource || ""}
-                onChange={(e) => {
-                  if (updateFormData) {
-                    updateFormData({ incomeSource: e.target.value });
-                  }
-                }}
-              >
-                <option value="">Select Income Source</option>
-                <option value="salary">Salary</option>
-                <option value="business">Business</option>
-                <option value="profession">Profession</option>
-                <option value="capital_gains">Capital Gains</option>
-                <option value="house_property">House Property</option>
-                <option value="other_sources">Other Sources</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Financial Year
-              </label>
-              <select
-                className="w-full p-2 border rounded-md"
-                value={formData?.financialYear || ""}
-                onChange={(e) => {
-                  if (updateFormData) {
-                    updateFormData({ financialYear: e.target.value });
-                  }
-                }}
-              >
-                <option value="">Select Financial Year</option>
-                <option value="2024-2025">2024-2025</option>
-                <option value="2023-2024">2023-2024</option>
-                <option value="2022-2023">2022-2023</option>
-                <option value="2021-2022">2021-2022</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Upload Income Proof
-              </label>
-              <div className="mt-1 flex items-center">
-                <input
-                  type="file"
-                  className="w-full p-2 border rounded-md"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    handleFileChange("incomeProofFile", file);
-                  }}
-                />
-              </div>
-              {fileUrls && fileUrls["incomeProofFile"] && (
-                <div className="mt-2 flex items-center">
-                  <span className="text-sm text-gray-500 mr-2">
-                    File uploaded:
-                  </span>
-                  <span className="text-sm text-blue-500">
-                    {fileUrls["incomeProofFile"].key.split("/").pop()}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleFileRemove(
-                        "incomeProofFile",
-                        fileUrls["incomeProofFile"].key
-                      )
-                    }
-                    className="ml-2 text-red-500 text-sm"
-                  >
-                    Remove
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Additional Notes
-              </label>
-              <textarea
-                className="w-full p-2 border rounded-md"
-                rows={3}
-                placeholder="Any additional information about your income"
-                value={formData?.additionalNotes || ""}
-                onChange={(e) => {
-                  if (updateFormData) {
-                    updateFormData({ additionalNotes: e.target.value });
-                  }
-                }}
-              ></textarea>
-            </div>
-          </div>
-        </div>
-      ) : (
-        // Fallback for when no serviceUniqueId is provided
-        <div className="p-6 border rounded-md">
-          <h3 className="text-lg font-medium mb-4">Financial Details</h3>
-          <p className="text-gray-500">
-            Please select a service to view the appropriate financial details
-            5678 form. {serviceUniqueId}
-          </p>
-        </div>
       )}
 
       {/* Display file previews if there are any uploaded files */}

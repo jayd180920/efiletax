@@ -11,11 +11,13 @@ interface GSTAmendmentData {
 interface GSTAmendmentProps {
   data: GSTAmendmentData;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
 export default function GSTAmendment({
   data,
   onFileChange,
+  fileUrls,
 }: GSTAmendmentProps) {
   // Icon for the section
   const icon = (
@@ -61,6 +63,8 @@ export default function GSTAmendment({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["amendmentDocFile"]?.url}
+              existingFileKey={fileUrls?.["amendmentDocFile"]?.key}
             />
           </div>
         </div>

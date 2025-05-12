@@ -126,7 +126,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
   const getFileExtension = (url: string) => {
     // For data URLs, extract the MIME type
-    if (url.startsWith("data:")) {
+    if (url && url.startsWith("data:")) {
       const mimeType = url.split(";")[0].split(":")[1];
       if (mimeType.startsWith("image/")) {
         return mimeType.split("/")[1]; // Returns 'jpeg', 'png', etc.
@@ -137,11 +137,17 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
     }
 
     // For regular URLs, extract the extension from the filename
-    const extension = url.split(".").pop()?.toLowerCase();
-    return extension || "";
+    if (url) {
+      const extension = url.split(".").pop()?.toLowerCase();
+      return extension || "";
+    }
+
+    return "";
   };
 
   const isImage = (url: string) => {
+    if (!url) return false;
+
     // For data URLs, check the MIME type directly
     if (url.startsWith("data:")) {
       return url.startsWith("data:image/");
@@ -158,6 +164,8 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   };
 
   const isPdf = (url: string) => {
+    if (!url) return false;
+
     // For data URLs, check the MIME type directly
     if (url.startsWith("data:")) {
       return url.startsWith("data:application/pdf");
@@ -275,6 +283,25 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
                     src={localPreviewUrl || fileUrl}
                     alt="File preview"
                     className="max-h-40 object-contain"
+                    onError={(e) => {
+                      console.error("Error loading image preview:", e);
+                      // Fallback to generic document icon if image fails to load
+                      e.currentTarget.style.display = "none";
+                      e.currentTarget.parentElement?.classList.add("hidden");
+                      // Show fallback
+                      const fallback = document.createElement("div");
+                      fallback.className =
+                        "flex items-center justify-center p-4";
+                      fallback.innerHTML = `
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                        </svg>
+                        <span class="text-sm">Image Preview Failed</span>
+                      `;
+                      e.currentTarget.parentElement?.parentElement?.appendChild(
+                        fallback
+                      );
+                    }}
                   />
                 </div>
               ) : isPdf(localPreviewUrl || fileUrl) ? (

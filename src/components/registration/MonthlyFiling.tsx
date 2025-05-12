@@ -13,11 +13,13 @@ interface MonthlyFilingData {
 interface MonthlyFilingProps {
   data: MonthlyFilingData;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
 export default function MonthlyFiling({
   data,
   onFileChange,
+  fileUrls,
 }: MonthlyFilingProps) {
   // Icon for the section
   const icon = (
@@ -63,6 +65,8 @@ export default function MonthlyFiling({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["salesInvoiceFile"]?.url}
+              existingFileKey={fileUrls?.["salesInvoiceFile"]?.key}
             />
 
             <FileUploadField
@@ -73,6 +77,8 @@ export default function MonthlyFiling({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["purchaseInvoiceFile"]?.url}
+              existingFileKey={fileUrls?.["purchaseInvoiceFile"]?.key}
             />
 
             <FileUploadField
@@ -83,6 +89,8 @@ export default function MonthlyFiling({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["bankStatementFile"]?.url}
+              existingFileKey={fileUrls?.["bankStatementFile"]?.key}
             />
           </div>
         </div>

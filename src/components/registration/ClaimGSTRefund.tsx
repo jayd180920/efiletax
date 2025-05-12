@@ -13,11 +13,13 @@ interface ClaimGSTRefundData {
 interface ClaimGSTRefundProps {
   data: ClaimGSTRefundData;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
 export default function ClaimGSTRefund({
   data,
   onFileChange,
+  fileUrls,
 }: ClaimGSTRefundProps) {
   // Icon for the section
   const icon = (
@@ -63,6 +65,8 @@ export default function ClaimGSTRefund({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["salesInvoiceFile"]?.url}
+              existingFileKey={fileUrls?.["salesInvoiceFile"]?.key}
             />
 
             <FileUploadField
@@ -73,6 +77,8 @@ export default function ClaimGSTRefund({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["purchaseInvoiceFile"]?.url}
+              existingFileKey={fileUrls?.["purchaseInvoiceFile"]?.key}
             />
 
             <FileUploadField
@@ -83,6 +89,8 @@ export default function ClaimGSTRefund({
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["annexureBFile"]?.url}
+              existingFileKey={fileUrls?.["annexureBFile"]?.key}
             />
           </div>
         </div>

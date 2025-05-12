@@ -282,6 +282,21 @@ export default function PersonalInfoTab({
       [name]: file,
     });
 
+    // If a new file is uploaded and there's an existing file in S3, mark the old file for removal
+    if (file && fileUrls[name] && fileUrls[name].key) {
+      // Add the file key to the filesToRemove array
+      setFilesToRemove([...filesToRemove, fileUrls[name].key]);
+
+      // Remove the file from fileUrls (will be updated when the new file is uploaded)
+      const updatedFileUrls = { ...fileUrls };
+      delete updatedFileUrls[name];
+      setFileUrls(updatedFileUrls);
+
+      console.log(
+        `Marked old file ${name} with key ${fileUrls[name].key} for removal`
+      );
+    }
+
     // Update place of business state if the file is related to it
     if (
       name === "rentalAgreement" ||
@@ -293,6 +308,23 @@ export default function PersonalInfoTab({
         ...placeOfBusiness,
         [name]: file,
       });
+    }
+
+    // Create a local preview URL for the file if it exists
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && event.target.result) {
+          // Create a temporary URL for preview
+          const tempFileUrls = { ...fileUrls };
+          tempFileUrls[name] = {
+            key: `temp-${name}`,
+            url: event.target.result as string,
+          };
+          setFileUrls(tempFileUrls);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 

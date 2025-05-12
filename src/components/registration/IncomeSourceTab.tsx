@@ -491,6 +491,21 @@ export default function IncomeSourceTab({
       [name]: file,
     });
 
+    // If a new file is uploaded and there's an existing file in S3, mark the old file for removal
+    if (file && fileUrls[name] && fileUrls[name].key) {
+      // Add the file key to the filesToRemove array
+      setFilesToRemove([...filesToRemove, fileUrls[name].key]);
+
+      // Remove the file from fileUrls (will be updated when the new file is uploaded)
+      const updatedFileUrls = { ...fileUrls };
+      delete updatedFileUrls[name];
+      setFileUrls(updatedFileUrls);
+
+      console.log(
+        `Marked old file ${name} with key ${fileUrls[name].key} for removal`
+      );
+    }
+
     // Update component-specific state based on file type
     if (serviceUniqueId === "gst_amendment" && name === "amendmentDocFile") {
       setGSTAmendmentData({
@@ -539,6 +554,23 @@ export default function IncomeSourceTab({
         ...claimGSTRefundData,
         [name]: file,
       });
+    }
+
+    // Create a local preview URL for the file if it exists
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target && event.target.result) {
+          // Create a temporary URL for preview
+          const tempFileUrls = { ...fileUrls };
+          tempFileUrls[name] = {
+            key: `temp-${name}`,
+            url: event.target.result as string,
+          };
+          setFileUrls(tempFileUrls);
+        }
+      };
+      reader.readAsDataURL(file);
     }
 
     console.log(`Updated local state with file ${name}`);
@@ -963,415 +995,62 @@ export default function IncomeSourceTab({
     <div className="space-y-6">
       {serviceUniqueId === "new_registration" ? (
         // Show BusinessKYC for new_registration service
-        <>
-          <BusinessKYC
-            data={businessKYCData}
-            onChange={setBusinessKYCData}
-            onFileChange={handleFileChange}
-          />
-
-          {/* Individual file previews for BusinessKYC files */}
-          <div className="mt-4 space-y-4">
-            {businessKYCData.businessType === "proprietor" && (
-              <>
-                {fileUrls["proprietorAadharFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Proprietor Aadhar
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["proprietorAadharFile"].url}
-                      fileName={
-                        fileUrls["proprietorAadharFile"].key.split("/").pop() ||
-                        "Proprietor Aadhar"
-                      }
-                    />
-                  </div>
-                )}
-
-                {fileUrls["proprietorPanFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Proprietor PAN
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["proprietorPanFile"].url}
-                      fileName={
-                        fileUrls["proprietorPanFile"].key.split("/").pop() ||
-                        "Proprietor PAN"
-                      }
-                    />
-                  </div>
-                )}
-              </>
-            )}
-
-            {businessKYCData.businessType === "partnership" && (
-              <>
-                {fileUrls["authorizationLetterFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Authorization Letter
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["authorizationLetterFile"].url}
-                      fileName={
-                        fileUrls["authorizationLetterFile"].key
-                          .split("/")
-                          .pop() || "Authorization Letter"
-                      }
-                    />
-                  </div>
-                )}
-
-                {fileUrls["partnershipDeedFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Partnership Deed
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["partnershipDeedFile"].url}
-                      fileName={
-                        fileUrls["partnershipDeedFile"].key.split("/").pop() ||
-                        "Partnership Deed"
-                      }
-                    />
-                  </div>
-                )}
-
-                {fileUrls["firmPanFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Firm PAN
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["firmPanFile"].url}
-                      fileName={
-                        fileUrls["firmPanFile"].key.split("/").pop() ||
-                        "Firm PAN"
-                      }
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </>
+        <BusinessKYC
+          data={businessKYCData}
+          onChange={setBusinessKYCData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "monthly_filing" ? (
         // Show MonthlyFiling for monthly_filing service
-        <>
-          <MonthlyFiling
-            data={monthlyFilingData}
-            onFileChange={handleFileChange}
-          />
-
-          {/* Individual file previews for MonthlyFiling files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["salesInvoiceFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Sales Invoice
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["salesInvoiceFile"].url}
-                  fileName={
-                    fileUrls["salesInvoiceFile"].key.split("/").pop() ||
-                    "Sales Invoice"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["purchaseInvoiceFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Purchase Invoice
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["purchaseInvoiceFile"].url}
-                  fileName={
-                    fileUrls["purchaseInvoiceFile"].key.split("/").pop() ||
-                    "Purchase Invoice"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["bankStatementFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Bank Statement
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["bankStatementFile"].url}
-                  fileName={
-                    fileUrls["bankStatementFile"].key.split("/").pop() ||
-                    "Bank Statement"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </>
+        <MonthlyFiling
+          data={monthlyFilingData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "annual_return" ? (
         // Show AnnualReturn for annual_return service
-        <>
-          <AnnualReturn
-            data={annualReturnData}
-            onChange={setAnnualReturnData}
-            onFileChange={handleFileChange}
-          />
-
-          {/* Individual file previews for AnnualReturn files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["outwardInwardSupplyFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Outward/Inward Supply
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["outwardInwardSupplyFile"].url}
-                  fileName={
-                    fileUrls["outwardInwardSupplyFile"].key.split("/").pop() ||
-                    "Outward/Inward Supply"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["taxPaymentDetailsFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Tax Payment Details
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["taxPaymentDetailsFile"].url}
-                  fileName={
-                    fileUrls["taxPaymentDetailsFile"].key.split("/").pop() ||
-                    "Tax Payment Details"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["inputTaxCreditFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Input Tax Credit
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["inputTaxCreditFile"].url}
-                  fileName={
-                    fileUrls["inputTaxCreditFile"].key.split("/").pop() ||
-                    "Input Tax Credit"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["previousYearReturnFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Previous Year Return
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["previousYearReturnFile"].url}
-                  fileName={
-                    fileUrls["previousYearReturnFile"].key.split("/").pop() ||
-                    "Previous Year Return"
-                  }
-                />
-              </div>
-            )}
-
-            {annualReturnData.gstrType === "GSTR-9C" && (
-              <>
-                {fileUrls["auditedFinancialStatementsFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Audited Financial Statements
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["auditedFinancialStatementsFile"].url}
-                      fileName={
-                        fileUrls["auditedFinancialStatementsFile"].key
-                          .split("/")
-                          .pop() || "Audited Financial Statements"
-                      }
-                    />
-                  </div>
-                )}
-
-                {fileUrls["reconciliationStatementFile"] && (
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Reconciliation Statement
-                    </h4>
-                    <IndividualFilePreview
-                      fileUrl={fileUrls["reconciliationStatementFile"].url}
-                      fileName={
-                        fileUrls["reconciliationStatementFile"].key
-                          .split("/")
-                          .pop() || "Reconciliation Statement"
-                      }
-                    />
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        </>
+        <AnnualReturn
+          data={annualReturnData}
+          onChange={setAnnualReturnData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "gst_e_invoice" ? (
         // Show GSTEInvoice for gst_e_invoice service
-        <>
-          <GSTEInvoice data={gstEInvoiceData} onFileChange={handleFileChange} />
-
-          {/* Individual file previews for GSTEInvoice files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["eInvoiceDocumentsFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  E-Invoice Documents
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["eInvoiceDocumentsFile"].url}
-                  fileName={
-                    fileUrls["eInvoiceDocumentsFile"].key.split("/").pop() ||
-                    "E-Invoice Documents"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </>
+        <GSTEInvoice
+          data={gstEInvoiceData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "claim_gst_refund" ? (
         // Show ClaimGSTRefund for claim_gst_refund service
-        <>
-          <ClaimGSTRefund
-            data={claimGSTRefundData}
-            onFileChange={handleFileChange}
-          />
-
-          {/* Individual file previews for ClaimGSTRefund files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["salesInvoiceFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Sales Invoice
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["salesInvoiceFile"].url}
-                  fileName={
-                    fileUrls["salesInvoiceFile"].key.split("/").pop() ||
-                    "Sales Invoice"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["purchaseInvoiceFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Purchase Invoice
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["purchaseInvoiceFile"].url}
-                  fileName={
-                    fileUrls["purchaseInvoiceFile"].key.split("/").pop() ||
-                    "Purchase Invoice"
-                  }
-                />
-              </div>
-            )}
-
-            {fileUrls["annexureBFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Annexure B
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["annexureBFile"].url}
-                  fileName={
-                    fileUrls["annexureBFile"].key.split("/").pop() ||
-                    "Annexure B"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </>
+        <ClaimGSTRefund
+          data={claimGSTRefundData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "gst_closure" ? (
         // Show GSTClosure for gst_closure service
-        <>
-          <GSTClosure data={gstClosureData} onFileChange={handleFileChange} />
-
-          {/* Individual file previews for GSTClosure files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["closureDocFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Closure Document
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["closureDocFile"].url}
-                  fileName={
-                    fileUrls["closureDocFile"].key.split("/").pop() ||
-                    "Closure Document"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </>
+        <GSTClosure
+          data={gstClosureData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "gst_amendment" ? (
         // Show GSTAmendment for gst_amendment service
-        <>
-          <GSTAmendment
-            data={gstAmendmentData}
-            onFileChange={handleFileChange}
-          />
-
-          {/* Individual file previews for GSTAmendment files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["amendmentDocFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  Amendment Document
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["amendmentDocFile"].url}
-                  fileName={
-                    fileUrls["amendmentDocFile"].key.split("/").pop() ||
-                    "Amendment Document"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </>
+        <GSTAmendment
+          data={gstAmendmentData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId === "gst_e_waybill" ? (
         // Show GSTEWaybill for gst_e_waybill service
-        <>
-          <GSTEWaybill data={gstEWaybillData} onFileChange={handleFileChange} />
-
-          {/* Individual file previews for GSTEWaybill files */}
-          <div className="mt-4 space-y-4">
-            {fileUrls["eWaybillDocFile"] && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-2">
-                  E-Waybill Document
-                </h4>
-                <IndividualFilePreview
-                  fileUrl={fileUrls["eWaybillDocFile"].url}
-                  fileName={
-                    fileUrls["eWaybillDocFile"].key.split("/").pop() ||
-                    "E-Waybill Document"
-                  }
-                />
-              </div>
-            )}
-          </div>
-        </>
+        <GSTEWaybill
+          data={gstEWaybillData}
+          onFileChange={handleFileChange}
+          fileUrls={fileUrls}
+        />
       ) : serviceUniqueId ? (
         // For any other service with a serviceUniqueId, show appropriate component based on service type
         <div className="p-6 border rounded-md">

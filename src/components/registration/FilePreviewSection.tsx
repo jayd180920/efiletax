@@ -10,8 +10,9 @@ export default function FilePreviewSection({
   fileUrls,
   onFileRemove,
 }: FilePreviewSectionProps) {
-  // Initialize state for expanded file view
+  // Initialize state for expanded file view and image errors
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
 
   // Icon for the section
   const icon = (
@@ -37,6 +38,8 @@ export default function FilePreviewSection({
 
   // Function to get file extension
   const getFileExtension = (url: string) => {
+    if (!url) return "";
+
     // For data URLs, extract the MIME type
     if (url.startsWith("data:")) {
       const mimeType = url.split(";")[0].split(":")[1];
@@ -55,6 +58,8 @@ export default function FilePreviewSection({
 
   // Function to check if file is an image
   const isImage = (url: string) => {
+    if (!url) return false;
+
     // For data URLs, check the MIME type directly
     if (url.startsWith("data:")) {
       return url.startsWith("data:image/");
@@ -72,6 +77,8 @@ export default function FilePreviewSection({
 
   // Function to check if file is a PDF
   const isPdf = (url: string) => {
+    if (!url) return false;
+
     // For data URLs, check the MIME type directly
     if (url.startsWith("data:")) {
       return url.startsWith("data:application/pdf");
@@ -206,15 +213,44 @@ export default function FilePreviewSection({
             >
               {isImage(url) ? (
                 <div className="flex justify-center h-full">
-                  <img
-                    src={url}
-                    alt={`Preview of ${name}`}
-                    className={`${
-                      expandedFile === key
-                        ? "max-h-96 w-auto"
-                        : "h-full object-contain"
-                    }`}
-                  />
+                  {imageErrors[key] ? (
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-12 w-12 text-gray-400"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                        />
+                      </svg>
+                      <span className="mt-2 text-sm text-gray-600">
+                        Image failed to load
+                      </span>
+                    </div>
+                  ) : (
+                    <img
+                      src={url}
+                      alt={`Preview of ${name}`}
+                      className={`${
+                        expandedFile === key
+                          ? "max-h-96 w-auto"
+                          : "h-full object-contain"
+                      }`}
+                      onError={(e) => {
+                        console.error(
+                          "Error loading image in FilePreviewSection:",
+                          e
+                        );
+                        setImageErrors((prev) => ({ ...prev, [key]: true }));
+                      }}
+                    />
+                  )}
                 </div>
               ) : isPdf(url) ? (
                 <div className="flex flex-col items-center justify-center h-full">

@@ -11,9 +11,14 @@ interface GSTClosureData {
 interface GSTClosureProps {
   data: GSTClosureData;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
-export default function GSTClosure({ data, onFileChange }: GSTClosureProps) {
+export default function GSTClosure({
+  data,
+  onFileChange,
+  fileUrls,
+}: GSTClosureProps) {
   // Icon for the section
   const icon = (
     <svg
@@ -58,6 +63,8 @@ export default function GSTClosure({ data, onFileChange }: GSTClosureProps) {
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["closureDocFile"]?.url}
+              existingFileKey={fileUrls?.["closureDocFile"]?.key}
             />
           </div>
         </div>

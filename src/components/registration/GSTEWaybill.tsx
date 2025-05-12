@@ -11,9 +11,14 @@ interface GSTEWaybillData {
 interface GSTEWaybillProps {
   data: GSTEWaybillData;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
-export default function GSTEWaybill({ data, onFileChange }: GSTEWaybillProps) {
+export default function GSTEWaybill({
+  data,
+  onFileChange,
+  fileUrls,
+}: GSTEWaybillProps) {
   // Icon for the section
   const icon = (
     <svg
@@ -58,6 +63,8 @@ export default function GSTEWaybill({ data, onFileChange }: GSTEWaybillProps) {
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["eWaybillDocFile"]?.url}
+              existingFileKey={fileUrls?.["eWaybillDocFile"]?.key}
             />
           </div>
         </div>

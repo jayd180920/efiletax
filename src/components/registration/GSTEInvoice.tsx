@@ -11,9 +11,14 @@ interface GSTEInvoiceData {
 interface GSTEInvoiceProps {
   data: GSTEInvoiceData;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
-export default function GSTEInvoice({ data, onFileChange }: GSTEInvoiceProps) {
+export default function GSTEInvoice({
+  data,
+  onFileChange,
+  fileUrls,
+}: GSTEInvoiceProps) {
   // Icon for the section
   const icon = (
     <svg
@@ -58,6 +63,8 @@ export default function GSTEInvoice({ data, onFileChange }: GSTEInvoiceProps) {
               onFileChange={onFileChange}
               accept=".jpg,.jpeg,.png,.pdf"
               required
+              existingFileUrl={fileUrls?.["eInvoiceDocumentsFile"]?.url}
+              existingFileKey={fileUrls?.["eInvoiceDocumentsFile"]?.key}
             />
           </div>
         </div>

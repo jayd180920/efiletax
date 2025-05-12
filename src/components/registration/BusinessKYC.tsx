@@ -65,12 +65,14 @@ interface BusinessKYCProps {
   data: BusinessKYCData;
   onChange: (data: BusinessKYCData) => void;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
 export default function BusinessKYC({
   data,
   onChange,
   onFileChange,
+  fileUrls,
 }: BusinessKYCProps) {
   // Handle text input changes
   const handleTextChange = (
@@ -316,6 +318,8 @@ export default function BusinessKYC({
                 file={data.proprietorData.proprietorAadharFile}
                 onFileChange={handleFileChange}
                 required
+                existingFileUrl={fileUrls?.["proprietorAadharFile"]?.url}
+                existingFileKey={fileUrls?.["proprietorAadharFile"]?.key}
               />
             </div>
           </div>
@@ -345,6 +349,8 @@ export default function BusinessKYC({
                 file={data.proprietorData.proprietorPanFile}
                 onFileChange={handleFileChange}
                 required
+                existingFileUrl={fileUrls?.["proprietorPanFile"]?.url}
+                existingFileKey={fileUrls?.["proprietorPanFile"]?.key}
               />
             </div>
           </div>

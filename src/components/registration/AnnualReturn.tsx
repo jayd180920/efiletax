@@ -20,12 +20,14 @@ interface AnnualReturnProps {
   data: AnnualReturnData;
   onChange: (data: AnnualReturnData) => void;
   onFileChange: (name: string, file: File | null) => void;
+  fileUrls?: Record<string, { key: string; url: string }>;
 }
 
 export default function AnnualReturn({
   data,
   onChange,
   onFileChange,
+  fileUrls,
 }: AnnualReturnProps) {
   // Icon for the section
   const icon = (
@@ -101,6 +103,8 @@ export default function AnnualReturn({
                   onFileChange={onFileChange}
                   accept=".jpg,.jpeg,.png,.pdf"
                   required
+                  existingFileUrl={fileUrls?.["outwardInwardSupplyFile"]?.url}
+                  existingFileKey={fileUrls?.["outwardInwardSupplyFile"]?.key}
                 />
 
                 <FileUploadField
@@ -111,6 +115,8 @@ export default function AnnualReturn({
                   onFileChange={onFileChange}
                   accept=".jpg,.jpeg,.png,.pdf"
                   required
+                  existingFileUrl={fileUrls?.["taxPaymentDetailsFile"]?.url}
+                  existingFileKey={fileUrls?.["taxPaymentDetailsFile"]?.key}
                 />
 
                 <FileUploadField
@@ -121,6 +127,8 @@ export default function AnnualReturn({
                   onFileChange={onFileChange}
                   accept=".jpg,.jpeg,.png,.pdf"
                   required
+                  existingFileUrl={fileUrls?.["inputTaxCreditFile"]?.url}
+                  existingFileKey={fileUrls?.["inputTaxCreditFile"]?.key}
                 />
 
                 <FileUploadField
@@ -131,6 +139,8 @@ export default function AnnualReturn({
                   onFileChange={onFileChange}
                   accept=".jpg,.jpeg,.png,.pdf"
                   required
+                  existingFileUrl={fileUrls?.["previousYearReturnFile"]?.url}
+                  existingFileKey={fileUrls?.["previousYearReturnFile"]?.key}
                 />
               </>
             )}
@@ -146,6 +156,12 @@ export default function AnnualReturn({
                   onFileChange={onFileChange}
                   accept=".jpg,.jpeg,.png,.pdf"
                   required
+                  existingFileUrl={
+                    fileUrls?.["auditedFinancialStatementsFile"]?.url
+                  }
+                  existingFileKey={
+                    fileUrls?.["auditedFinancialStatementsFile"]?.key
+                  }
                 />
 
                 <FileUploadField
@@ -156,6 +172,12 @@ export default function AnnualReturn({
                   onFileChange={onFileChange}
                   accept=".jpg,.jpeg,.png,.pdf"
                   required
+                  existingFileUrl={
+                    fileUrls?.["reconciliationStatementFile"]?.url
+                  }
+                  existingFileKey={
+                    fileUrls?.["reconciliationStatementFile"]?.key
+                  }
                 />
               </>
             )}

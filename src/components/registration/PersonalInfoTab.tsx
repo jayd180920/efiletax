@@ -107,6 +107,12 @@ interface PersonalInfoTabProps {
   updateFormData?: (data: {
     permanentInfo: any;
     identification: any;
+    companyName: any;
+    aadharGST: any;
+    directors: any;
+    partners: any;
+    nominee: any;
+    alterationDetails: any;
     address: any;
     bankDetails: any;
     placeOfBusiness: any;
@@ -450,16 +456,18 @@ export default function PersonalInfoTab({
   // Check if all required fields are filled
   const isFormValid = () => {
     // Basic validation for all service types
-    if (
-      !permanentInfo.firstName ||
-      !permanentInfo.lastName ||
-      !permanentInfo.dateOfBirth ||
-      !permanentInfo.fatherName ||
-      !permanentInfo.gender ||
-      !permanentInfo.mobileNumber ||
-      !permanentInfo.email
-    ) {
-      return false;
+    if (serviceUniqueId !== "company_name_change") {
+      if (
+        !permanentInfo.firstName ||
+        !permanentInfo.lastName ||
+        !permanentInfo.dateOfBirth ||
+        !permanentInfo.fatherName ||
+        !permanentInfo.gender ||
+        !permanentInfo.mobileNumber ||
+        !permanentInfo.email
+      ) {
+        return false;
+      }
     }
 
     // Service-specific validation
@@ -890,6 +898,12 @@ export default function PersonalInfoTab({
         // Prepare form data with file upload results
         const formDataToSubmit = {
           permanentInfo,
+          companyName,
+          directors,
+          partners,
+          nominee,
+          alterationDetails,
+          aadharGST,
           identification: {
             ...identification,
             mobileNumber: permanentInfo.mobileNumber,
@@ -1108,6 +1122,12 @@ export default function PersonalInfoTab({
             if (updateFormData) {
               updateFormData({
                 permanentInfo,
+                companyName,
+                directors,
+                partners,
+                nominee,
+                alterationDetails,
+                aadharGST,
                 identification: {
                   ...identification,
                   mobileNumber: permanentInfo.mobileNumber,
@@ -1141,6 +1161,12 @@ export default function PersonalInfoTab({
           if (updateFormData) {
             updateFormData({
               permanentInfo,
+              companyName,
+              directors,
+              partners,
+              nominee,
+              alterationDetails,
+              aadharGST,
               identification: {
                 ...identification,
                 mobileNumber: permanentInfo.mobileNumber,

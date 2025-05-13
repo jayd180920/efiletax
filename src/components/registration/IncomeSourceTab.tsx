@@ -343,7 +343,10 @@ export default function IncomeSourceTab({
   useEffect(() => {
     const getSubmissionData = async () => {
       // Check if we have a submission ID
-      const submissionId: any = params.id || null;
+      let submissionId: any = params?.id || null;
+      if (!submissionId) {
+        submissionId = window.formData?.submissionId || null;
+      }
 
       if (submissionId && activeTab === "income-source") {
         console.log("Fetching submission data for IncomeSourceTab...");
@@ -788,7 +791,10 @@ export default function IncomeSourceTab({
       }
 
       // Check if we have a submission ID from a previous save
-      const submissionId = params.id || null;
+      let submissionId: any = params?.id || null;
+      if (!submissionId) {
+        submissionId = window.formData?.submissionId || null;
+      }
 
       if (submissionId) {
         // Update existing submission
@@ -917,7 +923,10 @@ export default function IncomeSourceTab({
           });
 
           // Get the submission ID if it exists
-          const submissionId = params.id || null;
+          let submissionId: any = params?.id || null;
+          if (!submissionId) {
+            submissionId = window.formData?.submissionId || null;
+          }
 
           // If we have a submission ID, update the submission with file URLs
           if (submissionId) {
@@ -1053,7 +1062,10 @@ export default function IncomeSourceTab({
         }
 
         // Get the submission ID if it exists
-        const submissionId = params.id || null;
+        let submissionId: any = params?.id || null;
+        if (!submissionId) {
+          submissionId = window.formData?.submissionId || null;
+        }
 
         // Update parent component's state with form data and submission ID
         if (updateFormData) {

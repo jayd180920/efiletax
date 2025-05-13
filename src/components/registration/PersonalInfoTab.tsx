@@ -306,7 +306,11 @@ export default function PersonalInfoTab({
   useEffect(() => {
     const getSubmissionData = async () => {
       // Check if we have a submission ID
-      const submissionId: any = params.id || null;
+      let submissionId: any = params.id || null;
+      if (!submissionId) {
+        submissionId = window.formData?.submissionId || null;
+      }
+
       console.log("123456 Fetching submission data for PersonalInfoTab...");
       console.log(
         "123456 Fetching submission data for PersonalInfoTab...",
@@ -898,7 +902,10 @@ export default function PersonalInfoTab({
         };
 
         // Check if we have a submission ID from a previous save
-        const submissionId = params.id || null;
+        let submissionId: any = params?.id || null;
+        if (!submissionId) {
+          submissionId = window.formData?.submissionId || null;
+        }
 
         let response;
         let result;
@@ -1032,7 +1039,10 @@ export default function PersonalInfoTab({
             });
 
             // Get the submission ID if it exists
-            const submissionId: any = params.id || null;
+            let submissionId: any = params?.id || null;
+            if (!submissionId) {
+              submissionId = window.formData?.submissionId || null;
+            }
 
             // If we have a submission ID, update the submission with file URLs
             if (submissionId) {
@@ -1122,12 +1132,10 @@ export default function PersonalInfoTab({
         } else {
           // No files to upload, just update parent component's state
           // Get the submission ID if it exists
-          const submissionId =
-            typeof window !== "undefined" &&
-            window.formData &&
-            window.formData.submissionId
-              ? window.formData.submissionId
-              : null;
+          let submissionId: any = params?.id || null;
+          if (!submissionId) {
+            submissionId = window.formData?.submissionId || null;
+          }
 
           // Update parent component's state with form data and submission ID
           if (updateFormData) {

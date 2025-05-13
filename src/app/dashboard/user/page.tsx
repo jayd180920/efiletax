@@ -245,7 +245,7 @@ export default function UserDashboard() {
             {/* Submissions */}
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                My Submissions 123
+                My Submissions
               </h2>
 
               <div className="mb-4 flex justify-between items-center">
@@ -271,7 +271,7 @@ export default function UserDashboard() {
               {/* <UserSubmissionsList /> */}
 
               {/* Debug Component */}
-              <div className="mt-8">
+              {/* <div className="mt-8">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
                   Debug Information
                 </h3>
@@ -283,7 +283,7 @@ export default function UserDashboard() {
                     <SubmissionsDebug />
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </main>

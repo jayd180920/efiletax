@@ -125,7 +125,7 @@ const UserSubmissionsList = () => {
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
-          My Submissions 1234
+          My Submissions
         </h3>
         <div className="flex items-center">
           <label htmlFor="status-filter" className="mr-2 text-sm text-gray-700">

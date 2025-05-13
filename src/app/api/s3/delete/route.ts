@@ -20,10 +20,12 @@ export async function DELETE(req: NextRequest) {
       throw new UnauthorizedError("Authentication required");
     }
 
-    // Check if user is admin (only admins can delete files)
-    if (auth && auth.role !== "admin") {
-      throw new UnauthorizedError("Admin access required");
-    }
+    // Allow both admin users and regular authenticated users to delete their own files
+    // We'll rely on the S3 key structure to ensure users can only delete their own files
+
+    // Get user ID from authentication
+    const userId = auth?.userId || (nextAuthToken?.sub as string);
+    const isAdmin = auth?.role === "admin";
 
     // Get the S3 key from the query parameters
     const url = new URL(req.url);
@@ -36,9 +38,40 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
+    // Security check: Ensure users can only delete their own files
+    // S3 key format: uploads/{userId}/{serviceId}/{filename}
+    if (!isAdmin) {
+      const keyParts = key.split("/");
+      console.log("S3 Delete - Security check:", {
+        key,
+        keyParts,
+        userId,
+        isAdmin,
+      });
+
+      if (keyParts.length >= 2) {
+        const fileUserId = keyParts[1];
+        if (fileUserId !== userId) {
+          console.log("S3 Delete - Unauthorized attempt:", {
+            fileUserId,
+            userId,
+            key,
+          });
+          throw new UnauthorizedError("You can only delete your own files");
+        }
+      }
+    }
+
     try {
       // Delete the file from S3
       await deleteFileFromS3(key);
+
+      // Log successful deletion
+      console.log("S3 Delete - File deleted successfully:", {
+        key,
+        userId,
+        isAdmin,
+      });
 
       // Return success
       return NextResponse.json({

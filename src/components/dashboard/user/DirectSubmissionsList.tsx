@@ -192,42 +192,44 @@ const DirectSubmissionsList = () => {
               <li key={submission._id}>
                 <div className="px-4 py-4 sm:px-6">
                   <div className="flex items-center justify-between">
-                    <div className="flex flex-col">
-                      <p className="text-sm font-medium text-primary truncate">
-                        <Link
-                          href={`/dashboard/user/submissions/${submission._id}`}
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                            submission.status || "pending"
+                          )}`}
                         >
-                          {submission.serviceName}
-                        </Link>
-                      </p>
-                      <p className="mt-1 text-xs text-gray-500">
-                        Submitted on{" "}
-                        {submission.createdAt
-                          ? formatDate(submission.createdAt)
-                          : "N/A"}
-                      </p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.status || "pending"
-                        )}`}
-                      >
-                        {submission.status
-                          ? submission.status.charAt(0).toUpperCase() +
-                            submission.status.slice(1)
-                          : "Pending"}
-                      </span>
-                      <span
-                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.paymentStatus || "pending"
-                        )}`}
-                      >
-                        {submission.paymentStatus
-                          ? submission.paymentStatus.charAt(0).toUpperCase() +
-                            submission.paymentStatus.slice(1)
-                          : "Pending"}
-                      </span>
+                          {submission.status
+                            ? submission.status.charAt(0).toUpperCase() +
+                              submission.status.slice(1)
+                            : "Pending"}
+                        </span>
+                        <span
+                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                            submission.paymentStatus || "pending"
+                          )}`}
+                        >
+                          {submission.paymentStatus
+                            ? submission.paymentStatus.charAt(0).toUpperCase() +
+                              submission.paymentStatus.slice(1)
+                            : "Pending"}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <p className="text-sm font-medium text-primary truncate">
+                          <Link
+                            href={`/dashboard/user/submissions/${submission._id}`}
+                          >
+                            {submission.serviceName}
+                          </Link>
+                        </p>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Submitted on{" "}
+                          {submission.createdAt
+                            ? formatDate(submission.createdAt)
+                            : "N/A"}
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-2 sm:flex sm:justify-between">
@@ -239,18 +241,52 @@ const DirectSubmissionsList = () => {
                           : "N/A"}
                       </p>
                     </div>
-                    <div className="mt-2 flex items-center text-sm sm:mt-0">
+                    <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-3 action-buttons">
                       <Link
                         href={`/dashboard/user/submissions/${submission._id}`}
-                        className="text-primary hover:text-primary-700"
+                        className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                        title="View Details"
                       >
-                        View Details
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
                       </Link>
                       <Link
                         href={`/dashboard/user/submissions/${submission._id}/edit`}
-                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        title="Edit"
                       >
-                        Edit
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                          />
+                        </svg>
                       </Link>
                       {submission.status === "rejected" && (
                         <div className="ml-4 text-sm text-red-600">

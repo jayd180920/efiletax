@@ -107,6 +107,11 @@ export default function SubmissionDetailsView({
   const renderFormDataSections = () => {
     return Object.entries(submission.formData)
       .map(([sectionKey, sectionValue]) => {
+        console.log(
+          `Rendering section: abcd ${sectionKey}, value: ${JSON.stringify(
+            sectionValue
+          )}`
+        );
         // Skip empty sections
         if (isSectionEmpty(sectionValue as Record<string, any>)) {
           return null;
@@ -117,16 +122,21 @@ export default function SubmissionDetailsView({
             <AccordionTrigger className="bg-gray-50">
               <div className="flex items-center">
                 <div>
-                  <h3 className="text-lg font-medium">
+                  <h3 className="text-lg font-medium ABCD">
                     {formatLabel(sectionKey)}
                   </h3>
                 </div>
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 abcdefgh">
                 {Object.entries(sectionValue as Record<string, any>).map(
                   ([fieldKey, fieldValue]) => {
+                    console.log(
+                      `Rendering section:fieldKey ${fieldKey}, value:fieldValue ${JSON.stringify(
+                        fieldValue
+                      )}`
+                    );
                     // Skip empty fields
                     if (isFieldEmpty(fieldValue)) {
                       return null;
@@ -141,30 +151,96 @@ export default function SubmissionDetailsView({
                           {typeof fieldValue === "object" &&
                           fieldValue !== null ? (
                             Array.isArray(fieldValue) ? (
-                              <div className="space-y-4">
-                                {fieldValue.map((item, idx) => (
-                                  <div
-                                    key={idx}
-                                    className="border-l-2 border-blue-200 pl-3 py-1"
-                                  >
-                                    {Object.entries(item).map(
-                                      ([itemKey, itemValue]) => (
-                                        <div key={itemKey} className="mb-1">
-                                          <span className="font-medium">
-                                            {formatLabel(itemKey)}:{" "}
-                                          </span>
-                                          <span>
-                                            {typeof itemValue === "object" &&
-                                            itemValue !== null
-                                              ? JSON.stringify(itemValue)
-                                              : String(itemValue || "-")}
-                                          </span>
-                                        </div>
-                                      )
-                                    )}
+                              sectionKey === "directors" ? (
+                                // Special handling for directors
+                                fieldValue.length > 0 && fieldValue[0].name ? (
+                                  <div className="space-y-4">
+                                    <h4 className="font-medium text-gray-700">
+                                      Directors {sectionKey}
+                                    </h4>
+                                    {fieldValue.map((item, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="border-l-2 border-blue-200 pl-3 py-1"
+                                      >
+                                        {Object.entries(item).map(
+                                          ([itemKey, itemValue]) => (
+                                            <div key={itemKey} className="mb-1">
+                                              <span className="font-medium">
+                                                {formatLabel(itemKey)}:{" "}
+                                              </span>
+                                              <span>
+                                                {typeof itemValue ===
+                                                  "object" && itemValue !== null
+                                                  ? JSON.stringify(itemValue)
+                                                  : String(itemValue || "-")}
+                                              </span>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    ))}
                                   </div>
-                                ))}
-                              </div>
+                                ) : null
+                              ) : sectionKey === "partners" ? (
+                                // Special handling for partners
+                                fieldValue.length > 0 &&
+                                fieldValue[0].name !== "" ? (
+                                  <div className="space-y-4">
+                                    <h4 className="font-medium text-gray-700 abcdef">
+                                      Partners
+                                    </h4>
+                                    {fieldValue.map((item, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="border-l-2 border-blue-200 pl-3 py-1"
+                                      >
+                                        {Object.entries(item).map(
+                                          ([itemKey, itemValue]) => (
+                                            <div key={itemKey} className="mb-1">
+                                              <span className="font-medium">
+                                                {formatLabel(itemKey)}:{" "}
+                                              </span>
+                                              <span>
+                                                {typeof itemValue ===
+                                                  "object" && itemValue !== null
+                                                  ? JSON.stringify(itemValue)
+                                                  : String(itemValue || "-")}
+                                              </span>
+                                            </div>
+                                          )
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null
+                              ) : (
+                                // Default handling for other arrays
+                                <div className="space-y-4">
+                                  {fieldValue.map((item, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="border-l-2 border-blue-200 pl-3 py-1"
+                                    >
+                                      {Object.entries(item).map(
+                                        ([itemKey, itemValue]) => (
+                                          <div key={itemKey} className="mb-1">
+                                            <span className="font-medium">
+                                              {formatLabel(itemKey)}:{" "}
+                                            </span>
+                                            <span>
+                                              {typeof itemValue === "object" &&
+                                              itemValue !== null
+                                                ? JSON.stringify(itemValue)
+                                                : String(itemValue || "-")}
+                                            </span>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )
                             ) : (
                               <div className="space-y-2">
                                 {Object.entries(fieldValue).map(

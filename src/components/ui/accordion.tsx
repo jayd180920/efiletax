@@ -144,6 +144,7 @@ export function AccordionContent({
   className = "",
   children,
 }: AccordionContentProps) {
+  console.log("AccordionContent", children);
   const { isExpanded } = React.useContext(AccordionContext);
   const { value } = React.useContext(AccordionItemContext);
   const expanded = isExpanded(value);

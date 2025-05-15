@@ -226,35 +226,37 @@ const SubmissionsList = () => {
             <li key={submission._id}>
               <div className="px-4 py-4 sm:px-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <p className="text-sm font-medium text-blue-600 truncate">
-                      <Link
-                        href={`/dashboard/admin/submissions/${submission._id}`}
+                  <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-2">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                          submission.status
+                        )}`}
                       >
-                        {submission.serviceName}
-                      </Link>
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500">
-                      Submitted on {formatDate(submission.createdAt)}
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                        submission.status
-                      )}`}
-                    >
-                      {submission.status.charAt(0).toUpperCase() +
-                        submission.status.slice(1)}
-                    </span>
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                        submission.paymentStatus
-                      )}`}
-                    >
-                      {submission.paymentStatus.charAt(0).toUpperCase() +
-                        submission.paymentStatus.slice(1)}
-                    </span>
+                        {submission.status.charAt(0).toUpperCase() +
+                          submission.status.slice(1)}
+                      </span>
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                          submission.paymentStatus
+                        )}`}
+                      >
+                        {submission.paymentStatus.charAt(0).toUpperCase() +
+                          submission.paymentStatus.slice(1)}
+                      </span>
+                    </div>
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-blue-600 truncate">
+                        <Link
+                          href={`/dashboard/admin/submissions/${submission._id}`}
+                        >
+                          {submission.serviceName}
+                        </Link>
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Submitted on {formatDate(submission.createdAt)}
+                      </p>
+                    </div>
                   </div>
                 </div>
                 <div className="mt-2 sm:flex sm:justify-between">
@@ -264,28 +266,116 @@ const SubmissionsList = () => {
                     </p>
                   </div>
                   <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-2">
+                    <Link
+                      href={`/dashboard/admin/submissions/${submission._id}`}
+                      className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      title="View Details"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    </Link>
+                    <Link
+                      href={`/dashboard/admin/submissions/${submission._id}/edit`}
+                      className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      title="Edit"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </Link>
+                    <Link
+                      href={`/dashboard/admin/submissions/${submission._id}/feedback`}
+                      className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                      title="Feedback"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                        />
+                      </svg>
+                    </Link>
                     {submission.status === "pending" && (
                       <>
                         <button
                           onClick={() => openActionModal(submission, "approve")}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                          title="Approve"
                         >
-                          Approve
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
                         </button>
                         <button
                           onClick={() => openActionModal(submission, "reject")}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                          title="Reject"
                         >
-                          Reject
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
                         </button>
                       </>
                     )}
-                    <Link
-                      href={`/dashboard/admin/submissions/${submission._id}/edit`}
-                      className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                    >
-                      Edit
-                    </Link>
                   </div>
                 </div>
               </div>

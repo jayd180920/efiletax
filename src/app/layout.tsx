@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "eFileTax - Tax Filing Services",
   description:
     "Simplifying tax filing and compliance for businesses and individuals",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 
 export default function RootLayout({

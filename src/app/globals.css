@@ -55,3 +55,6 @@ button {
 .sidebar-list li .text-gray-700 {
   color: #029c94;
 }
+.flex.items-center.justify-between.border-b.px-4.py-5 {
+  border: none;
+}

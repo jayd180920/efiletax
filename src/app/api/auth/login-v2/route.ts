@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax", // Changed from 'strict' to 'lax' for better compatibility
+      sameSite: "strict", // Changed back to 'strict' for consistency with the original login API
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });

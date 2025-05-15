@@ -2,7 +2,8 @@
 
 import React from "react";
 import Header from "./Header";
-import Footer from "./Footer";
+// Footer is hidden as per requirements
+// import Footer from "./Footer";
 import { AuthProvider, NextAuthProvider } from "@/components/auth/AuthContext";
 import { useAuth } from "@/components/auth/AuthContext";
 
@@ -23,11 +24,9 @@ const ClientLayout: React.FC<ClientLayoutProps> = ({ children }) => {
   return (
     <NextAuthProvider>
       <AuthProvider>
-        <Header />
+        {/* <Header /> */}
         <main className="flex-grow">{children}</main>
-        <div className={`${showSidebar ? "lg:ml-64" : ""}`}>
-          <Footer />
-        </div>
+        {/* Footer is hidden as per requirements */}
       </AuthProvider>
     </NextAuthProvider>
   );

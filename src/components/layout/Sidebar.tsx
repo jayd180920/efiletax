@@ -14,7 +14,15 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   // Define sidebar menu items based on user role
   const menuItems = [
@@ -143,25 +151,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       ),
       roles: ["user"],
     },
-    {
-      title: "Common Services",
-      href: "/dashboard/user/common-submissions",
-      icon: (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l4-2 4 2V6z"
-            clipRule="evenodd"
-          />
-        </svg>
-      ),
-      roles: ["user"],
-    },
+    // {
+    //   title: "Common Services",
+    //   href: "/dashboard/user/common-submissions",
+    //   icon: (
+    //     <svg
+    //       xmlns="http://www.w3.org/2000/svg"
+    //       className="h-5 w-5"
+    //       viewBox="0 0 20 20"
+    //       fill="currentColor"
+    //     >
+    //       <path
+    //         fillRule="evenodd"
+    //         d="M3 5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V5zm11 1H6v8l4-2 4 2V6z"
+    //         clipRule="evenodd"
+    //       />
+    //     </svg>
+    //   ),
+    //   roles: ["user"],
+    // },
   ];
 
   // Filter menu items based on user role
@@ -220,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
           {/* Sidebar content */}
           <nav className="flex-1 overflow-y-auto px-4 py-4">
-            <ul className="space-y-2">
+            <ul className="space-y-2 sidebar-list">
               {filteredMenuItems.map((item, index) => (
                 <li key={index}>
                   <Link
@@ -242,18 +250,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           {/* Sidebar footer */}
           {user && (
             <div className="border-t px-4 py-4">
-              <div className="flex items-center">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary">
-                  {user.name.charAt(0).toUpperCase()}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-700">
+                      {user.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm font-medium text-gray-700">
-                    {user.name}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
-                  </p>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-500 hover:text-gray-700"
+                  title="Logout"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </button>
               </div>
             </div>
           )}

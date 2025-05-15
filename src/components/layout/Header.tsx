@@ -131,24 +131,7 @@ const Header = () => {
             {loading ? (
               <div className="px-4 py-2">Loading...</div>
             ) : user ? (
-              <>
-                {/* <Link
-                  href={
-                    user.role === "admin"
-                      ? "/dashboard/admin"
-                      : "/dashboard/user"
-                  }
-                  className="px-4 py-2 text-primary hover:text-primary-700"
-                >
-                  Dashboard
-                </Link> */}
-                <button
-                  onClick={handleLogout}
-                  className="px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary-50"
-                >
-                  Logout
-                </button>
-              </>
+              <></>
             ) : (
               <>
                 <Link

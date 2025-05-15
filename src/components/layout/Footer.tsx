@@ -1,7 +1,19 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/components/auth/AuthContext";
 
 const Footer = () => {
+  const { user, logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
   return (
     <footer className="bg-gray-800 text-white py-8">
       <div className="container mx-auto px-4">
@@ -155,10 +167,33 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-300">
+        <div className="border-t border-gray-700 mt-8 pt-6 flex justify-between items-center text-gray-300">
           <p>
             &copy; {new Date().getFullYear()} eFileTax. All rights reserved.
           </p>
+          {user && (
+            <div className="flex items-center space-x-2">
+              <span>{user.name}</span>
+              <button
+                onClick={handleLogout}
+                className="text-gray-300 hover:text-white"
+                title="Logout"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </footer>

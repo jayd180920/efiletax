@@ -27,5 +27,31 @@ body {
 
 .text-white {
   color: #ffffff;
-  background-color: #2f4f4f;
+  background-color: #21b2aa;
+}
+h4.sign-in-text {
+  font-size: 18px;
+  padding-top: 10px;
+  color: #4a5565;
+}
+@media (min-width: 992px) {
+  div.mt-8.sm\:mx-auto.sm\:w-full.sm\:max-w-md {
+    max-width: 400px;
+  }
+}
+
+div.mt-8.sm\:mx-auto.sm\:w-full.sm\:max-w-md {
+  box-shadow: rgb(202 221 220) 0px 7px 29px 0px;
+  border-radius: 10px;
+}
+button {
+  cursor: pointer;
+}
+.sidebar-list li {
+  font-size: 14px;
+  color: #029c94;
+  box-shadow: rgb(237 238 238) 0px 4px 2px -2px;
+}
+.sidebar-list li .text-gray-700 {
+  color: #029c94;
 }

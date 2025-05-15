@@ -2,24 +2,84 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
 
 export default function Home() {
   const router = useRouter();
-  const { user, loading } = useAuth();
+  const searchParams = useSearchParams();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [callbackUrl, setCallbackUrl] = useState("/");
 
+  const { user, loading, login, loginWithGoogle } = useAuth();
+
+  // Get the callback URL from the query parameters
   useEffect(() => {
-    // If user is logged in, redirect to the appropriate dashboard
-    if (!loading && user) {
-      if (user.role === "admin") {
-        router.push("/dashboard/admin");
-      } else {
-        router.push("/dashboard/user");
+    const callback = searchParams.get("callbackUrl");
+    if (callback) {
+      // Check if the callback URL is valid
+      const validPaths = ["/dashboard/user", "/dashboard/admin"];
+      const isValidPath = validPaths.some((path) => callback.startsWith(path));
+
+      // If it's a valid path, use it; otherwise, it will default to "/"
+      if (isValidPath) {
+        setCallbackUrl(callback);
+      } else if (callback === "/dashboard/users") {
+        // Fix common typo: /dashboard/users -> /dashboard/user
+        setCallbackUrl("/dashboard/user");
       }
     }
-  }, [user, loading, router]);
+  }, [searchParams]);
+
+  // Redirect if user is already logged in
+  useEffect(() => {
+    // Only redirect if we're sure the user is logged in (has id and role)
+    if (!loading && user && user.id && user.role) {
+      console.log("User authenticated:", user, callbackUrl);
+
+      // Determine target URL
+      let targetUrl = callbackUrl || "";
+      if (user.role === "admin") {
+        targetUrl = "/dashboard/admin";
+      } else {
+        targetUrl = "/dashboard/user";
+      }
+
+      console.log("User authenticated, redirecting to:", targetUrl);
+
+      // Use window.location for direct navigation
+      if (typeof window !== "undefined") {
+        console.log("Target URL for redirect:", targetUrl);
+        console.log("Current pathname:", window.location.pathname);
+
+        // Add a small delay to ensure cookies are properly set before navigation
+        setTimeout(() => {
+          // Force navigation to the target URL
+          console.log("Using window.location to navigate to:", targetUrl);
+          window.location.href = targetUrl;
+        }, 100);
+      }
+    }
+  }, [user, loading, callbackUrl]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await login(email, password, callbackUrl);
+      // The redirect is handled in the AuthContext
+    } catch (error: any) {
+      console.error("Login error:", error);
+      alert(error.message || "Failed to login. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // If still loading or user is logged in (will be redirected), don't render content yet
   if (loading || user) {
@@ -30,337 +90,164 @@ export default function Home() {
     );
   }
   return (
-    <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-20">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center">
-            <div className="md:w-1/2 mb-10 md:mb-0">
-              <h1 className="text-4xl md:text-5xl font-bold mb-6">
-                Simplify Your Tax Filing Process
-              </h1>
-              <p className="text-xl mb-8">
-                Professional tax filing services for businesses and individuals.
-                Save time and ensure compliance with our expert solutions.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/auth/register"
-                  className="bg-white text-blue-700 hover:bg-gray-100 px-6 py-3 rounded-md font-medium text-center"
-                >
-                  Get Started
-                </Link>
-                <Link
-                  href="/services"
-                  className="bg-transparent border border-white text-white hover:bg-white/10 px-6 py-3 rounded-md font-medium text-center"
-                >
-                  Explore Services
-                </Link>
-              </div>
-            </div>
-            <div className="md:w-1/2 flex justify-center">
-              <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-                <h3 className="text-blue-800 font-bold text-xl mb-4">
-                  Quick Access
-                </h3>
-                <div className="space-y-3">
-                  <Link
-                    href="/services/gst-filing/new-registration"
-                    className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700"
-                  >
-                    <span className="mr-3">📝</span>
-                    GST Registration
-                  </Link>
-                  <Link
-                    href="/services/gst-filing/monthly-filing"
-                    className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700"
-                  >
-                    <span className="mr-3">📅</span>
-                    Monthly GST Filing
-                  </Link>
-                  <Link
-                    href="/services/itr-filing/gst-e-invoice"
-                    className="flex items-center p-3 bg-gray-50 hover:bg-gray-100 rounded-md text-gray-700"
-                  >
-                    <span className="mr-3">📄</span>
-                    GST e-Invoice
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <Image
+            src="/efiletax-logo.svg"
+            alt="eFileTax Logo"
+            width={200}
+            height={60}
+            priority
+          />
         </div>
-      </section>
+        <h4 className="sign-in-text mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h4>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Or{" "}
+          <Link
+            href="/auth/register"
+            className="font-medium text-primary hover:text-primary-500"
+          >
+            create a new account
+          </Link>
+        </p>
+      </div>
 
-      {/* Services Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Services</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              We offer a comprehensive range of tax filing and compliance
-              services to meet your business needs.
-            </p>
-          </div>
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                />
+              </div>
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* GST Filing */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="text-blue-600 mb-4">
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  Remember me
+                </label>
+              </div>
+
+              <div className="text-sm">
+                <a
+                  href="#"
+                  className="font-medium text-primary hover:text-primary-500"
+                >
+                  Forgot your password?
+                </a>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-secondary hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary ${
+                  isLoading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
+              >
+                {isLoading ? "Signing in..." : "Sign in"}
+              </button>
+            </div>
+          </form>
+
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-300" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-2 bg-white text-gray-500">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-1 gap-3">
+              <button
+                type="button"
+                onClick={() => loginWithGoogle(callbackUrl)}
+                className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
+              >
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  className="w-5 h-5 mr-2"
+                  aria-hidden="true"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
                 >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    d="M19.822 10.1227C19.822 9.35273 19.7553 8.78273 19.6107 8.19273H10.2V11.9627H15.7107C15.6 12.9327 15.0287 14.3227 13.7213 15.2227L13.7007 15.3607L16.6713 17.7027L16.8693 17.7227C18.7387 15.9427 19.822 13.2727 19.822 10.1227Z"
+                    fill="#4285F4"
                   />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">GST Filing</h3>
-              <p className="text-gray-600 mb-4">
-                Complete GST filing services including registration, monthly
-                filing, and annual returns.
-              </p>
-              <Link
-                href="/services/gst-filing"
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Learn More →
-              </Link>
-            </div>
-
-            {/* ITR Filing */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="text-blue-600 mb-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"
+                    d="M10.2 20C12.9293 20 15.2387 19.1227 16.8693 17.7227L13.7213 15.2227C12.8607 15.8227 11.7173 16.2427 10.2 16.2427C7.50267 16.2427 5.21533 14.4827 4.39733 12.0427L4.27467 12.0527L1.19067 14.4847L1.14667 14.6107C2.76933 17.7787 6.21733 20 10.2 20Z"
+                    fill="#34A853"
                   />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">ITR Filing</h3>
-              <p className="text-gray-600 mb-4">
-                Comprehensive ITR filing services including GST e-Invoice,
-                e-Waybill, and refund claims.
-              </p>
-              <Link
-                href="/services/itr-filing"
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Learn More →
-              </Link>
-            </div>
-
-            {/* ROC Filing */}
-            <div className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow">
-              <div className="text-blue-600 mb-4">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-12 w-12"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
                   <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                    d="M4.39733 12.0427C4.184 11.4427 4.06667 10.7827 4.06667 10.1C4.06667 9.41733 4.184 8.75733 4.38467 8.15733L4.37667 8.01067L1.27267 5.54267L1.14667 5.59C0.418667 6.98733 0 8.51267 0 10.1C0 11.6873 0.418667 13.2127 1.14667 14.6107L4.39733 12.0427Z"
+                    fill="#FBBC05"
+                  />
+                  <path
+                    d="M10.2 3.95733C12.1013 3.95733 13.4067 4.79733 14.1507 5.49067L16.9893 2.73733C15.2227 1.08267 12.9293 0 10.2 0C6.21733 0 2.76933 2.22133 1.14667 5.59L4.38467 8.15733C5.21533 5.71733 7.50267 3.95733 10.2 3.95733Z"
+                    fill="#EB4335"
                   />
                 </svg>
-              </div>
-              <h3 className="text-xl font-semibold mb-2">ROC Filing</h3>
-              <p className="text-gray-600 mb-4">
-                Expert ROC filing services including GST closure and amendment
-                procedures.
-              </p>
-              <Link
-                href="/services/roc-filing"
-                className="text-blue-600 hover:text-blue-800 font-medium"
-              >
-                Learn More →
-              </Link>
+                Sign in with Google
+              </button>
             </div>
           </div>
         </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="py-16">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">How It Works</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Our streamlined process makes tax filing simple and efficient.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="text-center">
-              <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                1
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Register</h3>
-              <p className="text-gray-600">
-                Create an account and select the service you need.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                2
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Submit Details</h3>
-              <p className="text-gray-600">
-                Fill out the required forms and upload necessary documents.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                3
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Expert Review</h3>
-              <p className="text-gray-600">
-                Our experts review your submission and process your filing.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-blue-100 text-blue-600 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">
-                4
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Completion</h3>
-              <p className="text-gray-600">
-                Receive confirmation and documentation of your completed filing.
-              </p>
-            </div>
-          </div>
-
-          <div className="text-center mt-12">
-            <Link
-              href="/auth/register"
-              className="bg-blue-600 text-white hover:bg-blue-700 px-8 py-3 rounded-md font-medium inline-block"
-            >
-              Get Started Now
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">What Our Clients Say</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Hear from businesses and individuals who have simplified their tax
-              filing with our services.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Testimonial 1 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="flex items-center mb-4">
-                <div className="text-yellow-400 flex">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                "eFileTax made our GST filing process incredibly simple. Their
-                team guided us through every step and ensured we were compliant.
-                Highly recommended!"
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold">Rahul Sharma</p>
-                <p className="text-gray-500 text-sm">Small Business Owner</p>
-              </div>
-            </div>
-
-            {/* Testimonial 2 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="flex items-center mb-4">
-                <div className="text-yellow-400 flex">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                "The ITR filing service was excellent. The team was professional
-                and responsive, making the entire process stress-free. I'll
-                definitely use their services again next year."
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold">Priya Patel</p>
-                <p className="text-gray-500 text-sm">Freelance Consultant</p>
-              </div>
-            </div>
-
-            {/* Testimonial 3 */}
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <div className="flex items-center mb-4">
-                <div className="text-yellow-400 flex">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-              </div>
-              <p className="text-gray-600 mb-4">
-                "As a startup founder, I needed help with ROC filing. eFileTax
-                provided exceptional service and expert guidance. Their team's
-                knowledge saved us time and ensured compliance."
-              </p>
-              <div className="mt-4">
-                <p className="font-semibold">Vikram Singh</p>
-                <p className="text-gray-500 text-sm">Tech Startup CEO</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

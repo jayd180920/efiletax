@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const loadUser = async () => {
       try {
         // Skip API calls if we're on the login page to prevent loops
+        // Note: We allow auth checks on home page to enable redirection to dashboard
         if (
           typeof window !== "undefined" &&
           window.location.pathname.includes("/auth/login")

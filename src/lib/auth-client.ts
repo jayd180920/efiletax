@@ -178,6 +178,21 @@ export async function register(
 
 // Logout function
 export async function logout(): Promise<void> {
+  // Clear all client-side cookies
+  const cookies = document.cookie.split(";");
+  for (let i = 0; i < cookies.length; i++) {
+    const cookie = cookies[i];
+    const eqPos = cookie.indexOf("=");
+    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+  }
+
+  // Clear session storage
+  sessionStorage.clear();
+
+  // Clear local storage (if used)
+  localStorage.clear();
+
   // Use NextAuth signOut for Google authentication
   await signOut({ callbackUrl: "/" });
 

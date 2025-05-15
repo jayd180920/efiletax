@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout/Layout";
+import SubmissionDetailsView from "@/components/dashboard/user/SubmissionDetailsView";
 
 interface Submission {
   _id: string;
@@ -18,6 +19,7 @@ interface Submission {
   status: "pending" | "approved" | "rejected";
   formData: Record<string, any>;
   files: Record<string, string[]>;
+  fileUrls?: Record<string, any>;
   rejectionReason?: string;
   paymentStatus: "pending" | "paid";
   amount: number;
@@ -381,132 +383,10 @@ export default function SubmissionDetailPage({
                   </div>
                 </div>
 
-                {/* Form Data */}
+                {/* Form Data and Files */}
                 <div className="px-6 py-5 border-t border-gray-200">
-                  <h3 className="text-lg font-medium text-gray-900 mb-3">
-                    Form Data
-                  </h3>
-                  <div className="bg-gray-50 rounded-md p-4">
-                    <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6">
-                      {Object.entries(submission.formData).map(
-                        ([key, value]) => (
-                          <div key={key} className="sm:col-span-1">
-                            <dt className="text-sm font-medium text-gray-500">
-                              {key
-                                .split(/(?=[A-Z])/)
-                                .join(" ")
-                                .replace(/^\w/, (c) => c.toUpperCase())}
-                            </dt>
-                            <dd className="mt-1 text-sm text-gray-900">
-                              {typeof value === "object"
-                                ? JSON.stringify(value)
-                                : String(value)}
-                            </dd>
-                          </div>
-                        )
-                      )}
-                    </dl>
-                  </div>
+                  <SubmissionDetailsView submission={submission} />
                 </div>
-
-                {/* Files */}
-                {Object.keys(submission.files).length > 0 && (
-                  <div className="px-6 py-5 border-t border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">
-                      Files
-                    </h3>
-                    <div className="space-y-4">
-                      {Object.entries(submission.files).map(
-                        ([category, files]) => (
-                          <div
-                            key={category}
-                            className="bg-gray-50 p-4 rounded-md"
-                          >
-                            <h4 className="text-sm font-medium text-gray-700 mb-2">
-                              {category
-                                .split(/(?=[A-Z])/)
-                                .join(" ")
-                                .replace(/^\w/, (c) => c.toUpperCase())}
-                            </h4>
-                            <ul className="space-y-2">
-                              {Array.isArray(files) ? (
-                                // Handle array of file paths or URLs
-                                files.map((file, index) => {
-                                  const fileName =
-                                    file.split("/").pop() || file;
-                                  return (
-                                    <li
-                                      key={index}
-                                      className="flex items-center"
-                                    >
-                                      <svg
-                                        className="h-5 w-5 text-gray-400 mr-2"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                        />
-                                      </svg>
-                                      <a
-                                        href={`/api/s3/download?key=${encodeURIComponent(
-                                          file
-                                        )}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-sm text-blue-600 hover:text-blue-800"
-                                      >
-                                        {fileName}
-                                      </a>
-                                    </li>
-                                  );
-                                })
-                              ) : (
-                                // Handle object with key and url properties
-                                <li className="flex items-center">
-                                  <svg
-                                    className="h-5 w-5 text-gray-400 mr-2"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                                    />
-                                  </svg>
-                                  <a
-                                    href={
-                                      (files as any).url ||
-                                      `/api/s3/download?key=${encodeURIComponent(
-                                        (files as any).key || ""
-                                      )}`
-                                    }
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-sm text-blue-600 hover:text-blue-800"
-                                  >
-                                    {((files as any).key || "")
-                                      .split("/")
-                                      .pop() || "File"}
-                                  </a>
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>

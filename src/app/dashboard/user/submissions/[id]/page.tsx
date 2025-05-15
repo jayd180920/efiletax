@@ -4,13 +4,16 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getSubmission } from "@/lib/auth-client";
+import SubmissionDetailsView from "@/components/dashboard/user/SubmissionDetailsView";
 
 interface Submission {
   _id: string;
+  userId: string;
   serviceId: string;
   serviceName: string;
   formData: Record<string, any>;
   files: Record<string, string[]>;
+  fileUrls: Record<string, any>;
   amount: number;
   status: "pending" | "approved" | "rejected";
   paymentStatus: "pending" | "paid" | "refunded";
@@ -26,7 +29,7 @@ export default function SubmissionDetailsPage() {
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [fileUrls, setFileUrls] = useState<Record<string, string[]>>({});
+  const [fileUrls, setFileUrls] = useState<Record<string, any>>({});
 
   useEffect(() => {
     const fetchSubmission = async () => {
@@ -38,7 +41,9 @@ export default function SubmissionDetailsPage() {
         setSubmission(data);
 
         // Set file URLs directly from submission data
-        if (data.files && Object.keys(data.files).length > 0) {
+        if (data.fileUrls && Object.keys(data.fileUrls).length > 0) {
+          setFileUrls(data.fileUrls);
+        } else if (data.files && Object.keys(data.files).length > 0) {
           setFileUrls(data.files);
         }
       } catch (err: any) {
@@ -163,16 +168,11 @@ export default function SubmissionDetailsPage() {
   }
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-        <div>
-          <h3 className="text-lg leading-6 font-medium text-gray-900">
-            Submission Details
-          </h3>
-          <p className="mt-1 max-w-2xl text-sm text-gray-500">
-            {submission.serviceName}
-          </p>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-semibold text-gray-900">
+          Submission Details
+        </h2>
         <Link
           href="/dashboard/user"
           className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -181,177 +181,63 @@ export default function SubmissionDetailsPage() {
         </Link>
       </div>
 
-      <div className="border-t border-gray-200">
-        <dl>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Service</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-              {submission.serviceName}
-            </dd>
+      <div className="bg-white shadow overflow-hidden sm:rounded-lg p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-gray-50 p-3 rounded">
+            <p className="text-sm font-medium text-gray-500">Service</p>
+            <p className="text-sm font-medium">{submission.serviceName}</p>
           </div>
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">
-              Submission Date
-            </dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <div className="bg-gray-50 p-3 rounded">
+            <p className="text-sm font-medium text-gray-500">Submission Date</p>
+            <p className="text-sm font-medium">
               {formatDate(submission.createdAt)}
-            </dd>
+            </p>
           </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Status</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-              <span
-                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                  submission.status
-                )}`}
-              >
-                {submission.status.charAt(0).toUpperCase() +
-                  submission.status.slice(1)}
-              </span>
-              {submission.status === "rejected" &&
-                submission.rejectionReason && (
-                  <p className="mt-1 text-sm text-red-600">
-                    Reason: {submission.rejectionReason}
-                  </p>
-                )}
-            </dd>
-          </div>
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">
-              Payment Status
-            </dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-              <span
-                className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                  submission.paymentStatus
-                )}`}
-              >
-                {submission.paymentStatus.charAt(0).toUpperCase() +
-                  submission.paymentStatus.slice(1)}
-              </span>
-            </dd>
-          </div>
-          <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Amount</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+          <div className="bg-gray-50 p-3 rounded">
+            <p className="text-sm font-medium text-gray-500">Amount</p>
+            <p className="text-sm font-medium">
               {formatCurrency(submission.amount)}
-            </dd>
+            </p>
           </div>
+        </div>
 
-          {/* Form Data */}
-          <div className="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-            <dt className="text-sm font-medium text-gray-500">Form Data</dt>
-            <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-              <div className="border border-gray-200 rounded-md divide-y divide-gray-200">
-                {Object.entries(submission.formData).map(([key, value]) => (
-                  <div
-                    key={key}
-                    className="px-4 py-3 flex items-center justify-between"
-                  >
-                    <span className="text-sm font-medium">{key}</span>
-                    <span className="text-sm text-gray-500">
-                      {typeof value === "object"
-                        ? JSON.stringify(value)
-                        : String(value)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </dd>
+        <div className="flex flex-wrap gap-2 mb-6">
+          <div className="flex items-center">
+            <span className="text-sm font-medium text-gray-500 mr-2">
+              Status:
+            </span>
+            <span
+              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                submission.status
+              )}`}
+            >
+              {submission.status.charAt(0).toUpperCase() +
+                submission.status.slice(1)}
+            </span>
           </div>
+          <div className="flex items-center">
+            <span className="text-sm font-medium text-gray-500 mr-2">
+              Payment:
+            </span>
+            <span
+              className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                submission.paymentStatus
+              )}`}
+            >
+              {submission.paymentStatus.charAt(0).toUpperCase() +
+                submission.paymentStatus.slice(1)}
+            </span>
+          </div>
+        </div>
 
-          {/* Files */}
-          {Object.keys(fileUrls).length > 0 && (
-            <div className="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-              <dt className="text-sm font-medium text-gray-500">Files</dt>
-              <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                <ul className="border border-gray-200 rounded-md divide-y divide-gray-200">
-                  {Object.entries(fileUrls).map(([fieldName, urls]) =>
-                    Array.isArray(urls) ? (
-                      // Handle array of URLs
-                      urls.map((url, index) => (
-                        <li
-                          key={`${fieldName}-${index}`}
-                          className="pl-3 pr-4 py-3 flex items-center justify-between text-sm"
-                        >
-                          <div className="w-0 flex-1 flex items-center">
-                            <svg
-                              className="flex-shrink-0 h-5 w-5 text-gray-400"
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                              aria-hidden="true"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                            <span className="ml-2 flex-1 w-0 truncate">
-                              {`${fieldName} - ${getFilenameFromUrl(url)}`}
-                            </span>
-                          </div>
-                          <div className="ml-4 flex-shrink-0">
-                            <a
-                              href={`/api/s3/download?key=${encodeURIComponent(
-                                url
-                              )}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-medium text-blue-600 hover:text-blue-500"
-                            >
-                              Download
-                            </a>
-                          </div>
-                        </li>
-                      ))
-                    ) : (
-                      // Handle object with key and url properties
-                      <li
-                        key={fieldName}
-                        className="pl-3 pr-4 py-3 flex items-center justify-between text-sm"
-                      >
-                        <div className="w-0 flex-1 flex items-center">
-                          <svg
-                            className="flex-shrink-0 h-5 w-5 text-gray-400"
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M8 4a3 3 0 00-3 3v4a5 5 0 0010 0V7a1 1 0 112 0v4a7 7 0 11-14 0V7a5 5 0 0110 0v4a3 3 0 11-6 0V7a1 1 0 012 0v4a1 1 0 102 0V7a3 3 0 00-3-3z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                          <span className="ml-2 flex-1 w-0 truncate">
-                            {`${fieldName} - ${getFilenameFromUrl(
-                              (urls as any).url || ""
-                            )}`}
-                          </span>
-                        </div>
-                        <div className="ml-4 flex-shrink-0">
-                          <a
-                            href={`/api/s3/download?key=${encodeURIComponent(
-                              (urls as any).key || ""
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-blue-600 hover:text-blue-500"
-                          >
-                            Download
-                          </a>
-                        </div>
-                      </li>
-                    )
-                  )}
-                </ul>
-              </dd>
-            </div>
-          )}
-        </dl>
+        {submission.status === "rejected" && submission.rejectionReason && (
+          <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">
+            <p className="text-sm font-medium">Rejection Reason:</p>
+            <p className="text-sm">{submission.rejectionReason}</p>
+          </div>
+        )}
+
+        <SubmissionDetailsView submission={submission} />
       </div>
     </div>
   );

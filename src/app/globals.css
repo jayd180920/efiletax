@@ -58,3 +58,35 @@ button {
 .flex.items-center.justify-between.border-b.px-4.py-5 {
   border: none;
 }
+.text-blue-500 {
+  color: #029c94 !important;
+}
+.text-blue-500-red {
+  color: red;
+}
+.text-blue-500-blue {
+  color: blue;
+}
+button.form-tabs {
+  background-color: #ffffff;
+  color: #21b2aa;
+  font-weight: 600;
+  /* box-shadow: #21b2aa 0px 7px 29px 0px; */
+  box-shadow: #9ba0a0 0px 4px 4px;
+  border: none;
+}
+button.form-tabs.active-tab {
+  background-color: #21b2aa;
+  color: #ffffff;
+  box-shadow: rgb(202 221 220) 0px 7px 29px 0px;
+}
+div.tab-list {
+  border: none;
+}
+.main-accordin {
+  border-color: #f1f1f1;
+}
+div[role="tabpanel"] {
+  padding-left: 0px;
+  padding-right: 0px;
+}

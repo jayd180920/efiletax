@@ -419,14 +419,14 @@ const CommonServiceForm: React.FC<CommonServiceFormProps> = ({
 
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6">
+      {/* <div className="px-4 py-5 sm:px-6">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
           {serviceName}
         </h3>
         <p className="mt-2 text-lg font-semibold text-blue-600">
           {formatCurrency(price)}
         </p>
-      </div>
+      </div> */}
 
       {submitSuccess ? (
         <div className="px-4 py-5 sm:p-6">

@@ -92,7 +92,9 @@ export function AccordionItem({
 }: AccordionItemProps) {
   return (
     <AccordionItemContext.Provider value={{ value }}>
-      <div className={`border rounded-md overflow-hidden ${className}`}>
+      <div
+        className={`border main-accordin rounded-md overflow-hidden ${className}`}
+      >
         {children}
       </div>
     </AccordionItemContext.Provider>

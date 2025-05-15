@@ -60,7 +60,7 @@ export function Tabs({
 export function TabsList({ className = "", children }: TabsListProps) {
   return (
     <div
-      className={`flex space-x-1 rounded-lg bg-gray-100 p-1 ${className}`}
+      className={`tab-list flex space-x-1 rounded-lg bg-gray-100 p-1 ${className}`}
       role="tablist"
     >
       {children}
@@ -81,10 +81,10 @@ export function TabsTrigger({
       role="tab"
       aria-selected={isSelected}
       data-state={isSelected ? "active" : "inactive"}
-      className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all focus:outline-none ${
+      className={`form-tabs flex-1 rounded-md px-3 py-2 text-sm font-medium transition-all focus:outline-none ${
         isSelected
-          ? "bg-white text-blue-600 shadow-sm"
-          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900"
+          ? "bg-white text-blue-600 shadow-sm active-tab"
+          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 normal-tab"
       } ${className}`}
       onClick={() => onValueChange(value)}
     >
@@ -107,7 +107,7 @@ export function TabsContent({
     <div
       role="tabpanel"
       data-state={isSelected ? "active" : "inactive"}
-      className={`mt-4 rounded-md border p-6 ${className}`}
+      className={`mt-4 rounded-md p-6 ${className}`}
     >
       {children}
     </div>

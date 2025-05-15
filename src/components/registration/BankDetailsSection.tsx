@@ -41,7 +41,7 @@ export default function BankDetailsSection({
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="text-blue-500"
+      className="text-blue-500-blue"
     >
       <rect x="2" y="5" width="20" height="14" rx="2" />
       <line x1="2" y1="10" x2="22" y2="10" />

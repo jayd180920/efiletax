@@ -193,10 +193,10 @@ export default function ServicePage() {
   // Define service-specific form content with tabs
   const ServiceSpecificContent = () => (
     <div className="mb-6">
-      <h4 className="text-base font-semibold text-gray-900 mb-4">
+      {/* <h4 className="text-base font-semibold text-gray-900 mb-4">
         Service Information {service_unique_name}
       </h4>
-      <p className="text-sm text-gray-600 mb-4">{serviceDetails.description}</p>
+      <p className="text-sm text-gray-600 mb-4">{serviceDetails.description}</p> */}
 
       <Tabs
         defaultValue={activeTab}

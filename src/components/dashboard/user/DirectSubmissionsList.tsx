@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthContext";
+import UserReplyPopup from "./UserReplyPopup";
 
 interface Submission {
   _id: string;
@@ -11,11 +12,17 @@ interface Submission {
   formData: Record<string, any>;
   files: Record<string, string[]>;
   amount: number;
-  status: "pending" | "approved" | "rejected";
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "sent for revision"
+    | "in-progress";
   paymentStatus: "pending" | "paid" | "refunded";
   createdAt: string;
   updatedAt: string;
   rejectionReason?: string;
+  admin_comments?: string;
 }
 
 interface Pagination {
@@ -37,6 +44,9 @@ const DirectSubmissionsList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [isReplyPopupOpen, setIsReplyPopupOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] =
+    useState<Submission | null>(null);
 
   // Fetch submissions directly using fetch API
   const fetchSubmissions = async () => {
@@ -132,12 +142,63 @@ const DirectSubmissionsList = () => {
         return "bg-red-100 text-red-800";
       case "pending":
         return "bg-yellow-100 text-yellow-800";
+      case "sent for revision":
+        return "bg-orange-100 text-orange-800";
+      case "in-progress":
+        return "bg-indigo-100 text-indigo-800";
       case "paid":
         return "bg-blue-100 text-blue-800";
       case "refunded":
         return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // Open reply popup
+  const openReplyPopup = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setIsReplyPopupOpen(true);
+  };
+
+  // Close reply popup
+  const closeReplyPopup = () => {
+    setIsReplyPopupOpen(false);
+    setSelectedSubmission(null);
+  };
+
+  // Handle reply submission
+  const handleReplySubmit = async (data: { user_comments: string }) => {
+    if (!selectedSubmission) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/submissions/reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submissionId: selectedSubmission._id,
+          user_comments: data.user_comments,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit reply");
+      }
+
+      // Refresh submissions
+      await fetchSubmissions();
+      closeReplyPopup();
+    } catch (error: any) {
+      setError(error.message || "Failed to submit reply");
+      console.error("Error submitting reply:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -293,6 +354,35 @@ const DirectSubmissionsList = () => {
                           Reason:{" "}
                           {submission.rejectionReason || "No reason provided"}
                         </div>
+                      )}
+                      {submission.status === "sent for revision" && (
+                        <>
+                          <button
+                            onClick={() => openReplyPopup(submission)}
+                            className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                            title="Reply"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                              />
+                            </svg>
+                          </button>
+                          <div className="ml-4 text-sm text-orange-600">
+                            Admin comments:{" "}
+                            {submission.admin_comments ||
+                              "No comments provided"}
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
@@ -455,6 +545,16 @@ const DirectSubmissionsList = () => {
             </div>
           )}
         </>
+      )}
+
+      {/* Reply Popup */}
+      {selectedSubmission && (
+        <UserReplyPopup
+          isOpen={isReplyPopupOpen}
+          onClose={closeReplyPopup}
+          submissionId={selectedSubmission._id}
+          onSubmit={handleReplySubmit}
+        />
       )}
     </div>
   );

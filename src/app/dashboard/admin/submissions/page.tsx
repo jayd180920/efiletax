@@ -451,7 +451,7 @@ const SubmissionsPage = () => {
                               }
                               className="hover:underline focus:outline-none"
                             >
-                              {submission.status}
+                              {submission.serviceName}
                             </button>
                           </p>
                           <p className="mt-1 text-xs text-gray-500">

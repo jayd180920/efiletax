@@ -957,7 +957,7 @@ export default function IncomeSourceTab({
                   body: JSON.stringify({
                     id: submissionId, // Include the ID in the request body
                     fileUrls: mergedFileUrls,
-                    status: "draft",
+                    status: "finished",
                   }),
                 });
                 console.log(
@@ -974,7 +974,7 @@ export default function IncomeSourceTab({
                   body: JSON.stringify({
                     id: submissionId, // Include the ID in the request body
                     fileUrls: fileUploadResults,
-                    status: "draft",
+                    status: "finished",
                   }),
                 });
                 console.log("Updated submission with file URLs:", submissionId);

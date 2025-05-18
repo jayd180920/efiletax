@@ -16,7 +16,7 @@ interface Submission {
   };
   serviceId: string;
   serviceName: string;
-  status: "pending" | "approved" | "rejected";
+  status: "pending" | "approved" | "rejected" | "draft" | "sent for revision";
   formData: Record<string, any>;
   files: Record<string, string[]>;
   rejectionReason?: string;
@@ -451,7 +451,7 @@ const SubmissionsPage = () => {
                               }
                               className="hover:underline focus:outline-none"
                             >
-                              {submission.serviceName}
+                              {submission.status}
                             </button>
                           </p>
                           <p className="mt-1 text-xs text-gray-500">
@@ -460,7 +460,7 @@ const SubmissionsPage = () => {
                         </div>
                         <div className="flex items-center space-x-2">
                           <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                            className={`submission-status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
                               submission.status
                             )}`}
                           >
@@ -468,7 +468,7 @@ const SubmissionsPage = () => {
                               submission.status.slice(1)}
                           </span>
                           <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                            className={`payment-status  px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
                               submission.paymentStatus
                             )}`}
                           >
@@ -503,15 +503,19 @@ const SubmissionsPage = () => {
                         >
                           View
                         </button>
-                        <button
-                          onClick={() => {
-                            setSelectedSubmissionForReply(submission);
-                            setIsReplyPopupOpen(true);
-                          }}
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-                        >
-                          Reply
-                        </button>
+                        {submission.status !== "draft" &&
+                          submission.status !== "sent for revision" &&
+                          submission.status !== "approved" && (
+                            <button
+                              onClick={() => {
+                                setSelectedSubmissionForReply(submission);
+                                setIsReplyPopupOpen(true);
+                              }}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                            >
+                              Reply
+                            </button>
+                          )}
                         {submission.status === "pending" && (
                           <>
                             <button

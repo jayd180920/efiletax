@@ -103,6 +103,7 @@ const SubmissionsList = () => {
     submission: Submission,
     action: "approve" | "reject" | "reply"
   ) => {
+    console.log("Opening modal for action:", submission);
     setSelectedSubmission(submission);
     setActionType(action);
     setRejectionReason("");

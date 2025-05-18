@@ -343,7 +343,7 @@ export default function SubmissionDetailPage({
                     </h2>
                     <div className="flex space-x-2">
                       <span
-                        className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                        className={`submission-status px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusBadgeClass(
                           submission.status
                         )}`}
                       >
@@ -351,7 +351,7 @@ export default function SubmissionDetailPage({
                           submission.status.slice(1)}
                       </span>
                       <span
-                        className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                        className={`payment-status px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusBadgeClass(
                           submission.paymentStatus
                         )}`}
                       >

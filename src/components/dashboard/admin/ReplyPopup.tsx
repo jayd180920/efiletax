@@ -64,6 +64,7 @@ const ReplyPopup: React.FC<ReplyPopupProps> = ({
         setIsUploading(true);
         const formData = new FormData();
         formData.append("file", taxSummaryFile);
+        formData.append("serviceId", submissionId);
 
         const uploadResponse = await fetch("/api/upload", {
           method: "POST",
@@ -77,16 +78,18 @@ const ReplyPopup: React.FC<ReplyPopupProps> = ({
           body: formData,
         });
 
+        console.log("Tax summary file uploadResult:", uploadResponse);
         if (!uploadResponse.ok) {
           const uploadData = await uploadResponse.json();
           throw new Error(uploadData.error || "Failed to upload tax summary");
         }
 
         const uploadResult = await uploadResponse.json();
-        taxSummaryFileKey = uploadResult.key;
+        console.log("Tax summary file uploadResult:", uploadResult);
+        taxSummaryFileKey = uploadResult.files[0].url;
         setIsUploading(false);
       }
-
+      console.log("Tax summary file key:", taxSummaryFileKey);
       // Submit the form data
       onSubmit({
         status,

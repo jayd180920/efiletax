@@ -28,6 +28,7 @@ interface IncomeSourceTabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   serviceUniqueId?: string;
+  submissionStatus?: string;
   formData?: {
     businessKYCData?: {
       businessType: "proprietor" | "partnership" | "company" | "llp";
@@ -149,6 +150,7 @@ export default function IncomeSourceTab({
   serviceUniqueId,
   formData,
   updateFormData,
+  submissionStatus,
 }: IncomeSourceTabProps) {
   const params = useParams();
   console.log(
@@ -1291,7 +1293,12 @@ export default function IncomeSourceTab({
         <button
           type="button"
           onClick={handleBack}
-          className="px-4 py-2 rounded-md text-gray-700 border border-gray-300 hover:bg-gray-50 font-medium"
+          disabled={submissionStatus === "approved"}
+          className={`px-4 py-2 rounded-md border font-medium ${
+            submissionStatus === "approved"
+              ? "text-gray-400 border-gray-300 cursor-not-allowed"
+              : "text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
         >
           Back
         </button>
@@ -1299,14 +1306,24 @@ export default function IncomeSourceTab({
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 font-medium"
+            disabled={submissionStatus === "approved"}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              submissionStatus === "approved"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
           >
             Save
           </button>
           <button
             type="button"
             onClick={handleNext}
-            className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium"
+            disabled={submissionStatus === "approved"}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              submissionStatus === "approved"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             Finish
           </button>

@@ -17,6 +17,7 @@ interface TaxSummaryTabProps {
   serviceUniqueId?: string;
   fileUrls?: Record<string, { key: string; url: string }>;
   onFileRemove?: (name: string, key: string) => void;
+  submissionStatus?: string;
 }
 
 export default function TaxSummaryTab({
@@ -26,6 +27,7 @@ export default function TaxSummaryTab({
   serviceUniqueId,
   fileUrls,
   onFileRemove,
+  submissionStatus,
 }: TaxSummaryTabProps) {
   // Track if component is mounted to prevent state updates after unmount
   const isMounted = useRef(true);
@@ -189,6 +191,39 @@ export default function TaxSummaryTab({
             </p>
           </div>
 
+          {/* Display tax summary file if available */}
+          {formData?.tax_summary && (
+            <div className="p-4 border rounded-md bg-green-50">
+              <h4 className="font-medium text-green-800 mb-2">
+                Tax Summary File
+              </h4>
+              <div className="flex items-center space-x-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 text-green-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                <a
+                  href={`${formData.tax_summary}`}
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Download Tax Summary
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Display file previews if there are any uploaded files */}
           {fileUrls && Object.keys(fileUrls).length > 0 && (
             <FilePreviewSection
@@ -199,11 +234,16 @@ export default function TaxSummaryTab({
         </div>
       </div>
 
-      {/* <div className="flex justify-between mt-6">
+      <div className="flex justify-between mt-6">
         <button
           type="button"
           onClick={handleBack}
-          className="px-4 py-2 rounded-md text-gray-700 border border-gray-300 hover:bg-gray-50 font-medium"
+          disabled={submissionStatus === "approved"}
+          className={`px-4 py-2 rounded-md border font-medium ${
+            submissionStatus === "approved"
+              ? "text-gray-400 border-gray-300 cursor-not-allowed"
+              : "text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
         >
           Back
         </button>
@@ -211,19 +251,29 @@ export default function TaxSummaryTab({
           <button
             type="button"
             onClick={handleSave}
-            className="px-4 py-2 rounded-md text-white bg-green-600 hover:bg-green-700 font-medium"
+            disabled={submissionStatus === "approved"}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              submissionStatus === "approved"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
           >
             Save
           </button>
           <button
             type="button"
             onClick={handleFinish}
-            className="px-4 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 font-medium"
+            disabled={submissionStatus === "approved"}
+            className={`px-4 py-2 rounded-md text-white font-medium ${
+              submissionStatus === "approved"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
           >
             Finish
           </button>
         </div>
-      </div> */}
+      </div>
     </div>
   );
 }

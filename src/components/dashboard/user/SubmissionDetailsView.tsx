@@ -535,9 +535,7 @@ export default function SubmissionDetailsView({
                 />
               </svg>
               <a
-                href={`/api/s3/download?key=${encodeURIComponent(
-                  submission.tax_summary
-                )}`}
+                href={`${submission.tax_summary}`}
                 className="text-blue-600 hover:text-blue-800 font-medium"
                 target="_blank"
                 rel="noopener noreferrer"

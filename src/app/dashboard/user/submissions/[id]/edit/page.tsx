@@ -25,6 +25,8 @@ interface Submission {
   amount: number;
   createdAt: string;
   updatedAt: string;
+  tax_summary?: string;
+  admin_comments?: string;
 }
 
 export default function EditSubmissionPage({
@@ -219,7 +221,12 @@ export default function EditSubmissionPage({
               </div>
               <button
                 onClick={handleSave}
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                disabled={submission?.status === "approved"}
+                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                  submission?.status === "approved"
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                }`}
               >
                 Save Changes
               </button>
@@ -280,6 +287,7 @@ export default function EditSubmissionPage({
                         serviceUniqueId={submission.serviceId}
                         formData={formData}
                         updateFormData={updateFormData}
+                        submissionStatus={submission.status}
                       />
                     </TabsContent>
 
@@ -290,6 +298,7 @@ export default function EditSubmissionPage({
                         serviceUniqueId={submission.serviceId}
                         formData={formData}
                         updateFormData={updateFormData}
+                        submissionStatus={submission.status}
                       />
                     </TabsContent>
 
@@ -297,8 +306,12 @@ export default function EditSubmissionPage({
                       <TaxSummaryTab
                         activeTab={activeTab}
                         setActiveTab={setActiveTab}
-                        formData={formData}
+                        formData={{
+                          ...formData,
+                          tax_summary: submission.tax_summary,
+                        }}
                         serviceUniqueId={submission.serviceId}
+                        submissionStatus={submission.status}
                       />
                     </TabsContent>
                   </Tabs>

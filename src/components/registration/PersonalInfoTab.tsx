@@ -50,6 +50,7 @@ interface PersonalInfoTabProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   serviceUniqueId?: string;
+  submissionStatus?: string;
   formData?: {
     permanentInfo: {
       firstName: string;
@@ -128,6 +129,7 @@ export default function PersonalInfoTab({
   serviceUniqueId,
   formData,
   updateFormData,
+  submissionStatus,
 }: PersonalInfoTabProps) {
   const params = useParams();
   console.log(" Rendering PersonalInfoTab...", serviceUniqueId);
@@ -1197,11 +1199,11 @@ export default function PersonalInfoTab({
           <button
             type="button"
             onClick={handleSave}
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || submissionStatus === "approved"}
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              isFormValid()
-                ? "bg-green-600 hover:bg-green-700"
-                : "bg-gray-400 cursor-not-allowed"
+              !isFormValid() || submissionStatus === "approved"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
             }`}
           >
             Save
@@ -1209,11 +1211,11 @@ export default function PersonalInfoTab({
           <button
             type="button"
             onClick={handleNext}
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || submissionStatus === "approved"}
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              isFormValid()
-                ? "bg-blue-600 hover:bg-blue-700"
-                : "bg-gray-400 cursor-not-allowed"
+              !isFormValid() || submissionStatus === "approved"
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
             Next

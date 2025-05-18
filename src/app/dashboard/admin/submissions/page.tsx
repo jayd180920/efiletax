@@ -5,6 +5,7 @@ import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import ReplyPopup from "@/components/dashboard/admin/ReplyPopup";
+import { createAdminUserInteraction } from "@/lib/auth-client";
 
 interface Submission {
   _id: string;
@@ -94,7 +95,17 @@ const SubmissionsPage = () => {
         url += `&search=${encodeURIComponent(searchTerm)}`;
       }
 
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          // Add Cache-Control header to prevent caching
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Failed to fetch submissions");
@@ -116,7 +127,17 @@ const SubmissionsPage = () => {
     if (user?.role !== "admin") return;
 
     try {
-      const response = await fetch("/api/admin/regions?limit=100");
+      const response = await fetch("/api/admin/regions?limit=100", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          // Add Cache-Control header to prevent caching
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || "Failed to fetch regions");
@@ -200,21 +221,11 @@ const SubmissionsPage = () => {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch("/api/admin/interactions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          submissionId: selectedSubmissionForReply._id,
-          ...data,
-        }),
+      // Use the createAdminUserInteraction function from auth-client
+      await createAdminUserInteraction({
+        submissionId: selectedSubmissionForReply._id,
+        ...data,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to submit reply");
-      }
 
       // Refresh submissions
       await fetchSubmissions();
@@ -250,7 +261,12 @@ const SubmissionsPage = () => {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
+            // Add Cache-Control header to prevent caching
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
           },
+          credentials: "include", // Include credentials to send cookies
           body: JSON.stringify(body),
         }
       );

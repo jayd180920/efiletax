@@ -1,22 +1,83 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticate } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import AdminUserInteraction from "@/models/AdminUserInteraction";
 import Submission from "@/models/Submission";
 
 export async function POST(req: NextRequest) {
   try {
-    // Check authentication
+    console.log("POST /api/admin/interactions: Starting authentication check");
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("POST /api/admin/interactions: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log("POST /api/admin/interactions: Session:", session);
+
+    if (session?.user) {
+      console.log("POST /api/admin/interactions: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
 
-    // Check if user is admin or regionAdmin
-    if (session.user.role !== "admin" && session.user.role !== "regionAdmin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log("POST /api/admin/interactions: Checking NextAuth JWT token");
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("POST /api/admin/interactions: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
     }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("POST /api/admin/interactions: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("POST /api/admin/interactions: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("POST /api/admin/interactions: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin or regionAdmin role
+    if (userRole !== "admin" && userRole !== "regionAdmin") {
+      console.log(
+        `POST /api/admin/interactions: User role '${userRole}' is not admin or regionAdmin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin or regionAdmin" },
+        { status: 403 }
+      );
+    }
+
+    console.log("POST /api/admin/interactions: Authentication successful");
 
     // Parse request body
     const body = await req.json();
@@ -86,16 +147,75 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    // Check authentication
+    console.log("GET /api/admin/interactions: Starting authentication check");
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("GET /api/admin/interactions: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log("GET /api/admin/interactions: Session:", session);
+
+    if (session?.user) {
+      console.log("GET /api/admin/interactions: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
 
-    // Check if user is admin or regionAdmin
-    if (session.user.role !== "admin" && session.user.role !== "regionAdmin") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/interactions: Checking NextAuth JWT token");
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("GET /api/admin/interactions: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
     }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/interactions: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("GET /api/admin/interactions: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/interactions: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin or regionAdmin role
+    if (userRole !== "admin" && userRole !== "regionAdmin") {
+      console.log(
+        `GET /api/admin/interactions: User role '${userRole}' is not admin or regionAdmin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin or regionAdmin" },
+        { status: 403 }
+      );
+    }
+
+    console.log("GET /api/admin/interactions: Authentication successful");
 
     // Get submissionId from query params
     const url = new URL(req.url);

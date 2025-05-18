@@ -153,6 +153,7 @@ export default function SubmissionDetailPage({
 
           const uploadResponse = await fetch("/api/upload", {
             method: "POST",
+            credentials: "include", // Include credentials to send cookies
             body: formData,
           });
 
@@ -174,7 +175,12 @@ export default function SubmissionDetailPage({
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          // Add Cache-Control header to prevent caching
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
         },
+        credentials: "include", // Include credentials to send cookies
         body: JSON.stringify(body),
       });
 

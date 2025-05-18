@@ -801,3 +801,78 @@ export async function deleteRegion(id: string): Promise<any> {
 
   return { success: true };
 }
+
+// Create admin-user interaction (admin only)
+export async function createAdminUserInteraction(data: {
+  submissionId: string;
+  status: string;
+  admin_comments?: string;
+  tax_summary_file?: string;
+}): Promise<any> {
+  try {
+    // First check if the user is authenticated
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      throw new Error("You must be logged in to perform this action");
+    }
+
+    // Check if the user has admin or regionAdmin role
+    if (currentUser.role !== "admin" && currentUser.role !== "regionAdmin") {
+      throw new Error("You don't have permission to perform this action");
+    }
+
+    const response = await fetch(`/api/admin/interactions`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Error creating interaction:", error);
+      throw new Error(error.error || "Failed to create interaction");
+    }
+
+    const responseData = await response.json();
+    return responseData.interaction || responseData;
+  } catch (error: any) {
+    console.error("Error in createAdminUserInteraction:", error);
+    throw error;
+  }
+}
+
+// Get admin-user interactions for a submission (admin only)
+export async function getAdminUserInteractions(
+  submissionId: string
+): Promise<any[]> {
+  const response = await fetch(
+    `/api/admin/interactions?submissionId=${submissionId}`,
+    {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error("Error fetching interactions:", error);
+    throw new Error(error.error || "Failed to fetch interactions");
+  }
+
+  const data = await response.json();
+  return data.interactions || [];
+}

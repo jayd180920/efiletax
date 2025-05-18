@@ -67,6 +67,13 @@ const ReplyPopup: React.FC<ReplyPopupProps> = ({
 
         const uploadResponse = await fetch("/api/upload", {
           method: "POST",
+          credentials: "include", // Include credentials to send cookies
+          headers: {
+            // Add Cache-Control header to prevent caching
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
           body: formData,
         });
 

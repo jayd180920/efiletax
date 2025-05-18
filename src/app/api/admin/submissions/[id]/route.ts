@@ -3,7 +3,9 @@ import dbConnect from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticate } from "@/lib/auth";
+import { getToken } from "next-auth/jwt";
 import { isValidObjectId } from "mongoose";
 
 // GET /api/admin/submissions/[id] - Get a specific submission (admin or regionAdmin only)
@@ -12,14 +14,79 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if user is authenticated and has appropriate role
+    console.log(
+      "GET /api/admin/submissions/[id]: Starting authentication check"
+    );
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("GET /api/admin/submissions/[id]: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (
-      !session ||
-      (session.user.role !== "admin" && session.user.role !== "regionAdmin")
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log("Session in GET: abcd", session);
+
+    if (session?.user) {
+      console.log("GET /api/admin/submissions/[id]: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log(
+        "GET /api/admin/submissions/[id]: Checking NextAuth JWT token"
+      );
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("GET /api/admin/submissions/[id]: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/submissions/[id]: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("GET /api/admin/submissions/[id]: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("GET /api/admin/submissions/[id]: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin or regionAdmin role
+    if (userRole !== "admin" && userRole !== "regionAdmin") {
+      console.log(
+        `GET /api/admin/submissions/[id]: User role '${userRole}' is not admin or regionAdmin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin or regionAdmin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("GET /api/admin/submissions/[id]: Authentication successful");
 
     // Connect to the database
     await dbConnect();
@@ -47,9 +114,14 @@ export async function GET(
     }
 
     // If user is regionAdmin, check if they have access to this submission
-    if (session.user.role === "regionAdmin") {
+    if (userRole === "regionAdmin") {
       // Get the admin's user record to find their region
-      const admin = await User.findOne({ email: session.user.email });
+      // Find the admin user by userId or email depending on what we have
+      const admin = userId
+        ? await User.findById(userId)
+        : session?.user?.email
+        ? await User.findOne({ email: session.user.email })
+        : null;
       if (!admin || !admin.region) {
         return NextResponse.json(
           { error: "Region admin not assigned to any region" },
@@ -85,14 +157,79 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Check if user is authenticated and has appropriate role
+    console.log(
+      "PUT /api/admin/submissions/[id]: Starting authentication check"
+    );
+
+    // Try multiple authentication methods
+    let isAuthenticated = false;
+    let userRole = null;
+    let userId = null;
+
+    // 1. Try NextAuth session first
+    console.log("PUT /api/admin/submissions/[id]: Checking NextAuth session");
     const session = await getServerSession(authOptions);
-    if (
-      !session ||
-      (session.user.role !== "admin" && session.user.role !== "regionAdmin")
-    ) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    console.log("Session in PUT:", session);
+
+    if (session?.user) {
+      console.log("PUT /api/admin/submissions/[id]: Session found with user");
+      isAuthenticated = true;
+      userRole = session.user.role;
+      userId = session.user.id;
     }
+
+    // 2. If no session, try NextAuth JWT token
+    if (!isAuthenticated) {
+      console.log(
+        "PUT /api/admin/submissions/[id]: Checking NextAuth JWT token"
+      );
+      const nextAuthToken = await getToken({
+        req,
+        secret: process.env.NEXTAUTH_SECRET,
+      });
+
+      if (nextAuthToken) {
+        console.log("PUT /api/admin/submissions/[id]: NextAuth token found");
+        isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
+        userId = nextAuthToken.sub;
+      }
+    }
+
+    // 3. If still not authenticated, try custom token
+    if (!isAuthenticated) {
+      console.log("PUT /api/admin/submissions/[id]: Checking custom token");
+      const customAuth = await authenticate(req);
+
+      if (customAuth) {
+        console.log("PUT /api/admin/submissions/[id]: Custom token found");
+        isAuthenticated = true;
+        userRole = customAuth.role;
+        userId = customAuth.userId;
+      }
+    }
+
+    // Check if we have authentication
+    if (!isAuthenticated) {
+      console.log("PUT /api/admin/submissions/[id]: No authentication found");
+      return NextResponse.json(
+        { error: "Unauthorized - No authentication" },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin or regionAdmin role
+    if (userRole !== "admin" && userRole !== "regionAdmin") {
+      console.log(
+        `PUT /api/admin/submissions/[id]: User role '${userRole}' is not admin or regionAdmin`
+      );
+      return NextResponse.json(
+        { error: "Unauthorized - Not an admin or regionAdmin" },
+        { status: 401 }
+      );
+    }
+
+    console.log("PUT /api/admin/submissions/[id]: Authentication successful");
 
     // Connect to the database
     await dbConnect();
@@ -107,10 +244,20 @@ export async function PUT(
     }
 
     // Get request body
-    const { status, rejectionReason } = await req.json();
+    const { status, rejectionReason, admin_comments, tax_summary } =
+      await req.json();
 
     // Validate status
-    if (!status || !["pending", "approved", "rejected"].includes(status)) {
+    if (
+      !status ||
+      ![
+        "pending",
+        "approved",
+        "rejected",
+        "sent for revision",
+        "in-progress",
+      ].includes(status)
+    ) {
       return NextResponse.json(
         { error: "Invalid status value" },
         { status: 400 }
@@ -135,9 +282,14 @@ export async function PUT(
     }
 
     // If user is regionAdmin, check if they have access to this submission
-    if (session.user.role === "regionAdmin") {
+    if (userRole === "regionAdmin") {
       // Get the admin's user record to find their region
-      const admin = await User.findOne({ email: session.user.email });
+      // Find the admin user by userId or email depending on what we have
+      const admin = userId
+        ? await User.findById(userId)
+        : session?.user?.email
+        ? await User.findOne({ email: session.user.email })
+        : null;
       if (!admin || !admin.region) {
         return NextResponse.json(
           { error: "Region admin not assigned to any region" },
@@ -167,6 +319,18 @@ export async function PUT(
     } else if (status === "rejected") {
       submission.rejectedAt = new Date();
       submission.rejectionReason = rejectionReason;
+    } else if (status === "sent for revision") {
+      // Add admin comments for "sent for revision" status
+      if (admin_comments) {
+        submission.admin_comments = admin_comments;
+      }
+    } else if (status === "in-progress") {
+      // No additional fields needed for "in-progress" status
+    }
+
+    // Add tax_summary if provided (for "completed" status)
+    if (tax_summary) {
+      submission.tax_summary = tax_summary;
     }
 
     // Save submission

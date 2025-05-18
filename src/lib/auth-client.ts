@@ -36,8 +36,13 @@ export async function login(
     console.log("auth-client: Attempting to login with v2 API");
     const v2Response = await fetch("/api/auth/login-v2", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
       },
       body: JSON.stringify({ email, password }),
     });
@@ -72,7 +77,18 @@ export async function login(
 
     // If NextAuth login was successful, fetch the user data
     console.log("auth-client: NextAuth login successful, fetching user data");
-    const sessionResponse = await fetch("/api/auth/session");
+    const sessionResponse = await fetch("/api/auth/session", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
     console.log(
       "auth-client: Session response status:",
       sessionResponse.status
@@ -127,8 +143,13 @@ async function loginWithOriginalCustomAuth(
 
   const response = await fetch("/api/auth/login", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify({ email, password }),
   });
@@ -161,14 +182,20 @@ export async function register(
 ): Promise<User> {
   const response = await fetch("/api/auth/register", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify({ name, email, password }),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error registering user:", error);
     throw new Error(error.error || "Registration failed");
   }
 
@@ -178,28 +205,51 @@ export async function register(
 
 // Logout function
 export async function logout(): Promise<void> {
-  // Clear all client-side cookies
-  const cookies = document.cookie.split(";");
-  for (let i = 0; i < cookies.length; i++) {
-    const cookie = cookies[i];
-    const eqPos = cookie.indexOf("=");
-    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+  try {
+    console.log("auth-client: logout called");
+
+    // Clear all client-side cookies
+    const cookies = document.cookie.split(";");
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i];
+      const eqPos = cookie.indexOf("=");
+      const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+      document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    }
+
+    // Clear session storage
+    sessionStorage.clear();
+
+    // Clear local storage (if used)
+    localStorage.clear();
+
+    // Call the custom logout endpoint first for backward compatibility
+    console.log("auth-client: Calling custom logout endpoint");
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
+    // Use NextAuth signOut for Google authentication
+    // This will redirect to the home page (login page)
+    console.log("auth-client: Calling NextAuth signOut");
+    await signOut({ callbackUrl: "/" });
+
+    console.log("auth-client: Logout completed");
+  } catch (error) {
+    console.error("auth-client: Error during logout:", error);
+    // If there's an error with NextAuth signOut, force redirect to home page
+    if (typeof window !== "undefined") {
+      window.location.href = "/";
+    }
   }
-
-  // Clear session storage
-  sessionStorage.clear();
-
-  // Clear local storage (if used)
-  localStorage.clear();
-
-  // Use NextAuth signOut for Google authentication
-  await signOut({ callbackUrl: "/" });
-
-  // Also call the custom logout endpoint for backward compatibility
-  await fetch("/api/auth/logout", {
-    method: "POST",
-  });
 }
 
 // Get current user function
@@ -209,7 +259,18 @@ export async function getCurrentUser(): Promise<User | null> {
   try {
     // First try to get the user from NextAuth session
     console.log("auth-client: Checking NextAuth session");
-    const sessionResponse = await fetch("/api/auth/session");
+    const sessionResponse = await fetch("/api/auth/session", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
     console.log(
       "auth-client: NextAuth session response status:",
       sessionResponse.status
@@ -235,7 +296,18 @@ export async function getCurrentUser(): Promise<User | null> {
 
     // Fall back to the custom auth system
     console.log("auth-client: Falling back to custom auth system");
-    const response = await fetch("/api/auth/me");
+    const response = await fetch("/api/auth/me", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
     console.log(
       "auth-client: Custom getCurrentUser API response status:",
       response.status
@@ -262,14 +334,20 @@ export async function getCurrentUser(): Promise<User | null> {
 export async function submitForm(formData: any): Promise<any> {
   const response = await fetch("/api/submissions", {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify(formData),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error submitting form:", error);
     throw new Error(error.error || "Form submission failed");
   }
 
@@ -285,6 +363,7 @@ export async function getSubmissions(
     page?: number;
     limit?: number;
     isAdmin?: boolean; // New parameter to indicate if the request is from an admin
+    _t?: number; // Timestamp to prevent caching
   } = {}
 ): Promise<{
   submissions: any[];
@@ -295,7 +374,14 @@ export async function getSubmissions(
     pages: number;
   };
 }> {
-  const { status, serviceId, page = 1, limit = 10, isAdmin = false } = options;
+  const {
+    status,
+    serviceId,
+    page = 1,
+    limit = 10,
+    isAdmin = false,
+    _t,
+  } = options;
 
   // Use the admin-specific API route if isAdmin is true
   let url = isAdmin
@@ -304,11 +390,23 @@ export async function getSubmissions(
 
   if (status) url += `&status=${status}`;
   if (serviceId) url += `&serviceId=${serviceId}`;
+  if (_t) url += `&_t=${_t}`; // Add timestamp to prevent caching
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error fetching submissions:", error);
     throw new Error(error.error || "Failed to fetch submissions");
   }
 
@@ -331,14 +429,30 @@ export async function getSubmission(
   id: string,
   isAdmin: boolean = false
 ): Promise<any> {
+  console.log("XYZ getSubmission called with id:", id, "isAdmin:", isAdmin);
   // Use the admin-specific API route if isAdmin is true
   const url = isAdmin
     ? `/api/admin/submissions/${id}`
     : `/api/submissions/${id}`;
-  const response = await fetch(url);
 
+  console.log(`XYZ getSubmission: Fetching from ${url}, isAdmin=${isAdmin}`);
+
+  // Include credentials to ensure cookies are sent with the request
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
+  console.log("XYZ getSubmission: Response status:", response.status);
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error fetching submission:", error);
     throw new Error(error.error || "Failed to fetch submission");
   }
 
@@ -349,12 +463,16 @@ export async function getSubmission(
 // Update submission status (admin only)
 export async function updateSubmissionStatus(
   id: string,
-  status: "approved" | "rejected",
-  rejectionReason?: string
+  status: "approved" | "rejected" | "sent for revision" | "in-progress",
+  rejectionReason?: string,
+  admin_comments?: string
 ): Promise<any> {
   const body: any = { status };
   if (status === "rejected") {
     body.rejectionReason = rejectionReason;
+  }
+  if (status === "sent for revision" && admin_comments) {
+    body.admin_comments = admin_comments;
   }
 
   // Always use the admin-specific API route for updating submission status
@@ -362,12 +480,18 @@ export async function updateSubmissionStatus(
     method: "PUT", // Changed from PATCH to PUT to match the admin API route
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
+    credentials: "include",
     body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error updating submission:", error);
     throw new Error(error.error || "Failed to update submission");
   }
 
@@ -382,6 +506,7 @@ export async function getUsers(
     search?: string;
     page?: number;
     limit?: number;
+    _t?: number; // Timestamp to prevent caching
   } = {}
 ): Promise<{
   users: any[];
@@ -392,16 +517,28 @@ export async function getUsers(
     pages: number;
   };
 }> {
-  const { role, search, page = 1, limit = 10 } = options;
+  const { role, search, page = 1, limit = 10, _t } = options;
 
   let url = `/api/admin/users?page=${page}&limit=${limit}`;
   if (role) url += `&role=${role}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (_t) url += `&_t=${_t}`; // Add timestamp to prevent caching
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error fetching users:", error);
     throw new Error(error.error || "Failed to fetch users");
   }
 
@@ -419,10 +556,21 @@ export async function getUsers(
 
 // Get user by ID (admin only)
 export async function getUser(id: string): Promise<any> {
-  const response = await fetch(`/api/admin/users/${id}`);
+  const response = await fetch(`/api/admin/users/${id}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error fetching user:", error);
     throw new Error(error.error || "Failed to fetch user");
   }
 
@@ -440,14 +588,20 @@ export async function createUser(userData: {
 }): Promise<any> {
   const response = await fetch(`/api/admin/users`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify(userData),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error creating user:", error);
     throw new Error(error.error || "Failed to create user");
   }
 
@@ -468,14 +622,20 @@ export async function updateUser(
 ): Promise<any> {
   const response = await fetch(`/api/admin/users/${id}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify(userData),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error updating user:", error);
     throw new Error(error.error || "Failed to update user");
   }
 
@@ -489,6 +649,7 @@ export async function getRegions(
     search?: string;
     page?: number;
     limit?: number;
+    _t?: number; // Timestamp to prevent caching
   } = {}
 ): Promise<{
   regions: any[];
@@ -499,15 +660,27 @@ export async function getRegions(
     pages: number;
   };
 }> {
-  const { search, page = 1, limit = 10 } = options;
+  const { search, page = 1, limit = 10, _t } = options;
 
   let url = `/api/admin/regions?page=${page}&limit=${limit}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (_t) url += `&_t=${_t}`; // Add timestamp to prevent caching
 
-  const response = await fetch(url);
+  const response = await fetch(url, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error fetching regions:", error);
     throw new Error(error.error || "Failed to fetch regions");
   }
 
@@ -525,10 +698,21 @@ export async function getRegions(
 
 // Get region by ID (admin only)
 export async function getRegion(id: string): Promise<any> {
-  const response = await fetch(`/api/admin/regions/${id}`);
+  const response = await fetch(`/api/admin/regions/${id}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error fetching region:", error);
     throw new Error(error.error || "Failed to fetch region");
   }
 
@@ -543,14 +727,20 @@ export async function createRegion(regionData: {
 }): Promise<any> {
   const response = await fetch(`/api/admin/regions`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify(regionData),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error creating region:", error);
     throw new Error(error.error || "Failed to create region");
   }
 
@@ -568,14 +758,20 @@ export async function updateRegion(
 ): Promise<any> {
   const response = await fetch(`/api/admin/regions/${id}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
     },
     body: JSON.stringify(regionData),
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error updating region:", error);
     throw new Error(error.error || "Failed to update region");
   }
 
@@ -587,10 +783,19 @@ export async function updateRegion(
 export async function deleteRegion(id: string): Promise<any> {
   const response = await fetch(`/api/admin/regions/${id}`, {
     method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
   });
 
   if (!response.ok) {
     const error = await response.json();
+    console.error("Error deleting region:", error);
     throw new Error(error.error || "Failed to delete region");
   }
 

@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
       phone,
       role,
       region,
-      password: tempPassword,
+      password: "ABCD123!ss",
     });
 
     // Save user to database
@@ -273,7 +273,7 @@ async function sendPasswordSetupEmail(email: string, tempPassword: string) {
   const transporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: false, // true for 465, false for other ports
+    secure: true, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_EMAIL,
       pass: process.env.SMTP_PASSWORD,

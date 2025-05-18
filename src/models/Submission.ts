@@ -4,10 +4,17 @@ export interface ISubmission extends mongoose.Document {
   userId: mongoose.Types.ObjectId;
   serviceId: string;
   serviceName: string;
-  status: "pending" | "approved" | "rejected";
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "sent for revision"
+    | "in-progress";
   formData: Record<string, any>;
   files: Record<string, string[]>;
   rejectionReason?: string;
+  admin_comments?: string;
+  tax_summary?: string;
   paymentStatus: "pending" | "paid";
   amount: number;
   region?: mongoose.Types.ObjectId;
@@ -34,7 +41,13 @@ const SubmissionSchema = new mongoose.Schema<ISubmission>(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: [
+        "pending",
+        "approved",
+        "rejected",
+        "sent for revision",
+        "in-progress",
+      ],
       default: "pending",
     },
     formData: {
@@ -47,6 +60,12 @@ const SubmissionSchema = new mongoose.Schema<ISubmission>(
       default: {},
     },
     rejectionReason: {
+      type: String,
+    },
+    admin_comments: {
+      type: String,
+    },
+    tax_summary: {
       type: String,
     },
     paymentStatus: {

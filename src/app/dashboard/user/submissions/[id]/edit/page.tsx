@@ -27,11 +27,16 @@ interface Submission {
   updatedAt: string;
 }
 
-export default function EditSubmissionPage() {
+export default function EditSubmissionPage({
+  params,
+}: {
+  params: { id: string };
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const params = useParams();
-  const submissionId = params.id as string;
+  // Store the id from params using React.use() to unwrap the Promise
+  const unwrappedParams = React.use(params as any) as { id: string };
+  const submissionId = unwrappedParams.id;
 
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [isLoading, setIsLoading] = useState(true);

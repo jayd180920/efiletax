@@ -179,7 +179,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(true);
       await logoutApi();
       setUser(null);
-      router.push("/");
+
+      // Use window.location for a more reliable redirect to the login page
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     } catch (error: any) {
       setError(error.message || "Logout failed");
     } finally {

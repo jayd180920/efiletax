@@ -40,6 +40,9 @@ declare module "next-auth" {
       email?: string;
     };
   }
+  interface JWT {
+    role?: string;
+  }
 }
 
 /**
@@ -120,8 +123,19 @@ export const authOptions: NextAuthOptions = {
     session: async ({ session, token }) => {
       if (session?.user) {
         session.user.id = token.sub!;
+        // Add role to the session from token
+        if (token.role) {
+          session.user.role = token.role as string;
+        }
       }
       return session;
+    },
+    jwt: async ({ token, user }) => {
+      // Add role to the token when a user signs in
+      if (user) {
+        token.role = user.role;
+      }
+      return token;
     },
   },
 };

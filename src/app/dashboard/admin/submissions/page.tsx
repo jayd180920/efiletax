@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import Layout from "@/components/layout/Layout";
+import ReplyPopup from "@/components/dashboard/admin/ReplyPopup";
 
 interface Submission {
   _id: string;
@@ -61,6 +62,9 @@ const SubmissionsPage = () => {
   const [actionType, setActionType] = useState<"approve" | "reject" | null>(
     null
   );
+  const [isReplyPopupOpen, setIsReplyPopupOpen] = useState(false);
+  const [selectedSubmissionForReply, setSelectedSubmissionForReply] =
+    useState<Submission | null>(null);
 
   // Redirect non-admin/non-regionAdmin users
   useEffect(() => {
@@ -184,6 +188,46 @@ const SubmissionsPage = () => {
     setRejectionReason("");
   };
 
+  // Handle reply submission
+  const handleReplySubmit = async (data: {
+    status: string;
+    admin_comments?: string;
+    tax_summary_file?: string;
+  }) => {
+    if (!selectedSubmissionForReply) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch("/api/admin/interactions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submissionId: selectedSubmissionForReply._id,
+          ...data,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to submit reply");
+      }
+
+      // Refresh submissions
+      await fetchSubmissions();
+      setIsReplyPopupOpen(false);
+      setSelectedSubmissionForReply(null);
+    } catch (error: any) {
+      setError(error.message);
+      console.error("Error submitting reply:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Handle submission action (approve/reject)
   const handleSubmissionAction = async () => {
     if (!selectedSubmission || !actionType) return;
@@ -286,7 +330,7 @@ const SubmissionsPage = () => {
           <div className="px-4 py-6 sm:px-0">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-semibold text-gray-900">
-                Submissions
+                Submissions aafdf
               </h1>
             </div>
 
@@ -432,26 +476,47 @@ const SubmissionsPage = () => {
                           </p>
                         </div>
                       </div>
-                      {submission.status === "pending" && (
-                        <div className="mt-3 flex justify-end space-x-3">
-                          <button
-                            onClick={() =>
-                              openActionModal(submission, "approve")
-                            }
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() =>
-                              openActionModal(submission, "reject")
-                            }
-                            className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          >
-                            Reject
-                          </button>
-                        </div>
-                      )}
+                      <div className="mt-3 flex justify-end space-x-3">
+                        <button
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/admin/submissions/${submission._id}`
+                            )
+                          }
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedSubmissionForReply(submission);
+                            setIsReplyPopupOpen(true);
+                          }}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                        >
+                          Reply
+                        </button>
+                        {submission.status === "pending" && (
+                          <>
+                            <button
+                              onClick={() =>
+                                openActionModal(submission, "approve")
+                              }
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() =>
+                                openActionModal(submission, "reject")
+                              }
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </li>
                   ))
                 )}
@@ -649,6 +714,19 @@ const SubmissionsPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Reply Popup */}
+      {selectedSubmissionForReply && (
+        <ReplyPopup
+          isOpen={isReplyPopupOpen}
+          onClose={() => {
+            setIsReplyPopupOpen(false);
+            setSelectedSubmissionForReply(null);
+          }}
+          submissionId={selectedSubmissionForReply._id}
+          onSubmit={handleReplySubmit}
+        />
+      )}
 
       {/* Modal for approval/rejection */}
       {isModalOpen && selectedSubmission && (

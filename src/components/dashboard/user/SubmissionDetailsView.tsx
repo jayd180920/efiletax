@@ -28,6 +28,8 @@ interface SubmissionDetailsViewProps {
     paymentStatus: string;
     createdAt: string;
     updatedAt: string;
+    admin_comments?: string;
+    tax_summary?: string;
   };
 }
 
@@ -474,6 +476,81 @@ export default function SubmissionDetailsView({
     );
   };
 
+  // Render admin comments if available
+  const renderAdminComments = () => {
+    if (!submission.admin_comments) return null;
+
+    return (
+      <AccordionItem value="admin_comments">
+        <AccordionTrigger className="bg-gray-50">
+          <div className="flex items-center">
+            <div>
+              <h3 className="text-lg font-medium text-blue-600">
+                Admin Comments
+              </h3>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="p-4 bg-blue-50 border-l-4 border-blue-500">
+            <p className="text-sm text-gray-800 whitespace-pre-wrap">
+              {submission.admin_comments}
+            </p>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    );
+  };
+
+  // Render tax summary if available
+  const renderTaxSummary = () => {
+    if (!submission.tax_summary) return null;
+
+    return (
+      <AccordionItem value="tax_summary">
+        <AccordionTrigger className="bg-gray-50">
+          <div className="flex items-center">
+            <div>
+              <h3 className="text-lg font-medium text-green-600">
+                Tax Summary
+              </h3>
+            </div>
+          </div>
+        </AccordionTrigger>
+        <AccordionContent>
+          <div className="p-4">
+            <div className="flex items-center space-x-2">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-green-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <a
+                href={`/api/s3/download?key=${encodeURIComponent(
+                  submission.tax_summary
+                )}`}
+                className="text-blue-600 hover:text-blue-800 font-medium"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Download Tax Summary
+              </a>
+            </div>
+          </div>
+        </AccordionContent>
+      </AccordionItem>
+    );
+  };
+
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:px-6">
@@ -487,6 +564,8 @@ export default function SubmissionDetailsView({
 
       <div className="border-t border-gray-200">
         <Accordion type="multiple" className="w-full">
+          {renderAdminComments()}
+          {renderTaxSummary()}
           {renderFormDataSections()}
           {renderFileUrls()}
         </Accordion>

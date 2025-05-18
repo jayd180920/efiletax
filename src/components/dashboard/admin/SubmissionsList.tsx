@@ -41,9 +41,9 @@ const SubmissionsList = () => {
     useState<Submission | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [actionType, setActionType] = useState<"approve" | "reject" | null>(
-    null
-  );
+  const [actionType, setActionType] = useState<
+    "approve" | "reject" | "reply" | null
+  >(null);
 
   // Fetch submissions
   const fetchSubmissions = async () => {
@@ -62,7 +62,11 @@ const SubmissionsList = () => {
 
       // Set isAdmin to true for admin dashboard
       options.isAdmin = true;
-      const result = await getSubmissions(options);
+
+      // Add a timestamp to prevent caching
+      const timestamp = new Date().getTime();
+      const result = await getSubmissions({ ...options, _t: timestamp });
+
       setSubmissions(result.submissions);
       setPagination(result.pagination);
     } catch (error: any) {
@@ -94,10 +98,10 @@ const SubmissionsList = () => {
     setPagination({ ...pagination, page: 1 }); // Reset to first page
   };
 
-  // Open modal for approval/rejection
+  // Open modal for approval/rejection/reply
   const openActionModal = (
     submission: Submission,
-    action: "approve" | "reject"
+    action: "approve" | "reject" | "reply"
   ) => {
     setSelectedSubmission(submission);
     setActionType(action);
@@ -113,7 +117,7 @@ const SubmissionsList = () => {
     setRejectionReason("");
   };
 
-  // Handle submission action (approve/reject)
+  // Handle submission action (approve/reject/reply)
   const handleSubmissionAction = async () => {
     if (!selectedSubmission || !actionType) return;
 
@@ -132,6 +136,19 @@ const SubmissionsList = () => {
           "rejected",
           rejectionReason
         );
+      } else if (actionType === "reply") {
+        if (!rejectionReason.trim()) {
+          alert("Please provide a message for the reply");
+          return;
+        }
+
+        // Use the updated updateSubmissionStatus function with admin_comments
+        await updateSubmissionStatus(
+          selectedSubmission._id,
+          "sent for revision",
+          undefined,
+          rejectionReason
+        );
       }
 
       // Refresh submissions
@@ -139,7 +156,12 @@ const SubmissionsList = () => {
       closeModal();
     } catch (error: any) {
       setError(error.message || `Failed to ${actionType} submission`);
-      console.error(`Error ${actionType}ing submission:`, error);
+      console.error(
+        `Error ${
+          actionType === "reply" ? "replying to" : actionType + "ing"
+        } submission:`,
+        error
+      );
     } finally {
       setLoading(false);
     }
@@ -186,11 +208,11 @@ const SubmissionsList = () => {
     <div className="bg-white shadow overflow-hidden sm:rounded-md">
       <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Submissions
+          Submissionsfkfafkja
         </h3>
         <div className="flex items-center">
           <label htmlFor="status-filter" className="mr-2 text-sm text-gray-700">
-            Filter by status:
+            Filter by status: dkhsdbvaskhd
           </label>
           <select
             id="status-filter"
@@ -262,18 +284,18 @@ const SubmissionsList = () => {
                 <div className="mt-2 sm:flex sm:justify-between">
                   <div className="sm:flex">
                     <p className="flex items-center text-sm text-gray-500">
-                      Amount: {formatCurrency(submission.amount)}
+                      Amount 123: {formatCurrency(submission.amount)}
                     </p>
                   </div>
                   <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-2">
                     <Link
                       href={`/dashboard/admin/submissions/${submission._id}`}
-                      className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       title="View Details"
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-4 w-4"
+                        className="h-4 w-4 mr-1"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -291,6 +313,7 @@ const SubmissionsList = () => {
                           d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                         />
                       </svg>
+                      View
                     </Link>
                     <Link
                       href={`/dashboard/admin/submissions/${submission._id}/edit`}
@@ -376,6 +399,27 @@ const SubmissionsList = () => {
                         </button>
                       </>
                     )}
+                    <button
+                      onClick={() => openActionModal(submission, "reply")}
+                      className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                      title="Reply"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 mr-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                        />
+                      </svg>
+                      Reply
+                    </button>
                   </div>
                 </div>
               </div>
@@ -593,7 +637,11 @@ const SubmissionsList = () => {
                 <div className="sm:flex sm:items-start">
                   <div
                     className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${
-                      actionType === "approve" ? "bg-green-100" : "bg-red-100"
+                      actionType === "approve"
+                        ? "bg-green-100"
+                        : actionType === "reject"
+                        ? "bg-red-100"
+                        : "bg-blue-100"
                     } sm:mx-0 sm:h-10 sm:w-10`}
                   >
                     {actionType === "approve" ? (
@@ -611,7 +659,7 @@ const SubmissionsList = () => {
                           d="M5 13l4 4L19 7"
                         />
                       </svg>
-                    ) : (
+                    ) : actionType === "reject" ? (
                       <svg
                         className="h-6 w-6 text-red-600"
                         xmlns="http://www.w3.org/2000/svg"
@@ -626,6 +674,21 @@ const SubmissionsList = () => {
                           d="M6 18L18 6M6 6l12 12"
                         />
                       </svg>
+                    ) : (
+                      <svg
+                        className="h-6 w-6 text-blue-600"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"
+                        />
+                      </svg>
                     )}
                   </div>
                   <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
@@ -635,28 +698,38 @@ const SubmissionsList = () => {
                     >
                       {actionType === "approve"
                         ? "Approve Submission"
-                        : "Reject Submission"}
+                        : actionType === "reject"
+                        ? "Reject Submission"
+                        : "Reply to Submission"}
                     </h3>
                     <div className="mt-2">
                       <p className="text-sm text-gray-500">
                         {actionType === "approve"
                           ? "Are you sure you want to approve this submission? This action cannot be undone."
-                          : "Please provide a reason for rejecting this submission."}
+                          : actionType === "reject"
+                          ? "Please provide a reason for rejecting this submission."
+                          : "Please provide a message to reply to this submission."}
                       </p>
-                      {actionType === "reject" && (
+                      {(actionType === "reject" || actionType === "reply") && (
                         <div className="mt-4">
                           <label
                             htmlFor="rejection-reason"
                             className="block text-sm font-medium text-gray-700"
                           >
-                            Rejection Reason
+                            {actionType === "reject"
+                              ? "Rejection Reason"
+                              : "Reply Message"}
                           </label>
                           <textarea
                             id="rejection-reason"
                             name="rejection-reason"
                             rows={3}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                            placeholder="Enter reason for rejection"
+                            placeholder={
+                              actionType === "reject"
+                                ? "Enter reason for rejection"
+                                : "Enter message for the user"
+                            }
                             value={rejectionReason}
                             onChange={(e) => setRejectionReason(e.target.value)}
                           ></textarea>
@@ -673,10 +746,16 @@ const SubmissionsList = () => {
                   className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${
                     actionType === "approve"
                       ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
-                      : "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                      : actionType === "reject"
+                      ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                      : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
                   }`}
                 >
-                  {actionType === "approve" ? "Approve" : "Reject"}
+                  {actionType === "approve"
+                    ? "Approve"
+                    : actionType === "reject"
+                    ? "Reject"
+                    : "Send Reply"}
                 </button>
                 <button
                   type="button"

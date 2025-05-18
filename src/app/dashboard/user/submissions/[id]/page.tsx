@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getSubmission } from "@/lib/auth-client";
@@ -23,9 +23,14 @@ interface Submission {
   rejectionReason?: string;
 }
 
-export default function SubmissionDetailsPage() {
-  const params = useParams();
-  const submissionId = params.id as string;
+export default function SubmissionDetailsPage({
+  params,
+}: {
+  params: { id: string };
+}) {
+  // Store the id from params using React.use() to unwrap the Promise
+  const unwrappedParams = React.use(params as any) as { id: string };
+  const submissionId = unwrappedParams.id;
 
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,11 +39,13 @@ export default function SubmissionDetailsPage() {
 
   useEffect(() => {
     const fetchSubmission = async () => {
+      console.log("ABCD Fetched submission data:");
       try {
         setLoading(true);
         setError(null);
 
         const data = await getSubmission(submissionId);
+        console.log("ABCD Fetched submission data:", data);
         setSubmission(data);
 
         // Set file URLs directly from submission data

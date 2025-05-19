@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+// Define RouteParams inline as it is not exported from "next/dist/server/web/types"
 import dbConnect from "@/lib/mongodb";
 import Region from "@/models/Region";
 import User from "@/models/User";
@@ -9,6 +10,7 @@ import { getToken } from "next-auth/jwt";
 import { isValidObjectId } from "mongoose";
 
 // GET /api/admin/regions/[id] - Get a specific region (admin only)
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }

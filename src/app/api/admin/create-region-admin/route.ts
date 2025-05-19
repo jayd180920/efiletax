@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions, authenticate } from "@/lib/auth";
 import bcrypt from "bcryptjs";
 import nodemailer from "nodemailer";
 
@@ -11,9 +11,23 @@ import nodemailer from "nodemailer";
 export async function POST(req: NextRequest) {
   try {
     // Check if user is authenticated and is an admin
+    // First try NextAuth session
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "admin") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    // If session exists and user is admin, proceed
+    if (session && session.user.role === "admin") {
+      console.log("User authenticated via NextAuth session as admin");
+    } else {
+      // If no valid NextAuth session, try custom auth
+      const auth = await authenticate(req);
+
+      // If no valid auth or user is not admin, return unauthorized
+      if (!auth || auth.role !== "admin") {
+        console.log("User not authenticated or not admin");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      console.log("User authenticated via custom auth as admin");
     }
 
     // Connect to the database

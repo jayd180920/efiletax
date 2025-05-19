@@ -461,11 +461,11 @@ const SubmissionsPage = () => {
                         <div className="flex items-center space-x-2">
                           <span
                             className={`submission-status px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                              submission.status
+                              submission?.status
                             )}`}
                           >
-                            {submission.status.charAt(0).toUpperCase() +
-                              submission.status.slice(1)}
+                            {submission?.status?.charAt(0)?.toUpperCase() +
+                              submission?.status?.slice(1)}
                           </span>
                           <span
                             className={`payment-status  px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(

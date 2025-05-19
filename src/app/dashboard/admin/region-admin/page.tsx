@@ -46,6 +46,7 @@ export default function CreateRegionAdminPage() {
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include", // Add this line to include cookies with the request
         body: JSON.stringify(formData),
       });
 

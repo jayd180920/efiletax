@@ -6,6 +6,7 @@ export interface IPaymentRefund extends Document {
   amount: number;
   status: "success" | "pending" | "failure";
   reason: string;
+  notes?: string; // Optional field for additional information
   initiatedAt: Date;
   completedAt: Date;
 }
@@ -31,6 +32,9 @@ const PaymentRefundSchema: Schema = new Schema(
       default: "pending",
     },
     reason: {
+      type: String,
+    },
+    notes: {
       type: String,
     },
     initiatedAt: {

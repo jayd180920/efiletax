@@ -6,17 +6,35 @@ interface PayUConfig {
   baseUrl: string;
   successUrl: string;
   failureUrl: string;
+  refundUrl?: string;
+  authHeader?: string;
 }
 
 // Get PayU configuration from environment variables
 export const getPayUConfig = (): PayUConfig => {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+  const payuBaseUrl =
+    process.env.PAYU_BASE_URL || "https://sandboxsecure.payu.in";
+  const payuRefundUrl = process.env.PAYU_REFUND_URL || payuBaseUrl;
+
+  // Generate auth header from client ID and client secret if not provided directly
+  let authHeader = process.env.PAYU_AUTH_HEADER || "";
+  if (
+    !authHeader &&
+    process.env.PAYU_CLIENT_ID &&
+    process.env.PAYU_CLIENT_SECRET
+  ) {
+    const credentials = `${process.env.PAYU_CLIENT_ID}:${process.env.PAYU_CLIENT_SECRET}`;
+    const base64Credentials = Buffer.from(credentials).toString("base64");
+    authHeader = `Basic ${base64Credentials}`;
+  }
 
   return {
     merchantKey: process.env.PAYU_MERCHANT_KEY || "",
     merchantSalt: process.env.PAYU_MERCHANT_SALT || "",
-    baseUrl:
-      process.env.PAYU_BASE_URL || "https://sandboxsecure.payu.in/_payment",
+    baseUrl: `${payuBaseUrl}/_payment`,
+    refundUrl: `${payuRefundUrl}/merchant/postservice.php?form=2`,
+    authHeader,
     successUrl: `${baseUrl}/api/payment/success`,
     failureUrl: `${baseUrl}/api/payment/failure`,
   };
@@ -131,4 +149,152 @@ export const generatePayUFormData = (
     hash: hash,
     udf1: serviceId, // Store serviceId in udf1 field
   };
+};
+
+/**
+ * Generate hash for PayU refund request
+ * @param key - Merchant key
+ * @param command - Command type (cancel_refund_transaction)
+ * @param var1 - PayU payment ID (mihpayid)
+ * @param salt - Merchant salt
+ * @returns Hash string for refund request
+ */
+export const generateRefundHash = (
+  key: string,
+  command: string,
+  var1: string,
+  salt: string
+): string => {
+  // Hash sequence for refund: key|command|var1|salt
+  const hashString = `${key}|${command}|${var1}|${salt}`;
+  console.log("Refund Hash String:", hashString);
+
+  return crypto.createHash("sha512").update(hashString).digest("hex");
+};
+
+/**
+ * Process a refund through PayU API
+ * @param mihpayid - The PayU payment ID (mihpayid)
+ * @param amount - The amount to refund
+ * @param txnId - The original transaction ID
+ * @returns Promise with the refund response
+ */
+export const processRefund = async (
+  mihpayid: string,
+  amount: number,
+  txnId: string
+): Promise<any> => {
+  try {
+    const config = getPayUConfig();
+
+    if (!config.refundUrl) {
+      throw new Error("PayU refund URL is not configured");
+    }
+
+    // Generate a unique refund ID
+    const refundId = `refund_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 8)}`;
+
+    // Command for refund
+    const command = "cancel_refund_transaction";
+
+    // Generate hash for refund request
+    const hash = generateRefundHash(
+      config.merchantKey,
+      command,
+      mihpayid,
+      config.merchantSalt
+    );
+
+    // Prepare the request payload
+    const payload = {
+      key: config.merchantKey,
+      command: command,
+      var1: mihpayid, // PayU payment ID
+      var2: refundId, // Unique refund ID
+      var3: amount.toString(), // Amount to refund
+      var4: "Refund requested by admin", // Reason for refund
+      var5: txnId, // Original transaction ID
+      hash: hash, // Add hash for authentication
+    };
+
+    console.log("PayU Refund Request:", JSON.stringify(payload, null, 2));
+
+    // Make the API request to PayU
+    const response = await fetch(config.refundUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        ...(config.authHeader ? { Authorization: config.authHeader } : {}),
+      },
+      body: new URLSearchParams(payload).toString(),
+    });
+
+    console.log(
+      "PayU Refund Response Status:",
+      response.status,
+      response.statusText
+    );
+    console.log(
+      "PayU Refund Response Headers:",
+      Object.fromEntries(response.headers.entries())
+    );
+
+    // Check content type to determine how to parse the response
+    const contentType = response.headers.get("content-type") || "";
+
+    // Get the response text first
+    const responseText = await response.text();
+    console.log("PayU Refund Raw Response:", responseText);
+
+    // Try to parse as JSON first, even if content type is not JSON
+    try {
+      // Check if the response looks like JSON
+      if (
+        responseText.trim().startsWith("{") &&
+        responseText.trim().endsWith("}")
+      ) {
+        const jsonData = JSON.parse(responseText);
+        console.log(
+          "PayU Refund Response (parsed as JSON):",
+          JSON.stringify(jsonData, null, 2)
+        );
+
+        return {
+          refundId,
+          ...jsonData,
+        };
+      }
+    } catch (parseError) {
+      console.log("Failed to parse response as JSON:", parseError);
+      // Continue to handle as text if JSON parsing fails
+    }
+
+    // If we couldn't parse as JSON or it's not JSON format, handle as text
+    console.log("PayU Refund Response (non-JSON):", responseText);
+
+    // Check for specific error patterns in the text response
+    if (responseText.includes("Hash is empty")) {
+      return {
+        refundId,
+        status: "error",
+        message: "PayU refund failed: Hash is empty",
+        responseType: contentType,
+        responseText: responseText,
+      };
+    }
+
+    // Generic non-JSON response handler
+    return {
+      refundId,
+      status: "received",
+      message: "Received non-JSON response from PayU",
+      responseType: contentType,
+      responseText: responseText,
+    };
+  } catch (error) {
+    console.error("Error processing PayU refund:", error);
+    throw error;
+  }
 };

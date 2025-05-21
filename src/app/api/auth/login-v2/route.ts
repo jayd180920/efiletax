@@ -84,8 +84,8 @@ export async function POST(req: NextRequest) {
       name: "token",
       value: token,
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict", // Changed back to 'strict' for consistency with the original login API
+      secure: false, // Set to false since we don't have SSL
+      sameSite: "lax", // Changed to 'lax' to work better with redirects
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });

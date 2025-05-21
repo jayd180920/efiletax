@@ -15,6 +15,7 @@ export async function hasUserPaidForService(
   try {
     await dbConnect();
 
+    console.log("Checking payment status for userId:", userId);
     // Convert string IDs to ObjectId if needed
     const userObjId =
       typeof userId === "string" ? new ObjectId(userId) : userId;
@@ -28,6 +29,7 @@ export async function hasUserPaidForService(
       status: "success",
     });
 
+    console.log("Payment found:", payment);
     return !!payment; // Return true if payment exists, false otherwise
   } catch (error) {
     console.error("Error checking payment status:", error);

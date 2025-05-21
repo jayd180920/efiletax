@@ -10,13 +10,15 @@ interface PayUConfig {
 
 // Get PayU configuration from environment variables
 export const getPayUConfig = (): PayUConfig => {
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+
   return {
     merchantKey: process.env.PAYU_MERCHANT_KEY || "",
     merchantSalt: process.env.PAYU_MERCHANT_SALT || "",
     baseUrl:
       process.env.PAYU_BASE_URL || "https://sandboxsecure.payu.in/_payment",
-    successUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/success` || "",
-    failureUrl: `${process.env.NEXT_PUBLIC_BASE_URL}/api/payment/failure` || "",
+    successUrl: `${baseUrl}/api/payment/success`,
+    failureUrl: `${baseUrl}/api/payment/failure`,
   };
 };
 
@@ -56,18 +58,26 @@ export const verifyHash = (payuResponse: any): boolean => {
   }
 
   // Response hash sequence: salt|status||||||udf5|udf4|udf3|udf2|udf1|email|firstname|productinfo|amount|txnid|key
-  const hashString = `${config.merchantSalt}|${
-    payuResponse.status || ""
-  }|||||||${payuResponse.udf5 || ""}|${payuResponse.udf4 || ""}|${
-    payuResponse.udf3 || ""
-  }|${payuResponse.udf2 || ""}|${payuResponse.udf1 || ""}|${
-    payuResponse.email || ""
-  }|${payuResponse.firstname || ""}|${payuResponse.productinfo || ""}|${
-    payuResponse.amount || ""
-  }|${payuResponse.txnid || ""}|${config.merchantKey}`;
+  // const hashString = `${config.merchantSalt}|${
+  //   payuResponse.status || ""
+  // }|||||||${payuResponse.udf5 || ""}|${payuResponse.udf4 || ""}|${
+  //   payuResponse.udf3 || ""
+  // }|${payuResponse.udf2 || ""}|${payuResponse.udf1 || ""}|${
+  //   payuResponse.email || ""
+  // }|${payuResponse.firstname || ""}|${payuResponse.productinfo || ""}|${
+  //   payuResponse.amount || ""
+  // }|${payuResponse.txnid || ""}|${config.merchantKey}`;
+
+  const hashString = `${config.merchantSalt}|${payuResponse.status || ""}|${
+    payuResponse.udf1 || ""
+  }|||||||||${payuResponse.email || ""}|${payuResponse.firstname || ""}|${
+    payuResponse.productinfo || ""
+  }|${payuResponse.amount || ""}|${payuResponse.txnid || ""}|${
+    config.merchantKey
+  }`;
 
   // Log the hash string for debugging
-  console.log("Hash String:", hashString);
+  console.log("Hash String: After", hashString);
 
   const calculatedHash = crypto
     .createHash("sha512")

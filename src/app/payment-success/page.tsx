@@ -25,6 +25,9 @@ const PaymentSuccessLoading = () => (
 );
 
 export default function PaymentSuccessPage() {
+  // We don't need to manually pass the txnId as a prop
+  // The PaymentSuccessContent component will use useSearchParams() to get it from the URL
+  // This is the correct pattern for client components that need access to search params
   return (
     <Suspense fallback={<PaymentSuccessLoading />}>
       <PaymentSuccessContent />

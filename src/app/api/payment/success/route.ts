@@ -55,23 +55,64 @@ export async function POST(req: NextRequest) {
     paymentTransaction.responseData = payuResponse;
     await paymentTransaction.save();
 
+    console.log(
+      "Payment transaction updated:",
+      payuResponse,
+      baseUrl,
+      "request",
+      req
+    );
     // Redirect to appropriate page based on payment status
     if (payuResponse.status === "success") {
-      return NextResponse.redirect(
-        `${baseUrl}/payment-success?txnId=${payuResponse.txnid}`
-      );
+      // Add a timestamp to prevent caching issues
+      // const timestamp = new Date().getTime();
+      // // Create a proper URL object to ensure valid URL construction
+      // const redirectUrl = new URL("/payment-success", baseUrl);
+      // redirectUrl.searchParams.set("txnId", payuResponse.txnid);
+      // redirectUrl.searchParams.set("_", timestamp.toString());
+      // return NextResponse.redirect(redirectUrl);
+
+      console.log("Debug: payuResponse object:", payuResponse);
+      console.log("Debug: payuResponse.txnid value:", payuResponse?.txnid); // Use optional chaining for safety
+
+      // Make sure txnid exists before constructing the URL
+      if (!payuResponse.txnid) {
+        console.error("Missing txnid in PayU response");
+        return NextResponse.redirect(
+          `${baseUrl}/payment-failed?reason=missing-transaction-id`
+        );
+      }
+
+      // Construct a proper URL object to ensure valid URL
+      const redirectUrl = new URL("/payment-success", baseUrl);
+      redirectUrl.searchParams.set("txnId", payuResponse.txnid);
+      redirectUrl.searchParams.set("_", new Date().getTime().toString()); // Add timestamp to prevent caching
+
+      console.log("Debug: Constructed redirect URL:", redirectUrl.toString());
+
+      return NextResponse.redirect(redirectUrl);
+
+      // return NextResponse.redirect(
+      //   `http://localhost:3000/payment-success?txnId=${payuResponse.txnid}`
+      // );
     } else {
-      return NextResponse.redirect(
-        `${baseUrl}/payment-failed?reason=${
-          payuResponse.error || "payment-failed"
-        }`
+      // Create a proper URL object for failure redirect as well
+      const redirectUrl = new URL("/payment-failed", baseUrl);
+      redirectUrl.searchParams.set(
+        "reason",
+        payuResponse.error || "payment-failed"
       );
+      redirectUrl.searchParams.set("_", new Date().getTime().toString());
+      return NextResponse.redirect(redirectUrl);
     }
   } catch (error) {
     console.error("Error processing payment success:", error);
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    return NextResponse.redirect(
-      `${baseUrl}/payment-failed?reason=server-error`
-    );
+    const timestamp = new Date().getTime();
+    // Create a proper URL object for error redirect
+    const redirectUrl = new URL("/payment-failed", baseUrl);
+    redirectUrl.searchParams.set("reason", "server-error");
+    redirectUrl.searchParams.set("_", timestamp.toString());
+    return NextResponse.redirect(redirectUrl);
   }
 }

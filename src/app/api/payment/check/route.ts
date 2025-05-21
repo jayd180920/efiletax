@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
     }
 
     // Get serviceId from query parameters
-    const url = new URL(req.url);
+    // Ensure we have a valid URL by adding base if needed
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+    const url = new URL(req.url, baseUrl);
     const serviceId = url.searchParams.get("serviceId");
 
     if (!serviceId) {
@@ -54,6 +56,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    console.log("User found: ABCD", user);
     // Check if user has paid for this service
     const isPaid = await hasUserPaidForService(user._id, serviceId);
 

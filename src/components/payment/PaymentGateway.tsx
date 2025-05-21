@@ -22,6 +22,19 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
   const [paymentData, setPaymentData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper function to derive service_unique_name from service name
+  const getServiceUniqueName = (name: string): string => {
+    return name.toLowerCase().replace(/\s+/g, "-");
+  };
+
+  // Helper function to determine category from service name
+  const getServiceCategory = (name: string): string => {
+    if (name.toLowerCase().includes("gst")) return "gst-filing";
+    if (name.toLowerCase().includes("itr")) return "itr-filing";
+    if (name.toLowerCase().includes("roc")) return "roc-filing";
+    return "gst-filing"; // Default category
+  };
+
   // Check payment status on component mount
   useEffect(() => {
     const checkPaymentStatus = async () => {
@@ -70,7 +83,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
     };
 
     checkPaymentStatus();
-  }, [serviceId]);
+  }, [serviceId, serviceName]);
 
   // Initiate payment process
   const initiatePayment = async () => {

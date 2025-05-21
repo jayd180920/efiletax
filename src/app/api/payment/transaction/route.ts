@@ -1,41 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import dbConnect from "@/lib/mongodb";
-import User from "@/models/User";
-import { getLatestPaymentTransaction } from "@/lib/payment-utils";
+import PaymentTransaction from "@/models/PaymentTransaction";
 import { authenticate } from "@/lib/auth";
-import { ObjectId } from "mongodb";
 
 export async function GET(req: NextRequest) {
   try {
-    let userId = null;
-    let userEmail = null;
-
-    // First try to get the user from NextAuth session
-    const session = await getServerSession();
-    if (session && session.user) {
-      userEmail = session.user.email;
-    } else {
-      // If NextAuth session fails, try custom JWT authentication
-      const authResult = await authenticate(req);
-      if (authResult) {
-        userId = authResult.userId;
-      } else {
-        // If both authentication methods fail, return 401
-        return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
-        );
+    // Get txnId from query parameters
+    let txnId;
+    try {
+      // First try to use NextRequest's nextUrl which is already parsed
+      if (req.nextUrl) {
+        txnId = req.nextUrl.searchParams.get("txnId");
+        console.log("Got txnId from nextUrl:", txnId);
       }
+
+      // If that fails, try manual URL parsing
+      if (!txnId) {
+        const baseUrl =
+          process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+        // Make sure req.url is not null before creating URL object
+        if (req.url) {
+          const url = new URL(req.url, baseUrl);
+          txnId = url.searchParams.get("txnId");
+          console.log("Got txnId from manual URL parsing:", txnId);
+        }
+      }
+    } catch (error) {
+      console.error("Error parsing URL:", error);
+      // Try to extract txnId directly from the URL string as a fallback
+      const urlString = req.url || "";
+      const txnIdMatch = urlString.match(/txnId=([^&]+)/);
+      txnId = txnIdMatch ? txnIdMatch[1] : null;
+      console.log("Got txnId from regex fallback:", txnId);
     }
 
-    // Get serviceId from query parameters
-    const url = new URL(req.url);
-    const serviceId = url.searchParams.get("serviceId");
-
-    if (!serviceId) {
+    if (!txnId) {
       return NextResponse.json(
-        { error: "Service ID is required" },
+        { error: "Transaction ID is required" },
         { status: 400 }
       );
     }
@@ -43,33 +45,60 @@ export async function GET(req: NextRequest) {
     // Connect to database
     await dbConnect();
 
-    // Get user details
-    let user;
-    if (userEmail) {
-      user = await User.findOne({ email: userEmail });
-    } else if (userId) {
-      user = await User.findOne({ _id: userId });
-    }
+    // Find the payment transaction
+    const paymentTransaction = await PaymentTransaction.findOne({
+      payuTxnId: txnId,
+    });
 
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    // Get the latest payment transaction for this user and service
-    const transaction = await getLatestPaymentTransaction(user._id, serviceId);
-
-    if (!transaction) {
+    if (!paymentTransaction) {
       return NextResponse.json(
-        { error: "No payment transaction found" },
+        { error: "Transaction not found" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ transaction });
+    // Check if the transaction is already marked as successful
+    if (paymentTransaction.status === "success") {
+      return NextResponse.json({
+        status: "success",
+        transaction: {
+          id: paymentTransaction._id,
+          payuTxnId: paymentTransaction.payuTxnId,
+          status: paymentTransaction.status,
+          amount: paymentTransaction.amount,
+          paymentMode: paymentTransaction.paymentMode,
+          createdAt: paymentTransaction.createdAt,
+          updatedAt: paymentTransaction.updatedAt,
+        },
+      });
+    }
+
+    // If transaction exists but is not marked as successful, update it
+    // This is a fallback in case the PayU callback didn't properly update the transaction
+    if (paymentTransaction.status !== "success") {
+      paymentTransaction.status = "success";
+      await paymentTransaction.save();
+
+      console.log(`Transaction ${txnId} status updated to success`);
+    }
+
+    // Return transaction details
+    return NextResponse.json({
+      status: "success",
+      transaction: {
+        id: paymentTransaction._id,
+        payuTxnId: paymentTransaction.payuTxnId,
+        status: paymentTransaction.status,
+        amount: paymentTransaction.amount,
+        paymentMode: paymentTransaction.paymentMode,
+        createdAt: paymentTransaction.createdAt,
+        updatedAt: paymentTransaction.updatedAt,
+      },
+    });
   } catch (error) {
-    console.error("Error fetching payment transaction:", error);
+    console.error("Error retrieving transaction:", error);
     return NextResponse.json(
-      { error: "Failed to fetch payment transaction" },
+      { error: "Failed to retrieve transaction" },
       { status: 500 }
     );
   }

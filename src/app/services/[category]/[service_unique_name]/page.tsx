@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,6 +14,35 @@ import CommonServiceForm from "@/components/forms/CommonServiceForm";
 import Layout from "@/components/layout/Layout";
 
 export default function ServicePage() {
+  const pathname = usePathname(); // e.g., "/payment-success"
+  const [fullUrl, setFullUrl] = useState("");
+
+  useEffect(() => {
+    console.log("Full URL:", pathname);
+    setFullUrl(`${pathname}`);
+
+    // read serviceInfo cooie here
+    const serviceInfoCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("serviceInfo="));
+    if (serviceInfoCookie) {
+      const serviceInfoCookieValue = JSON.parse(
+        serviceInfoCookie.split("=")[1]
+      );
+      console.log("Service info from cookie:", serviceInfoCookieValue);
+      const serviceInfo = {
+        serviceId: serviceInfoCookieValue.serviceId,
+        serviceUrl: pathname,
+      };
+
+      // Store service info in a cookie with longer expiration (24 hours)
+      document.cookie = `serviceInfo=${JSON.stringify(
+        serviceInfo
+      )}; path=/; max-age=86400`;
+
+      console.log("Service link clicked, set cookie:", serviceInfo);
+    }
+  }, [pathname]);
   const params = useParams();
   const { category, service_unique_name } = params;
 

@@ -97,8 +97,26 @@ export default function UserDashboard() {
   };
 
   // Handle service click
-  const handleServiceClick = () => {
+  const handleServiceClick = (service: Service, category: string) => {
+    // Close the submenu
     setActiveCategory(null);
+
+    // Format the service URL
+    const serviceUniqueName = service.service_unique_name;
+    const categoryPath = category.toLowerCase().replace(/\s+/g, "-");
+
+    // Store service info in a cookie when link is clicked
+    const serviceInfo = {
+      serviceId: service._id,
+      serviceUrl: window.location.href,
+    };
+
+    // Store service info in a cookie with longer expiration (24 hours)
+    document.cookie = `serviceInfo=${JSON.stringify(
+      serviceInfo
+    )}; path=/; max-age=86400`;
+
+    console.log("Service link clicked, set cookie:", serviceInfo);
   };
 
   if (loading || servicesLoading) {
@@ -183,7 +201,7 @@ export default function UserDashboard() {
                             service.service_unique_name
                           )}
                           className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={handleServiceClick}
+                          onClick={() => handleServiceClick(service, category)}
                         >
                           <div className="flex justify-between items-center">
                             <span>{service.name}</span>
@@ -230,7 +248,7 @@ export default function UserDashboard() {
                               service.service_unique_name
                             )}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-                            onClick={handleServiceClick}
+                            onClick={() => handleServiceClick(service, category)}
                           >
                             Start Application
                           </Link>

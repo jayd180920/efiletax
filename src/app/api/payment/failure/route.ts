@@ -42,9 +42,9 @@ export async function POST(req: NextRequest) {
 
     if (!paymentTransaction) {
       console.error("Payment transaction not found in failure callback");
-      return NextResponse.redirect(
-        `${baseUrl}/payment-failed?reason=transaction-not-found`
-      );
+      const redirectUrl = new URL("/payment-failed", baseUrl);
+      redirectUrl.searchParams.set("reason", "transaction-not-found");
+      return NextResponse.redirect(redirectUrl);
     }
 
     // Update payment transaction with PayU response
@@ -52,17 +52,22 @@ export async function POST(req: NextRequest) {
     paymentTransaction.responseData = payuResponse;
     await paymentTransaction.save();
 
-    // Redirect to payment failed page with error reason
-    return NextResponse.redirect(
-      `${baseUrl}/payment-failed?reason=${
-        payuResponse.error || "payment-failed"
-      }`
+    // Redirect to payment failed page with error reason and timestamp to prevent caching
+    const timestamp = new Date().getTime();
+    const redirectUrl = new URL("/payment-failed", baseUrl);
+    redirectUrl.searchParams.set(
+      "reason",
+      payuResponse.error || "payment-failed"
     );
+    redirectUrl.searchParams.set("_", timestamp.toString());
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error("Error processing payment failure:", error);
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
-    return NextResponse.redirect(
-      `${baseUrl}/payment-failed?reason=server-error`
-    );
+    const timestamp = new Date().getTime();
+    const redirectUrl = new URL("/payment-failed", baseUrl);
+    redirectUrl.searchParams.set("reason", "server-error");
+    redirectUrl.searchParams.set("_", timestamp.toString());
+    return NextResponse.redirect(redirectUrl);
   }
 }

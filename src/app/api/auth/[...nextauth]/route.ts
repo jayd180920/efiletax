@@ -162,6 +162,17 @@ export const authOptions = {
     strategy: "jwt" as SessionStrategy,
   },
   secret: process.env.NEXTAUTH_SECRET,
+  cookies: {
+    sessionToken: {
+      name: "next-auth.session-token", // 👈 avoid "__Secure-" for HTTP/IP
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: false, // 👈 allow cookie over HTTP (must be false for IP-based access)
+      },
+    },
+  },
 };
 
 const handler = NextAuth(authOptions);

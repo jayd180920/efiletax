@@ -123,13 +123,13 @@ export default function FilePreviewSection({
       subtitle="Preview all files uploaded for this submission"
       icon={icon}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 file-preview-section-parent">
         {Object.entries(fileUrls).map(([name, { key, url }]) => (
           <div
             key={key}
-            className="border rounded-md overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow"
+            className="border rounded-md overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow file-preview-section"
           >
-            <div className="p-3 border-b bg-gray-50 flex justify-between items-center">
+            <div className="p-3 border-b bg-gray-50 flex justify-between items-center file-name-section">
               <h4 className="text-sm font-medium truncate" title={name}>
                 {getFileDisplayName(name)}
               </h4>

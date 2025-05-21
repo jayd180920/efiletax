@@ -258,7 +258,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
 
         {/* File Preview Section - Side by Side */}
         {showPreview && (fileUrl || localPreviewUrl) && !fileToRemove && (
-          <div className="flex-1 mt-3 md:mt-0 border rounded-md p-3">
+          <div className="flex-1 mt-3 md:mt-0 border rounded-md p-3 upload-file-preview">
             <div className="flex justify-between items-center mb-2">
               <h4 className="text-sm font-medium">File Preview</h4>
               {fileUrl ? (

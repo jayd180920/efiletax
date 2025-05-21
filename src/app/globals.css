@@ -99,3 +99,28 @@ div[role="tabpanel"] {
   color: #21b2aa;
   background-color: #ffffff;
 }
+div.file-preview-section,
+div.upload-file-preview {
+  width: 200px;
+  height: auto;
+  border: none;
+}
+div.file-preview-section-parent {
+  display: flex;
+  justify-content: space-around;
+}
+div.file-preview-section img {
+  box-shadow: rgb(1 156 147) 0px 5px 15px;
+}
+div.file-preview-section .bg-gray-100 {
+  border: none;
+}
+div.file-preview-section .p-2.text-xs.text-gray-500.truncate.border-t {
+  border: none;
+  display: none;
+}
+div.file-name-section {
+  border: none;
+  color: #019c93;
+  font-weight: 700;
+}

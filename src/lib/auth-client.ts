@@ -49,7 +49,8 @@ export async function login(
 
     console.log(
       "auth-client: Login v2 API response status:",
-      v2Response.status
+      v2Response.status,
+      v2Response
     );
 
     if (v2Response.ok) {

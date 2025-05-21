@@ -90,6 +90,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
         response.status,
         response.statusText
       );
+      console.log("Payment initiate error:", response);
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error("Payment initiate error:", errorData);

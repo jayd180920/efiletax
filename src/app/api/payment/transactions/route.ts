@@ -9,6 +9,14 @@ import { authenticate } from "@/lib/auth";
 import { getToken } from "next-auth/jwt";
 
 export async function GET(req: NextRequest) {
+  // Get pagination parameters from URL
+  const url = new URL(req.url);
+  const page = parseInt(url.searchParams.get("page") || "1");
+  const limit = parseInt(url.searchParams.get("limit") || "10");
+  const search = url.searchParams.get("search") || "";
+  const sortField = url.searchParams.get("sortField") || "createdAt";
+  const sortOrder = url.searchParams.get("sortOrder") || "desc";
+
   try {
     console.log("GET /api/payment/transactions: Starting authentication check");
 
@@ -86,8 +94,24 @@ export async function GET(req: NextRequest) {
     // Connect to database
     await dbConnect();
 
-    // Fetch all payment transactions with user and service details
-    const transactions = await PaymentTransaction.aggregate([
+    // Calculate skip value for pagination
+    const skip = (page - 1) * limit;
+
+    // Build search filter if search parameter is provided
+    const searchFilter = search
+      ? {
+          $or: [
+            { "user.name": { $regex: search, $options: "i" } },
+            { "user.email": { $regex: search, $options: "i" } },
+            { "service.name": { $regex: search, $options: "i" } },
+            { payuTxnId: { $regex: search, $options: "i" } },
+            { mihpayid: { $regex: search, $options: "i" } },
+          ],
+        }
+      : {};
+
+    // Fetch payment transactions with pagination, search, and sorting
+    const aggregationPipeline = [
       {
         $lookup: {
           from: "users",
@@ -151,11 +175,33 @@ export async function GET(req: NextRequest) {
         },
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: { [sortField]: sortOrder === "asc" ? 1 : -1 } as any,
       },
-    ]);
+      {
+        $skip: skip,
+      },
+      {
+        $limit: limit,
+      },
+    ];
 
-    return NextResponse.json(transactions);
+    // Execute the aggregation pipeline
+    const transactions = await PaymentTransaction.aggregate(
+      aggregationPipeline
+    );
+
+    // Get total count for pagination
+    const totalCount = await PaymentTransaction.countDocuments();
+
+    return NextResponse.json({
+      transactions,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     console.error("Error fetching payment transactions:", error);
     return NextResponse.json(

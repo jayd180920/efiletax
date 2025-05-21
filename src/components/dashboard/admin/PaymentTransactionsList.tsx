@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 interface User {
   _id: string;
@@ -237,6 +239,181 @@ const RefundModal: React.FC<RefundModalProps> = ({
   );
 };
 
+interface PaginationProps {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}
+
+const Pagination: React.FC<PaginationProps> = ({
+  currentPage,
+  totalPages,
+  onPageChange,
+}) => {
+  const pageNumbers = [];
+  const maxPageButtons = 5;
+
+  let startPage = Math.max(1, currentPage - Math.floor(maxPageButtons / 2));
+  let endPage = Math.min(totalPages, startPage + maxPageButtons - 1);
+
+  if (endPage - startPage + 1 < maxPageButtons) {
+    startPage = Math.max(1, endPage - maxPageButtons + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pageNumbers.push(i);
+  }
+
+  return (
+    <div className="flex items-center justify-between px-4 py-3 sm:px-6">
+      <div className="flex flex-1 justify-between sm:hidden">
+        <button
+          onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+          disabled={currentPage === 1}
+          className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+            currentPage === 1
+              ? "text-gray-300 cursor-not-allowed"
+              : "text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          Previous
+        </button>
+        <button
+          onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+          disabled={currentPage === totalPages}
+          className={`relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
+            currentPage === totalPages
+              ? "text-gray-300 cursor-not-allowed"
+              : "text-gray-700 hover:bg-gray-50"
+          }`}
+        >
+          Next
+        </button>
+      </div>
+      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+        <div>
+          <p className="text-sm text-gray-700">
+            Showing page <span className="font-medium">{currentPage}</span> of{" "}
+            <span className="font-medium">{totalPages}</span>
+          </p>
+        </div>
+        <div>
+          <nav
+            className="isolate inline-flex -space-x-px rounded-md shadow-sm"
+            aria-label="Pagination"
+          >
+            <button
+              onClick={() => onPageChange(1)}
+              disabled={currentPage === 1}
+              className={`relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ${
+                currentPage === 1 ? "cursor-not-allowed" : "hover:bg-gray-50"
+              }`}
+            >
+              <span className="sr-only">First</span>
+              <svg
+                className="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className={`relative inline-flex items-center px-2 py-2 text-gray-400 ${
+                currentPage === 1 ? "cursor-not-allowed" : "hover:bg-gray-50"
+              }`}
+            >
+              <span className="sr-only">Previous</span>
+              <svg
+                className="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+            {pageNumbers.map((number) => (
+              <button
+                key={number}
+                onClick={() => onPageChange(number)}
+                className={`relative inline-flex items-center px-4 py-2 text-sm font-semibold ${
+                  currentPage === number
+                    ? "z-10 bg-primary text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                    : "text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:outline-offset-0"
+                }`}
+              >
+                {number}
+              </button>
+            ))}
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className={`relative inline-flex items-center px-2 py-2 text-gray-400 ${
+                currentPage === totalPages
+                  ? "cursor-not-allowed"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              <span className="sr-only">Next</span>
+              <svg
+                className="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+            <button
+              onClick={() => onPageChange(totalPages)}
+              disabled={currentPage === totalPages}
+              className={`relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ${
+                currentPage === totalPages
+                  ? "cursor-not-allowed"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              <span className="sr-only">Last</span>
+              <svg
+                className="h-5 w-5"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PaymentTransactionsList: React.FC = () => {
   const router = useRouter();
   const [transactions, setTransactions] = useState<PaymentTransaction[]>([]);
@@ -246,29 +423,84 @@ const PaymentTransactionsList: React.FC = () => {
     useState<PaymentTransaction | null>(null);
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
 
-  useEffect(() => {
-    fetchTransactions();
-  }, []);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const fetchTransactions = async () => {
+  // Sorting state
+  const [sortField, setSortField] = useState("createdAt");
+  const [sortOrder, setSortOrder] = useState("desc");
+
+  // Search state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+
+  // Debounce search term
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchTerm]);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearchTerm]);
+
+  const fetchTransactions = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/payment/transactions");
+      const queryParams = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        sortField,
+        sortOrder,
+        ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+      });
+
+      const response = await fetch(`/api/payment/transactions?${queryParams}`);
       if (!response.ok) {
         throw new Error("Failed to fetch payment transactions");
       }
+
       const data = await response.json();
-      setTransactions(data);
+      setTransactions(data.transactions);
+      setTotalPages(data.pagination.totalPages);
+      setTotalItems(data.pagination.total);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to load transactions"
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, itemsPerPage, sortField, sortOrder, debouncedSearchTerm]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, [fetchTransactions]);
 
   const handleRefundClick = (transaction: PaymentTransaction) => {
     setSelectedTransaction(transaction);
     setIsRefundModalOpen(true);
+  };
+
+  const handleSort = (field: string) => {
+    if (field === sortField) {
+      // Toggle sort order if clicking the same field
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // Set new sort field and default to ascending order
+      setSortField(field);
+      setSortOrder("asc");
+    }
   };
 
   const handleRefund = async (
@@ -294,10 +526,15 @@ const PaymentTransactionsList: React.FC = () => {
         throw new Error(errorData.message || "Failed to process refund");
       }
 
+      toast.success("Refund processed successfully!");
+
       // Refresh the transactions list
       await fetchTransactions();
     } catch (error) {
       console.error("Error processing refund:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to process refund"
+      );
       throw error;
     }
   };
@@ -385,21 +622,127 @@ const PaymentTransactionsList: React.FC = () => {
     );
   }
 
+  const getSortIcon = (field: string) => {
+    if (field !== sortField) {
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+          />
+        </svg>
+      );
+    }
+
+    return sortOrder === "asc" ? (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4 text-gray-700"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 15l7-7 7 7"
+        />
+      </svg>
+    ) : (
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-4 w-4 text-gray-700"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    );
+  };
+
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <ToastContainer
+        position="top-right"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
+
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between">
+        <h1 className="mb-4 text-2xl font-bold text-gray-900 md:mb-0">
           Payment Transactions
         </h1>
-        <button
-          onClick={() => fetchTransactions()}
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-primary-dark"
-        >
-          Refresh
-        </button>
+        <div className="flex flex-col space-y-2 md:flex-row md:space-x-4 md:space-y-0">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search transactions..."
+              className="w-full rounded-md border border-gray-300 px-4 py-2 pr-10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light md:w-64"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+              <svg
+                className="h-5 w-5 text-gray-400"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+          </div>
+          <div className="flex space-x-2">
+            <select
+              className="rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light"
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value="10">10 per page</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+              <option value="100">100 per page</option>
+            </select>
+            <button
+              onClick={() => fetchTransactions()}
+              className="rounded-md bg-primary px-4 py-2 text-white hover:bg-primary-dark"
+            >
+              Refresh
+            </button>
+          </div>
+        </div>
       </div>
 
-      {transactions.length === 0 ? (
+      {transactions.length === 0 && !loading ? (
         <div className="rounded-md bg-gray-50 p-8 text-center">
           <p className="text-gray-600">No payment transactions found.</p>
         </div>
@@ -410,33 +753,53 @@ const PaymentTransactionsList: React.FC = () => {
               <tr>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  className="group cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  onClick={() => handleSort("user.name")}
                 >
-                  User
+                  <div className="flex items-center space-x-1">
+                    <span>User</span>
+                    {getSortIcon("user.name")}
+                  </div>
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  className="group cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  onClick={() => handleSort("service.name")}
                 >
-                  Service
+                  <div className="flex items-center space-x-1">
+                    <span>Service</span>
+                    {getSortIcon("service.name")}
+                  </div>
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  className="group cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  onClick={() => handleSort("amount")}
                 >
-                  Amount
+                  <div className="flex items-center space-x-1">
+                    <span>Amount</span>
+                    {getSortIcon("amount")}
+                  </div>
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  className="group cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  onClick={() => handleSort("status")}
                 >
-                  Status
+                  <div className="flex items-center space-x-1">
+                    <span>Status</span>
+                    {getSortIcon("status")}
+                  </div>
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  className="group cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  onClick={() => handleSort("createdAt")}
                 >
-                  Date
+                  <div className="flex items-center space-x-1">
+                    <span>Date</span>
+                    {getSortIcon("createdAt")}
+                  </div>
                 </th>
                 <th
                   scope="col"
@@ -532,6 +895,15 @@ const PaymentTransactionsList: React.FC = () => {
             </tbody>
           </table>
         </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
       )}
 
       <RefundModal

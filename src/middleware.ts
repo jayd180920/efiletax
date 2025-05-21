@@ -49,12 +49,13 @@ export async function middleware(request: NextRequest) {
     // Check if we have any valid authentication
     let isAuthenticated = false;
     let userRole = "user";
-
+    console.log("Verifying custom token Before NextAuth", token);
     // First try to verify the custom token
     if (token) {
       console.log("Verifying custom token");
       const payload = await verifyTokenEdge(token);
 
+      console.log("Custom token verified, payload", payload);
       if (payload) {
         console.log("Custom token verified, user role:", payload.role);
         isAuthenticated = true;

@@ -52,6 +52,12 @@ const DirectSubmissionsList = () => {
   const [selectedSubmission, setSelectedSubmission] =
     useState<Submission | null>(null);
   const [interactions, setInteractions] = useState<any[]>([]);
+  const [submissionWithInteractions, setSubmissionWithInteractions] = useState<
+    string | null
+  >(null);
+  const [hasInteractions, setHasInteractions] = useState<
+    Record<string, boolean>
+  >({});
 
   // Debounce search term
   useEffect(() => {
@@ -202,10 +208,49 @@ const DirectSubmissionsList = () => {
   // Fetch interactions for a submission using the auth-client utility
   const fetchInteractions = async (submissionId: string) => {
     try {
-      return await getAdminUserInteractions(submissionId, false);
+      const data = await getAdminUserInteractions(submissionId, false);
+      return data;
     } catch (error) {
       console.error("Error fetching interactions:", error);
       return [];
+    }
+  };
+
+  // Check for interactions for each submission
+  useEffect(() => {
+    const checkInteractions = async () => {
+      const interactionsMap: Record<string, boolean> = {};
+
+      for (const submission of submissions) {
+        try {
+          const data = await fetchInteractions(submission._id);
+          interactionsMap[submission._id] = data && data.length > 0;
+        } catch (error) {
+          console.error(
+            `Error checking interactions for submission ${submission._id}:`,
+            error
+          );
+          interactionsMap[submission._id] = false;
+        }
+      }
+
+      setHasInteractions(interactionsMap);
+    };
+
+    if (submissions.length > 0) {
+      checkInteractions();
+    }
+  }, [submissions]);
+
+  // Load interactions for a specific submission
+  const loadInteractions = async (submissionId: string) => {
+    try {
+      const data = await fetchInteractions(submissionId);
+      setInteractions(data);
+      setSubmissionWithInteractions(submissionId);
+    } catch (error) {
+      console.error("Error loading interactions:", error);
+      setInteractions([]);
     }
   };
 
@@ -414,22 +459,19 @@ const DirectSubmissionsList = () => {
                         )}
                       </div>
 
-                      {/* Comments History Button */}
-                      <button
-                        className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none mt-1 show-comments"
-                        onClick={async () => {
-                          const interactionData = await fetchInteractions(
-                            submission._id
-                          );
-                          setInteractions(interactionData);
-                        }}
-                      >
-                        Show Comments History
-                      </button>
+                      {/* Comments History Button - Only show if there are comments */}
+                      {hasInteractions[submission._id] && (
+                        <button
+                          className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none mt-1 show-comments"
+                          onClick={() => loadInteractions(submission._id)}
+                        >
+                          Show Comments History
+                        </button>
+                      )}
 
                       {/* Comments History Display */}
                       {interactions.length > 0 &&
-                        interactions[0].submissionId === submission._id && (
+                        submissionWithInteractions === submission._id && (
                           <div className="mt-2 border rounded-md p-2 bg-gray-50 comment-history">
                             <div className="flex justify-between items-center mb-1">
                               <h4 className="text-xs font-medium text-gray-700">

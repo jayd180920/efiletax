@@ -479,7 +479,7 @@ const SubmissionsPage = () => {
                                   `/dashboard/admin/submissions/${submission._id}`
                                 )
                               }
-                              className="hover:underline focus:outline-none"
+                              className="hover:underline focus:outline-none service-name-text"
                             >
                               {submission.serviceName}
                             </button>
@@ -530,7 +530,7 @@ const SubmissionsPage = () => {
                       {/* Comments Section */}
                       <div className="mt-3">
                         <button
-                          className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none"
+                          className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none show-comments"
                           onClick={async () => {
                             const interactionData = await fetchInteractions(
                               submission._id
@@ -543,10 +543,32 @@ const SubmissionsPage = () => {
 
                         {interactions.length > 0 &&
                           interactions[0].submissionId === submission._id && (
-                            <div className="mt-2 border rounded-md p-3 bg-gray-50">
-                              <h4 className="text-sm font-medium text-gray-700 mb-2">
-                                Comments History
-                              </h4>
+                            <div className="mt-2 border rounded-md p-3 bg-gray-50 comment-history">
+                              <div className="flex justify-between items-center mb-2">
+                                <h4 className="text-sm font-medium text-gray-700">
+                                  Comments History
+                                </h4>
+                                <button
+                                  onClick={() => setInteractions([])}
+                                  className="text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+                                  title="Close"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
                               <div className="space-y-2 max-h-40 overflow-y-auto">
                                 {interactions.map((interaction, index) => (
                                   <div

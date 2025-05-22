@@ -126,3 +126,24 @@ div.file-name-section {
   color: #019c93;
   font-weight: 700;
 }
+div.comment-history h4 {
+  color: #21b2aa;
+  font-weight: 600;
+}
+div.comment-history button {
+  color: red;
+}
+div.comment-history {
+  box-shadow: rgb(202 221 220) 0px 7px 29px 0px;
+  border-color: #fff9f9;
+}
+div.comment-history .rounded-md {
+  border-color: #e1e0e0;
+}
+button.show-comments {
+  color: #21b2aa;
+}
+.service-name-text {
+  color: #21b2aa;
+  font-weight: 600;
+}

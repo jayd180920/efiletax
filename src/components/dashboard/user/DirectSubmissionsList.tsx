@@ -249,7 +249,7 @@ const DirectSubmissionsList = () => {
       <div className="px-4 py-5 sm:px-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4 sm:mb-0">
-            My Submissions
+            {/* My Submissions */}
           </h3>
           <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
             <div className="relative w-full sm:w-64">
@@ -359,7 +359,7 @@ const DirectSubmissionsList = () => {
                   <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     {/* Column 1: Service name, Submitted date & time, Amount with paymentStatus */}
                     <div className="flex flex-col">
-                      <p className="text-sm font-medium text-primary truncate">
+                      <p className="text-sm font-medium text-primary truncate service-name-text">
                         <Link
                           href={`/dashboard/user/submissions/${submission._id}`}
                         >
@@ -416,7 +416,7 @@ const DirectSubmissionsList = () => {
 
                       {/* Comments History Button */}
                       <button
-                        className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none mt-1"
+                        className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none mt-1 show-comments"
                         onClick={async () => {
                           const interactionData = await fetchInteractions(
                             submission._id
@@ -430,10 +430,32 @@ const DirectSubmissionsList = () => {
                       {/* Comments History Display */}
                       {interactions.length > 0 &&
                         interactions[0].submissionId === submission._id && (
-                          <div className="mt-2 border rounded-md p-2 bg-gray-50">
-                            <h4 className="text-xs font-medium text-gray-700 mb-1">
-                              Comments History
-                            </h4>
+                          <div className="mt-2 border rounded-md p-2 bg-gray-50 comment-history">
+                            <div className="flex justify-between items-center mb-1">
+                              <h4 className="text-xs font-medium text-gray-700">
+                                Comments History
+                              </h4>
+                              <button
+                                onClick={() => setInteractions([])}
+                                className="text-xs text-gray-500 hover:text-gray-700 focus:outline-none"
+                                title="Close"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
                             <div className="space-y-2 max-h-32 overflow-y-auto">
                               {interactions.map((interaction, index) => (
                                 <div

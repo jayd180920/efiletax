@@ -111,6 +111,12 @@ export async function POST(req: NextRequest) {
       userObjectId = userId.toString();
     }
 
+    console.log(
+      "submissionObjectId :",
+      submissionObjectId,
+      "userObjectId :",
+      userObjectId
+    );
     // Try to find the submission with different userId formats
     let submission = await Submission.findOne({
       _id: submissionObjectId,
@@ -120,7 +126,9 @@ export async function POST(req: NextRequest) {
     // If not found, try with userId as string
     if (!submission) {
       console.log(
-        "Submission not found with ObjectId, trying with string userId"
+        "Submission not found with ObjectId, trying with string userId",
+        submissionObjectId,
+        userId.toString()
       );
       submission = await Submission.findOne({
         _id: submissionObjectId,

@@ -125,7 +125,7 @@ const UserSubmissionsList = () => {
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
-          My Submissions
+          My Submissions 123
         </h3>
         <div className="flex items-center">
           <label htmlFor="status-filter" className="mr-2 text-sm text-gray-700">
@@ -162,7 +162,7 @@ const UserSubmissionsList = () => {
             href="/services/gst-filing/new-registration"
             className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-secondary hover:bg-secondary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
           >
-            Create New Submission
+            Create New Submission 123
           </Link>
         </div>
       ) : (
@@ -171,47 +171,57 @@ const UserSubmissionsList = () => {
             {submissions.map((submission) => (
               <li className="ajhdvajhda" key={submission._id}>
                 <div className="px-4 py-4 sm:px-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                            submission.status
-                          )}`}
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                    {/* Column 1: Service name, submitted date & time, amount (with paymentStatus) */}
+                    <div className="flex flex-col">
+                      <p className="text-sm font-medium text-primary truncate">
+                        <Link
+                          href={`/dashboard/user/submissions/${submission._id}`}
                         >
-                          {submission.status.charAt(0).toUpperCase() +
-                            submission.status.slice(1)}
-                        </span>
+                          {submission.serviceName}
+                        </Link>
+                      </p>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Submitted on {formatDate(submission.createdAt)}
+                      </p>
+                      <p className="mt-1 flex items-center text-sm text-gray-500">
+                        Amount: {formatCurrency(submission.amount)}
                         <span
-                          className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                          className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
                             submission.paymentStatus
                           )}`}
                         >
                           {submission.paymentStatus.charAt(0).toUpperCase() +
                             submission.paymentStatus.slice(1)}
                         </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <p className="text-sm font-medium text-primary truncate">
-                          <Link
-                            href={`/dashboard/user/submissions/${submission._id}`}
-                          >
-                            {submission.serviceName}
-                          </Link>
-                        </p>
-                        <p className="mt-1 text-xs text-gray-500">
-                          Submitted on {formatDate(submission.createdAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-2 sm:flex sm:justify-between">
-                    <div className="sm:flex">
-                      <p className="flex items-center text-sm text-gray-500">
-                        Amount: {formatCurrency(submission.amount)}
                       </p>
                     </div>
-                    <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-3 action-buttons">
+
+                    {/* Column 2: Admin comments */}
+                    <div className="flex items-center">
+                      {submission.status === "rejected" ? (
+                        <p className="text-sm text-red-600">
+                          {submission.rejectionReason}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500">-</p>
+                      )}
+                    </div>
+
+                    {/* Column 3: Status */}
+                    <div className="flex items-center">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
+                          submission.status
+                        )}`}
+                      >
+                        {submission.status.charAt(0).toUpperCase() +
+                          submission.status.slice(1)}
+                      </span>
+                    </div>
+
+                    {/* Column 4: Actions */}
+                    <div className="flex items-center space-x-3 justify-end">
                       <Link
                         href={`/dashboard/user/submissions/${submission._id}`}
                         className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
@@ -258,11 +268,6 @@ const UserSubmissionsList = () => {
                           />
                         </svg>
                       </Link>
-                      {submission.status === "rejected" && (
-                        <div className="ml-4 text-sm text-red-600">
-                          Reason: {submission.rejectionReason}
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>

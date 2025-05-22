@@ -50,6 +50,7 @@ const DirectSubmissionsList = () => {
   const [isReplyPopupOpen, setIsReplyPopupOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] =
     useState<Submission | null>(null);
+  const [interactions, setInteractions] = useState<any[]>([]);
 
   // Debounce search term
   useEffect(() => {
@@ -195,6 +196,35 @@ const DirectSubmissionsList = () => {
   const closeReplyPopup = () => {
     setIsReplyPopupOpen(false);
     setSelectedSubmission(null);
+  };
+
+  // Fetch interactions for a submission
+  const fetchInteractions = async (submissionId: string) => {
+    try {
+      const response = await fetch(
+        `/api/admin/interactions?submissionId=${submissionId}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch interactions");
+      }
+
+      const data = await response.json();
+      return data.interactions || [];
+    } catch (error) {
+      console.error("Error fetching interactions:", error);
+      return [];
+    }
   };
 
   // Handle reply submission
@@ -382,19 +412,75 @@ const DirectSubmissionsList = () => {
 
                     {/* Column 2: Admin comments */}
                     <div className="flex flex-col">
-                      {submission.admin_comments ? (
-                        <div className="text-sm text-gray-600">
-                          <span className="font-medium">Admin comments:</span>{" "}
-                          {String(submission.admin_comments)}
-                        </div>
-                      ) : submission.rejectionReason ? (
-                        <div className="text-sm text-red-600">
-                          <span className="font-medium">Rejection reason:</span>{" "}
-                          {submission.rejectionReason || "No reason provided"}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">No comments</div>
-                      )}
+                      <div className="mb-2">
+                        {submission.admin_comments ? (
+                          <div className="text-sm text-gray-600">
+                            <span className="font-medium">Admin comments:</span>{" "}
+                            {String(submission.admin_comments)}
+                          </div>
+                        ) : submission.rejectionReason ? (
+                          <div className="text-sm text-red-600">
+                            <span className="font-medium">
+                              Rejection reason:
+                            </span>{" "}
+                            {submission.rejectionReason || "No reason provided"}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-gray-500">
+                            No comments
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Comments History Button */}
+                      <button
+                        className="text-xs text-blue-600 hover:text-blue-800 focus:outline-none mt-1"
+                        onClick={async () => {
+                          const interactionData = await fetchInteractions(
+                            submission._id
+                          );
+                          setInteractions(interactionData);
+                        }}
+                      >
+                        Show Comments History
+                      </button>
+
+                      {/* Comments History Display */}
+                      {interactions.length > 0 &&
+                        interactions[0].submissionId === submission._id && (
+                          <div className="mt-2 border rounded-md p-2 bg-gray-50">
+                            <h4 className="text-xs font-medium text-gray-700 mb-1">
+                              Comments History
+                            </h4>
+                            <div className="space-y-2 max-h-32 overflow-y-auto">
+                              {interactions.map((interaction, index) => (
+                                <div
+                                  key={index}
+                                  className="text-xs p-2 rounded-md bg-white border"
+                                >
+                                  <div className="flex justify-between items-start">
+                                    <span className="font-medium">
+                                      {interaction.admin_comments
+                                        ? "Admin"
+                                        : "User"}
+                                      :
+                                    </span>
+                                    <span className="text-gray-500 text-xs">
+                                      {new Date(
+                                        interaction.createdAt
+                                      ).toLocaleString()}
+                                    </span>
+                                  </div>
+                                  <p className="mt-1 text-xs">
+                                    {interaction.admin_comments ||
+                                      interaction.user_comments ||
+                                      "No comments"}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                     </div>
 
                     {/* Column 3: Status */}

@@ -136,6 +136,32 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // If still not found, try finding just by submission ID first to debug
+    if (!submission) {
+      const submissionById = await Submission.findOne({
+        _id: submissionObjectId,
+      });
+
+      if (submissionById) {
+        console.log(
+          "Found submission by ID, but userId doesn't match. Submission userId:",
+          submissionById.userId,
+          "Current userId:",
+          userObjectId
+        );
+
+        // Try with string comparison of both IDs
+        if (submissionById.userId.toString() === userId.toString()) {
+          console.log(
+            "IDs match when converted to strings, using this submission"
+          );
+          submission = submissionById;
+        }
+      } else {
+        console.log("Submission not found with ID:", submissionObjectId);
+      }
+    }
+
     console.log(
       "POST /api/submissions/reply: Submission found:",
       submission ? "Yes" : "No"
@@ -143,7 +169,10 @@ export async function POST(req: NextRequest) {
 
     if (!submission) {
       return NextResponse.json(
-        { error: "Submission not found or does not belong to you" },
+        {
+          error: "Submission not found or does not belong to you",
+          details: `Submission ID: ${submissionId}, User ID: ${userId}. Please contact support with these details.`,
+        },
         { status: 404 }
       );
     }
@@ -151,7 +180,10 @@ export async function POST(req: NextRequest) {
     // Check if the submission status is "sent for revision"
     if (submission.status !== "sent for revision") {
       return NextResponse.json(
-        { error: "This submission is not awaiting your revision" },
+        {
+          error: "This submission is not awaiting your revision",
+          details: `Current submission status: "${submission.status}". Only submissions with status "sent for revision" can be replied to.`,
+        },
         { status: 400 }
       );
     }
@@ -177,9 +209,16 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error creating user reply:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+
+    // Provide more detailed error information
+    const errorMessage = error.message || "Internal server error";
+    const errorDetails = {
+      error: errorMessage,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      code: error.code,
+      name: error.name,
+    };
+
+    return NextResponse.json(errorDetails, { status: 500 });
   }
 }

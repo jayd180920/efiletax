@@ -66,6 +66,7 @@ const SubmissionsPage = () => {
   const [isReplyPopupOpen, setIsReplyPopupOpen] = useState(false);
   const [selectedSubmissionForReply, setSelectedSubmissionForReply] =
     useState<Submission | null>(null);
+  const [interactions, setInteractions] = useState<any[]>([]);
 
   // Redirect non-admin/non-regionAdmin users
   useEffect(() => {
@@ -207,6 +208,35 @@ const SubmissionsPage = () => {
     setSelectedSubmission(null);
     setActionType(null);
     setRejectionReason("");
+  };
+
+  // Fetch interactions for a submission
+  const fetchInteractions = async (submissionId: string) => {
+    try {
+      const interactions = await fetch(
+        `/api/admin/interactions?submissionId=${submissionId}`,
+        {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+        }
+      );
+
+      if (!interactions.ok) {
+        throw new Error("Failed to fetch interactions");
+      }
+
+      const data = await interactions.json();
+      return data.interactions || [];
+    } catch (error) {
+      console.error("Error fetching interactions:", error);
+      return [];
+    }
   };
 
   // Handle reply submission
@@ -495,6 +525,57 @@ const SubmissionsPage = () => {
                             Amount: {formatCurrency(submission.amount)}
                           </p>
                         </div>
+                      </div>
+
+                      {/* Comments Section */}
+                      <div className="mt-3">
+                        <button
+                          className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none"
+                          onClick={async () => {
+                            const interactionData = await fetchInteractions(
+                              submission._id
+                            );
+                            setInteractions(interactionData);
+                          }}
+                        >
+                          Show Comments
+                        </button>
+
+                        {interactions.length > 0 &&
+                          interactions[0].submissionId === submission._id && (
+                            <div className="mt-2 border rounded-md p-3 bg-gray-50">
+                              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                                Comments History
+                              </h4>
+                              <div className="space-y-2 max-h-40 overflow-y-auto">
+                                {interactions.map((interaction, index) => (
+                                  <div
+                                    key={index}
+                                    className="text-xs p-2 rounded-md bg-white border"
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <span className="font-medium">
+                                        {interaction.admin_comments
+                                          ? "Admin"
+                                          : "User"}
+                                        :
+                                      </span>
+                                      <span className="text-gray-500">
+                                        {new Date(
+                                          interaction.createdAt
+                                        ).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <p className="mt-1">
+                                      {interaction.admin_comments ||
+                                        interaction.user_comments ||
+                                        "No comments"}
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
                       </div>
                       <div className="mt-3 flex justify-end space-x-3">
                         <button

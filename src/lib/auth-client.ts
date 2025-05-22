@@ -849,24 +849,27 @@ export async function createAdminUserInteraction(data: {
   }
 }
 
-// Get admin-user interactions for a submission (admin only)
+// Get admin-user interactions for a submission
 export async function getAdminUserInteractions(
-  submissionId: string
+  submissionId: string,
+  isAdmin: boolean = false
 ): Promise<any[]> {
-  const response = await fetch(
-    `/api/admin/interactions?submissionId=${submissionId}`,
-    {
-      method: "GET",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        // Add Cache-Control header to prevent caching
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    }
-  );
+  // Use the appropriate endpoint based on user role
+  const endpoint = isAdmin
+    ? `/api/admin/interactions?submissionId=${submissionId}`
+    : `/api/submissions/interactions?submissionId=${submissionId}`;
+
+  const response = await fetch(endpoint, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      // Add Cache-Control header to prevent caching
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  });
 
   if (!response.ok) {
     const error = await response.json();

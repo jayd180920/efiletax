@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthContext";
+import { getAdminUserInteractions } from "@/lib/auth-client";
 import UserReplyPopup from "./UserReplyPopup";
 
 interface Submission {
@@ -198,29 +199,10 @@ const DirectSubmissionsList = () => {
     setSelectedSubmission(null);
   };
 
-  // Fetch interactions for a submission
+  // Fetch interactions for a submission using the auth-client utility
   const fetchInteractions = async (submissionId: string) => {
     try {
-      const response = await fetch(
-        `/api/admin/interactions?submissionId=${submissionId}`,
-        {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-            Pragma: "no-cache",
-            Expires: "0",
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch interactions");
-      }
-
-      const data = await response.json();
-      return data.interactions || [];
+      return await getAdminUserInteractions(submissionId, false);
     } catch (error) {
       console.error("Error fetching interactions:", error);
       return [];

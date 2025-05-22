@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(url.searchParams.get("page") || "1");
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const status = url.searchParams.get("status");
+    const search = url.searchParams.get("search");
 
     // Calculate skip for pagination
     const skip = (page - 1) * limit;
@@ -41,6 +42,12 @@ export async function GET(request: NextRequest) {
     const query: any = { userId };
     if (status) {
       query.status = status;
+    }
+
+    // Add search functionality
+    if (search) {
+      // Search in serviceName field
+      query.serviceName = { $regex: search, $options: "i" };
     }
 
     // Get total count for pagination

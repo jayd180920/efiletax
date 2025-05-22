@@ -119,6 +119,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/services/:path*",
-    // Add other paths that should be checked by the middleware
+    // Exclude API routes from middleware to prevent interference
+    "/((?!api|_next/static|_next/image|favicon.ico).*)",
   ],
 };

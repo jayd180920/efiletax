@@ -6,7 +6,9 @@ import { authenticate } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import AdminUserInteraction from "@/models/AdminUserInteraction";
 import Submission from "@/models/Submission";
+import mongoose from "mongoose";
 
+// This is a Next.js App Router API route handler
 export async function POST(req: NextRequest) {
   try {
     console.log("POST /api/submissions/reply: Starting authentication check");
@@ -80,10 +82,56 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     // Check if submission exists and belongs to the user
-    const submission = await Submission.findOne({
-      _id: submissionId,
-      userId: userId,
+    // Convert submissionId to ObjectId to ensure proper comparison
+    console.log(
+      "POST /api/submissions/reply: Checking submission with ID:",
+      submissionId,
+      "for user:",
+      userId
+    );
+
+    // Try to convert submissionId to ObjectId if it's a string
+    let submissionObjectId;
+    try {
+      submissionObjectId = new mongoose.Types.ObjectId(submissionId);
+    } catch (error) {
+      console.error("Invalid submission ID format:", error);
+      return NextResponse.json(
+        { error: "Invalid submission ID format" },
+        { status: 400 }
+      );
+    }
+
+    // Try to convert userId to ObjectId if it's a string
+    let userObjectId;
+    try {
+      userObjectId = new mongoose.Types.ObjectId(userId);
+    } catch (error) {
+      console.error("Invalid user ID format, using as string:", error);
+      userObjectId = userId.toString();
+    }
+
+    // Try to find the submission with different userId formats
+    let submission = await Submission.findOne({
+      _id: submissionObjectId,
+      userId: userObjectId,
     });
+
+    // If not found, try with userId as string
+    if (!submission) {
+      console.log(
+        "Submission not found with ObjectId, trying with string userId"
+      );
+      submission = await Submission.findOne({
+        _id: submissionObjectId,
+        userId: userId.toString(),
+      });
+    }
+
+    console.log(
+      "POST /api/submissions/reply: Submission found:",
+      submission ? "Yes" : "No"
+    );
 
     if (!submission) {
       return NextResponse.json(
@@ -102,17 +150,17 @@ export async function POST(req: NextRequest) {
 
     // Create new interaction
     const interaction = new AdminUserInteraction({
-      submissionId,
-      status: "Revision completed",
-      user_comments,
+      submissionId: submissionObjectId, // Use the converted ObjectId
+      status: "In-progress", // Match the enum value in the model (capital I)
+      user_comments: String(user_comments), // Ensure user_comments is a string
     });
 
     // Save interaction
     await interaction.save();
 
     // Update submission status
-    await Submission.findByIdAndUpdate(submissionId, {
-      status: "in-progress",
+    await Submission.findByIdAndUpdate(submissionObjectId, {
+      status: "in-progress", // Keep lowercase for Submission model
     });
 
     return NextResponse.json({

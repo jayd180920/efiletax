@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/components/auth/AuthContext";
 import UserReplyPopup from "./UserReplyPopup";
@@ -23,6 +23,7 @@ interface Submission {
   updatedAt: string;
   rejectionReason?: string;
   admin_comments?: string;
+  user_comments?: string;
 }
 
 interface Pagination {
@@ -44,12 +45,35 @@ const DirectSubmissionsList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [isReplyPopupOpen, setIsReplyPopupOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] =
     useState<Submission | null>(null);
 
+  // Debounce search term
+  useEffect(() => {
+    const timerId = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500);
+
+    return () => {
+      clearTimeout(timerId);
+    };
+  }, [searchTerm]);
+
+  // Reset to first page when search term changes
+  useEffect(() => {
+    if (debouncedSearchTerm !== "") {
+      setPagination((prevState) => ({
+        ...prevState,
+        page: 1,
+      }));
+    }
+  }, [debouncedSearchTerm]);
+
   // Fetch submissions directly using fetch API
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -59,6 +83,12 @@ const DirectSubmissionsList = () => {
       if (statusFilter) {
         url += `&status=${statusFilter}`;
       }
+      if (debouncedSearchTerm) {
+        url += `&search=${encodeURIComponent(debouncedSearchTerm)}`;
+      }
+
+      // Add timestamp to prevent caching
+      url += `&_t=${Date.now()}`;
 
       console.log("Fetching submissions from:", url);
 
@@ -89,18 +119,18 @@ const DirectSubmissionsList = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.page, pagination.limit, statusFilter, debouncedSearchTerm]);
 
   // Initial fetch
   useEffect(() => {
     if (user) {
       fetchSubmissions();
     }
-  }, [pagination.page, statusFilter, user]);
+  }, [user, fetchSubmissions]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
-    if (newPage > 0 && pagination.pages && newPage <= pagination.pages) {
+    if (newPage > 0 && newPage <= pagination.pages) {
       setPagination({ ...pagination, page: newPage });
     }
   };
@@ -204,25 +234,87 @@ const DirectSubmissionsList = () => {
 
   return (
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-        <h3 className="text-lg leading-6 font-medium text-gray-900">
-          My Submissions (Direct)
-        </h3>
-        <div className="flex items-center">
-          <label htmlFor="status-filter" className="mr-2 text-sm text-gray-700">
-            Filter by status:
-          </label>
-          <select
-            id="status-filter"
-            className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-            value={statusFilter || "all"}
-            onChange={handleStatusFilterChange}
-          >
-            <option value="all">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
+      <div className="px-4 py-5 sm:px-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4 sm:mb-0">
+            My Submissions
+          </h3>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-64">
+              <input
+                type="text"
+                placeholder="Search submissions..."
+                className="w-full rounded-md border border-gray-300 px-4 py-2 pr-10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
+            <div className="flex items-center w-full sm:w-auto">
+              <label
+                htmlFor="status-filter"
+                className="mr-2 text-sm text-gray-700"
+              >
+                Status:
+              </label>
+              <select
+                id="status-filter"
+                className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm w-full"
+                value={statusFilter || "all"}
+                onChange={handleStatusFilterChange}
+              >
+                <option value="all">All</option>
+                <option value="pending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="sent for revision">Sent for Revision</option>
+                <option value="in-progress">In Progress</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-gray-500">
+            {debouncedSearchTerm
+              ? `Search results for "${debouncedSearchTerm}"`
+              : "All submissions"}
+            {statusFilter && statusFilter !== "all"
+              ? ` with status "${statusFilter}"`
+              : ""}
+          </p>
+          <div className="flex items-center">
+            <select
+              className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+              value={pagination.limit}
+              onChange={(e) => {
+                setPagination({
+                  ...pagination,
+                  limit: parseInt(e.target.value),
+                  page: 1,
+                });
+              }}
+            >
+              <option value="10">10 per page</option>
+              <option value="25">25 per page</option>
+              <option value="50">50 per page</option>
+              <option value="100">100 per page</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -379,8 +471,9 @@ const DirectSubmissionsList = () => {
                           </button>
                           <div className="ml-4 text-sm text-orange-600">
                             Admin comments:{" "}
-                            {submission.admin_comments ||
-                              "No comments provided"}
+                            {submission.admin_comments
+                              ? String(submission.admin_comments)
+                              : "No comments provided"}
                           </div>
                         </>
                       )}
@@ -392,7 +485,7 @@ const DirectSubmissionsList = () => {
           </ul>
 
           {/* Pagination */}
-          {pagination.pages && pagination.pages > 1 && (
+          {pagination.pages > 0 && (
             <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
               <div className="flex-1 flex justify-between sm:hidden">
                 <button
@@ -408,13 +501,9 @@ const DirectSubmissionsList = () => {
                 </button>
                 <button
                   onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={Boolean(
-                    pagination.pages && pagination.page === pagination.pages
-                  )}
+                  disabled={pagination.page === pagination.pages}
                   className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-                    Boolean(
-                      pagination.pages && pagination.page === pagination.pages
-                    )
+                    pagination.page === pagination.pages
                       ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                       : "bg-white text-gray-700 hover:bg-gray-50"
                   }`}
@@ -427,13 +516,13 @@ const DirectSubmissionsList = () => {
                   <p className="text-sm text-gray-700">
                     Showing{" "}
                     <span className="font-medium">
-                      {pagination.page && pagination.limit
+                      {submissions.length > 0
                         ? (pagination.page - 1) * pagination.limit + 1
                         : 0}
                     </span>{" "}
                     to{" "}
                     <span className="font-medium">
-                      {pagination.page && pagination.limit && pagination.total
+                      {submissions.length > 0
                         ? Math.min(
                             pagination.page * pagination.limit,
                             pagination.total
@@ -476,8 +565,7 @@ const DirectSubmissionsList = () => {
                     </button>
                     {Array.from(
                       {
-                        length:
-                          pagination.pages !== undefined ? pagination.pages : 0,
+                        length: pagination.pages,
                       },
                       (_, i) => i + 1
                     )
@@ -512,14 +600,9 @@ const DirectSubmissionsList = () => {
                       })}
                     <button
                       onClick={() => handlePageChange(pagination.page + 1)}
-                      disabled={Boolean(
-                        pagination.pages && pagination.page === pagination.pages
-                      )}
+                      disabled={pagination.page === pagination.pages}
                       className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                        Boolean(
-                          pagination.pages &&
-                            pagination.page === pagination.pages
-                        )
+                        pagination.page === pagination.pages
                           ? "text-gray-300 cursor-not-allowed"
                           : "text-gray-500 hover:bg-gray-50"
                       }`}

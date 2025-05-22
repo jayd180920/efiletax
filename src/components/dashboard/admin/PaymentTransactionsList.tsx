@@ -437,6 +437,9 @@ const PaymentTransactionsList: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
 
+  // Filter state
+  const [statusFilter, setStatusFilter] = useState<string | null>(null);
+
   // Debounce search term
   useEffect(() => {
     const timerId = setTimeout(() => {
@@ -462,6 +465,7 @@ const PaymentTransactionsList: React.FC = () => {
         sortField,
         sortOrder,
         ...(debouncedSearchTerm && { search: debouncedSearchTerm }),
+        ...(statusFilter && { status: statusFilter }),
       });
 
       const response = await fetch(`/api/payment/transactions?${queryParams}`);
@@ -481,11 +485,30 @@ const PaymentTransactionsList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, itemsPerPage, sortField, sortOrder, debouncedSearchTerm]);
+  }, [
+    currentPage,
+    itemsPerPage,
+    sortField,
+    sortOrder,
+    debouncedSearchTerm,
+    statusFilter,
+  ]);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
 
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  const handleStatusFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    setStatusFilter(value === "all" ? null : value);
+  };
 
   const handleRefundClick = (transaction: PaymentTransaction) => {
     setSelectedTransaction(transaction);
@@ -694,29 +717,41 @@ const PaymentTransactionsList: React.FC = () => {
           Payment Transactions
         </h1>
         <div className="flex flex-col space-y-2 md:flex-row md:space-x-4 md:space-y-0">
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search transactions..."
-              className="w-full rounded-md border border-gray-300 px-4 py-2 pr-10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light md:w-64"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-              <svg
-                className="h-5 w-5 text-gray-400"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
-                  clipRule="evenodd"
-                />
-              </svg>
+          <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search transactions..."
+                className="w-full rounded-md border border-gray-300 px-4 py-2 pr-10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light md:w-64"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg
+                  className="h-5 w-5 text-gray-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.452 4.391l3.328 3.329a.75.75 0 11-1.06 1.06l-3.329-3.328A7 7 0 012 9z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
             </div>
+            <select
+              className="rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light"
+              value={statusFilter || "all"}
+              onChange={handleStatusFilterChange}
+            >
+              <option value="all">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="success">Success</option>
+              <option value="refund">Refunded</option>
+            </select>
           </div>
           <div className="flex space-x-2">
             <select

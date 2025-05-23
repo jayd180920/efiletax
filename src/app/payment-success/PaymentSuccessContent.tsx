@@ -163,10 +163,14 @@ export default function PaymentSuccessContent() {
 
         if (serviceInfoCookie && serviceInfoCookie.serviceUrl) {
           // Use the service info from cookie
-          console.log("Found service info in cookie:", serviceInfoCookie);
+          console.log(
+            "Found service info in cookie:",
+            serviceInfoCookie,
+            process.env.NEXTAUTH_URL
+          );
           const { serviceUrl } = serviceInfoCookie;
 
-          const serviceFormUrl = `${process.env.NEXTAUTH_URL}/${serviceUrl}`;
+          const serviceFormUrl = `${process.env.NEXTAUTH_URL}${serviceUrl}`;
           console.log(
             "Redirecting to service form from cookie:",
             serviceFormUrl

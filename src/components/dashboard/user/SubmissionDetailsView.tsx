@@ -161,9 +161,9 @@ export default function SubmissionDetailsView({
                         key={fieldKey}
                         className="border-b pb-2 details-field"
                       >
-                        {/* <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-gray-500">
                           {formatLabel(fieldKey)}
-                        </p> */}
+                        </p>
                         <div className="mt-1 text-sm text-gray-900">
                           {typeof fieldValue === "object" &&
                           fieldValue !== null ? (
@@ -582,6 +582,24 @@ export default function SubmissionDetailsView({
                 .join(" ")
             : ""}
         </p>
+        <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+          <div>
+            <span className="text-sm font-medium text-gray-500">
+              Amount Paid:{" "}
+            </span>
+            <span className="text-sm text-gray-900">
+              {submission.paymentStatus || "Pending"}
+            </span>
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-500">
+              Request Status:{" "}
+            </span>
+            <span className="text-sm text-gray-900">
+              {submission.status || "draft"}
+            </span>
+          </div>
+        </div>
       </div>
 
       <div className="border-t border-gray-200">

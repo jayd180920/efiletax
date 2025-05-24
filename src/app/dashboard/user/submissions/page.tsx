@@ -32,10 +32,10 @@ export default function UserSubmissionsPage() {
         <header className="bg-white shadow">
           <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center">
-              <h1 className="text-3xl font-bold text-gray-900">
-                My Submissions 1234
-              </h1>
-              <div className="flex items-center space-x-4">
+              <h2 className="text-3xl font-bold text-gray-900 headeing-text">
+                Service Requests
+              </h2>
+              <div className="flex items-center space-x-4 back-link">
                 <Link
                   href="/dashboard/user"
                   className="px-4 py-2 text-primary border border-primary rounded-md hover:bg-primary-50"

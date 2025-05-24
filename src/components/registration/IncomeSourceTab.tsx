@@ -1289,7 +1289,7 @@ export default function IncomeSourceTab({
         />
       )}
 
-      <div className="flex justify-between mt-6">
+      <div className="flex justify-between mt-6 save-next-buttons">
         <button
           type="button"
           onClick={handleBack}

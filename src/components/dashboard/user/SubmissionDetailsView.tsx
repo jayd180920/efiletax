@@ -109,6 +109,18 @@ export default function SubmissionDetailsView({
   const renderFormDataSections = () => {
     return Object.entries(submission.formData)
       .map(([sectionKey, sectionValue]) => {
+        // Don't show directors or partners accordion when they have valid entries
+        if (
+          (sectionKey === "directors" || sectionKey === "partners") &&
+          Array.isArray(sectionValue) &&
+          sectionValue.length > 0 &&
+          sectionValue[0]?.name === ""
+        ) {
+          console.log(
+            `Skipping section: ${sectionKey}, value: ${sectionValue[0].name}`
+          );
+          return null;
+        }
         console.log(
           `Rendering section: abcd ${sectionKey}, value: ${JSON.stringify(
             sectionValue
@@ -145,20 +157,25 @@ export default function SubmissionDetailsView({
                     }
 
                     return (
-                      <div key={fieldKey} className="border-b pb-2">
-                        <p className="text-sm font-medium text-gray-500">
+                      <div
+                        key={fieldKey}
+                        className="border-b pb-2 details-field"
+                      >
+                        {/* <p className="text-sm font-medium text-gray-500">
                           {formatLabel(fieldKey)}
-                        </p>
+                        </p> */}
                         <div className="mt-1 text-sm text-gray-900">
                           {typeof fieldValue === "object" &&
                           fieldValue !== null ? (
                             Array.isArray(fieldValue) ? (
                               sectionKey === "directors" ? (
                                 // Special handling for directors
-                                fieldValue.length > 0 && fieldValue[0].name ? (
+                                // Don't show directors content when they have valid entries
+                                fieldValue.length > 0 &&
+                                fieldValue[0].name === "" ? (
                                   <div className="space-y-4">
                                     <h4 className="font-medium text-gray-700">
-                                      Directors {sectionKey}
+                                      Directors
                                     </h4>
                                     {fieldValue.map((item, idx) => (
                                       <div
@@ -186,8 +203,9 @@ export default function SubmissionDetailsView({
                                 ) : null
                               ) : sectionKey === "partners" ? (
                                 // Special handling for partners
+                                // Don't show partners content when they have valid entries
                                 fieldValue.length > 0 &&
-                                fieldValue[0].name !== "" ? (
+                                fieldValue[0].name === "" ? (
                                   <div className="space-y-4">
                                     <h4 className="font-medium text-gray-700 abcdef">
                                       Partners
@@ -553,10 +571,16 @@ export default function SubmissionDetailsView({
     <div className="bg-white shadow overflow-hidden sm:rounded-lg">
       <div className="px-4 py-5 sm:px-6">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
-          Submission Details
+          Request Details
         </h3>
         <p className="mt-1 max-w-2xl text-sm text-gray-500">
-          {submission.serviceName}
+          {submission.serviceName
+            ? submission.serviceName
+                .toLowerCase()
+                .split("_")
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ")
+            : ""}
         </p>
       </div>
 

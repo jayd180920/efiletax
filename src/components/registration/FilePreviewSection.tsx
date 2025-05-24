@@ -171,7 +171,7 @@ export default function FilePreviewSection({
                   href={url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 text-sm"
+                  className="text-blue-600 hover:text-blue-800 text-sm view-full-size"
                   title="View Full Size"
                 >
                   <svg

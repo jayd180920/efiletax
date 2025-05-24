@@ -296,11 +296,11 @@ const DirectSubmissionsList = () => {
           <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4 sm:mb-0">
             {/* My Submissions */}
           </h3>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-            <div className="relative w-full sm:w-64">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto search-submissions-parent">
+            <div className="relative w-full sm:w-64 search-submissions">
               <input
                 type="text"
-                placeholder="Search submissions..."
+                placeholder="Search..."
                 className="w-full rounded-md border border-gray-300 px-4 py-2 pr-10 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary-light"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -321,7 +321,7 @@ const DirectSubmissionsList = () => {
                 </svg>
               </div>
             </div>
-            <div className="flex items-center w-full sm:w-auto">
+            <div className="flex items-center w-full sm:w-auto filter-status">
               <label
                 htmlFor="status-filter"
                 className="mr-2 text-sm text-gray-700"
@@ -398,6 +398,7 @@ const DirectSubmissionsList = () => {
       ) : (
         <>
           <ul className="divide-y divide-gray-200">
+            {/* {JSON.stringify(submissions)} */}
             {submissions.map((submission) => (
               <li key={submission._id}>
                 <div className="px-4 py-4 sm:px-6">
@@ -408,7 +409,16 @@ const DirectSubmissionsList = () => {
                         <Link
                           href={`/dashboard/user/submissions/${submission._id}`}
                         >
-                          {submission.serviceName}
+                          {submission.serviceName
+                            ? submission.serviceName
+                                .toLowerCase()
+                                .split("_")
+                                .map(
+                                  (word) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1)
+                                )
+                                .join(" ")
+                            : ""}
                         </Link>
                       </p>
                       <p className="mt-1 text-xs text-gray-500">
@@ -442,8 +452,8 @@ const DirectSubmissionsList = () => {
                       <div className="mb-2">
                         {submission.admin_comments ? (
                           <div className="text-sm text-gray-600">
-                            <span className="font-medium">Admin comments:</span>{" "}
-                            {String(submission.admin_comments)}
+                            {/* <span className="font-medium">Admin comments:</span>{" "}
+                            {String(submission.admin_comments)} */}
                           </div>
                         ) : submission.rejectionReason ? (
                           <div className="text-sm text-red-600">
@@ -453,9 +463,7 @@ const DirectSubmissionsList = () => {
                             {submission.rejectionReason || "No reason provided"}
                           </div>
                         ) : (
-                          <div className="text-sm text-gray-500">
-                            No comments
-                          </div>
+                          <div className="text-sm text-gray-500"></div>
                         )}
                       </div>
 
@@ -544,7 +552,7 @@ const DirectSubmissionsList = () => {
                     </div>
 
                     {/* Column 4: Actions */}
-                    <div className="flex items-center space-x-3">
+                    <div className="flex items-center space-x-3 user-actions">
                       <Link
                         href={`/dashboard/user/submissions/${submission._id}`}
                         className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"

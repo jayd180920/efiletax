@@ -262,8 +262,8 @@ export default function UserDashboard() {
 
             {/* Submissions */}
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-800 mb-4">
-                Services Used
+              <h2 className="text-xl font-semibold text-gray-800 mb-4 headeing-text">
+                Services Requests
               </h2>
 
               {/* <div className="mb-4 flex justify-between items-center">

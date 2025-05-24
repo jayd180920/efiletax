@@ -287,7 +287,7 @@ export default function SubmissionDetailPage({
                   </svg>
                 </button>
                 <h1 className="text-2xl font-semibold text-gray-900">
-                  Submission Details
+                  Request Details
                 </h1>
               </div>
               {submission && (
@@ -339,7 +339,16 @@ export default function SubmissionDetailPage({
                 <div className="px-6 py-5 border-b border-gray-200">
                   <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold text-gray-800">
-                      {submission.serviceName}
+                      {submission.serviceName
+                        ? submission.serviceName
+                            .toLowerCase()
+                            .split("_")
+                            .map(
+                              (word) =>
+                                word.charAt(0).toUpperCase() + word.slice(1)
+                            )
+                            .join(" ")
+                        : ""}
                     </h2>
                     <div className="flex space-x-2">
                       <span
@@ -365,16 +374,25 @@ export default function SubmissionDetailPage({
                 {/* Submission Info */}
                 <div className="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    {/* <h3 className="text-lg font-medium text-gray-900 mb-3">
                       Submission Information
-                    </h3>
+                    </h3> */}
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium text-gray-500">
                           Service
                         </p>
                         <p className="mt-1 text-sm text-gray-900">
-                          {submission.serviceName}
+                          {submission.serviceName
+                            ? submission.serviceName
+                                .toLowerCase()
+                                .split("_")
+                                .map(
+                                  (word) =>
+                                    word.charAt(0).toUpperCase() + word.slice(1)
+                                )
+                                .join(" ")
+                            : ""}
                         </p>
                       </div>
                       <div>
@@ -427,9 +445,9 @@ export default function SubmissionDetailPage({
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-3">
+                    {/* <h3 className="text-lg font-medium text-gray-900 mb-3">
                       User Information
-                    </h3>
+                    </h3> */}
                     <div className="space-y-3">
                       <div>
                         <p className="text-sm font-medium text-gray-500">

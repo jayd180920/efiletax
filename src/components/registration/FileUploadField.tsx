@@ -177,15 +177,15 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-4 file-upload-flex-container">
       <label className="block text-sm font-medium text-gray-700 mb-1">
         {label} {required && <span className="text-red-500">*</span>}
       </label>
 
-      <div className="flex flex-col md:flex-row md:space-x-4">
+      <div className="flex flex-col md:flex-row md:space-x-4 upload-file-container">
         {/* File Upload Section */}
         <div className="flex-1">
-          <div className="flex items-center">
+          <div className="flex items-center upload-input-section">
             <input
               type="file"
               id={id}
@@ -199,7 +199,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
             <button
               type="button"
               onClick={handleBrowseClick}
-              className="px-3 py-2 bg-gray-200 text-gray-800 rounded-l-md hover:bg-gray-300 focus:outline-none"
+              className="px-3 py-2 bg-gray-200 text-gray-800 rounded-l-md hover:bg-gray-300 focus:outline-none upload-button"
             >
               {(fileUrl || localPreviewUrl) && !fileToRemove
                 ? "Update"
@@ -217,7 +217,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
             </div>
 
             {isUploading && (
-              <div className="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md">
+              <div className="ml-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-md upload-text-div">
                 Uploading...
               </div>
             )}
@@ -226,7 +226,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
               <button
                 type="button"
                 onClick={handleRemoveFile}
-                className="ml-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none"
+                className="ml-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none remove-button"
                 title="Remove file"
               >
                 <svg
@@ -339,11 +339,11 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
               )}
             </div>
 
-            {fileUrl && (
+            {/* {fileUrl && (
               <div className="mt-2 text-xs text-gray-500 truncate">
                 <span className="font-medium">URL:</span> {fileUrl}
               </div>
-            )}
+            )} */}
 
             {localPreviewUrl && !fileUrl && (
               <div className="mt-2 text-xs text-gray-500">

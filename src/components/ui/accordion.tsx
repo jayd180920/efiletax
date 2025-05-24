@@ -150,6 +150,8 @@ export function AccordionContent({
   const expanded = isExpanded(value);
 
   return expanded ? (
-    <div className={`px-4 pb-4 pt-0 ${className}`}>{children}</div>
+    <div className={`form-accrodion px-4 pb-4 pt-0 ${className}`}>
+      {children}
+    </div>
   ) : null;
 }

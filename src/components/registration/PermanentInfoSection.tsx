@@ -121,7 +121,7 @@ export default function PermanentInfoSection({
       icon={icon}
       defaultOpen={true}
     >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 form-input-fields">
         <div>
           <label
             htmlFor="firstName"

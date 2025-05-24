@@ -41,7 +41,7 @@ export default function IncomeDetailsSection({
   onFileRemove,
 }: IncomeDetailsSectionProps) {
   return (
-    <div className="p-6 border rounded-md">
+    <div className="p-6 border rounded-md form-section">
       <h3 className="text-lg font-medium mb-4">Income Details</h3>
       <p className="text-gray-500 mb-4">
         Please provide the required income details.

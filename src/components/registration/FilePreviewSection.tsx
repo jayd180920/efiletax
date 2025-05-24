@@ -214,7 +214,7 @@ export default function FilePreviewSection({
               {isImage(url) ? (
                 <div className="flex justify-center h-full">
                   {imageErrors[key] ? (
-                    <div className="flex flex-col items-center justify-center h-full">
+                    <div className="flex flex-col items-center justify-center h-full pdf-section">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-12 w-12 text-gray-400"
@@ -253,7 +253,7 @@ export default function FilePreviewSection({
                   )}
                 </div>
               ) : isPdf(url) ? (
-                <div className="flex flex-col items-center justify-center h-full">
+                <div className="flex flex-col items-center justify-center h-full pdf-section">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-16 w-16 text-red-500"
@@ -286,7 +286,7 @@ export default function FilePreviewSection({
                   )}
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full">
+                <div className="flex flex-col items-center justify-center h-full pdf-section">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     className="h-16 w-16 text-gray-500"

@@ -22,7 +22,7 @@ export default function TaxSummaryTab({
 
   return (
     <div className="space-y-6">
-      <div className="p-6 border rounded-md">
+      <div className="p-6 border rounded-md form-section">
         <h3 className="text-lg font-medium mb-4">Tax Summary</h3>
         <p className="text-gray-500 mb-4">
           View your tax summary details below.

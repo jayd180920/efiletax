@@ -180,7 +180,8 @@ export default function TaxSummaryTab({
       <div className="p-6 border rounded-md">
         <h3 className="text-lg font-medium mb-4">Tax Summary</h3>
         <p className="text-gray-500 mb-4">
-          Review your submission details below.
+          Please find below the tax summary details based on the provide
+          information.
         </p>
 
         <div className="space-y-4">
@@ -247,7 +248,7 @@ export default function TaxSummaryTab({
         >
           Back
         </button>
-        <div className="space-x-4">
+        {/* <div className="space-x-4">
           <button
             type="button"
             onClick={handleSave}
@@ -272,7 +273,7 @@ export default function TaxSummaryTab({
           >
             Finish
           </button>
-        </div>
+        </div> */}
       </div>
     </div>
   );

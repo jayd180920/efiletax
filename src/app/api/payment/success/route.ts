@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     if (!paymentTransaction) {
       console.error("Payment transaction not found");
       return NextResponse.redirect(
-        `${baseUrl}/payment-failed?reason=transaction-not-found`
+        `${baseUrl}/payment-failed?reason=transaction-not-found`,
+        { status: 303 }
       );
     }
 
@@ -79,7 +80,8 @@ export async function POST(req: NextRequest) {
       if (!payuResponse.txnid) {
         console.error("Missing txnid in PayU response");
         return NextResponse.redirect(
-          `${baseUrl}/payment-failed?reason=missing-transaction-id`
+          `${baseUrl}/payment-failed?reason=missing-transaction-id`,
+          { status: 303 }
         );
       }
 
@@ -90,7 +92,8 @@ export async function POST(req: NextRequest) {
 
       console.log("Debug: Constructed redirect URL:", redirectUrl.toString());
 
-      return NextResponse.redirect(redirectUrl);
+      // Explicitly use a GET method for the redirect to prevent POST method being carried over
+      return NextResponse.redirect(redirectUrl, { status: 303 });
 
       // return NextResponse.redirect(
       //   `http://localhost:3000/payment-success?txnId=${payuResponse.txnid}`
@@ -103,7 +106,7 @@ export async function POST(req: NextRequest) {
         payuResponse.error || "payment-failed"
       );
       redirectUrl.searchParams.set("_", new Date().getTime().toString());
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(redirectUrl, { status: 303 });
     }
   } catch (error) {
     console.error("Error processing payment success:", error);
@@ -113,6 +116,6 @@ export async function POST(req: NextRequest) {
     const redirectUrl = new URL("/payment-failed", baseUrl);
     redirectUrl.searchParams.set("reason", "server-error");
     redirectUrl.searchParams.set("_", timestamp.toString());
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 }

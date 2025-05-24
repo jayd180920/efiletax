@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
       console.error("Payment transaction not found in failure callback");
       const redirectUrl = new URL("/payment-failed", baseUrl);
       redirectUrl.searchParams.set("reason", "transaction-not-found");
-      return NextResponse.redirect(redirectUrl);
+      return NextResponse.redirect(redirectUrl, { status: 303 });
     }
 
     // Update payment transaction with PayU response
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       payuResponse.error || "payment-failed"
     );
     redirectUrl.searchParams.set("_", timestamp.toString());
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
   } catch (error) {
     console.error("Error processing payment failure:", error);
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
@@ -68,6 +68,6 @@ export async function POST(req: NextRequest) {
     const redirectUrl = new URL("/payment-failed", baseUrl);
     redirectUrl.searchParams.set("reason", "server-error");
     redirectUrl.searchParams.set("_", timestamp.toString());
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
   }
 }

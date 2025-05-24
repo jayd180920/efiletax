@@ -11,6 +11,9 @@ const protectedPaths = [
   // Add other protected paths here
 ];
 
+// Paths that should bypass middleware completely
+const bypassPaths = ["/payment-success", "/payment-failed"];
+
 // Paths that require admin role
 const adminPaths = ["/dashboard/admin"];
 
@@ -22,6 +25,14 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/dashboard/users") {
     console.log("Redirecting from /dashboard/users to /dashboard/user");
     return NextResponse.redirect(new URL("/dashboard/user", request.url));
+  }
+
+  // Check if the path should bypass middleware completely
+  const shouldBypass = bypassPaths.some((path) => pathname.startsWith(path));
+
+  if (shouldBypass) {
+    console.log(`Bypassing middleware for path: ${pathname}`);
+    return NextResponse.next();
   }
 
   // Check if the path is protected

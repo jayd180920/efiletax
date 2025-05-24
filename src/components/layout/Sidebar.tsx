@@ -107,7 +107,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin"],
     },
     {
-      title: "Submissions",
+      title: "Service Requests",
       href: "/dashboard/admin/submissions",
       icon: (
         <svg
@@ -164,7 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       roles: ["admin"],
     },
     {
-      title: "My Submissions",
+      title: "Service Requests",
       href: "/dashboard/user/submissions",
       icon: (
         <svg

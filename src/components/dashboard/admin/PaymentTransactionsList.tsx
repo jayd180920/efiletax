@@ -916,7 +916,7 @@ const PaymentTransactionsList: React.FC = () => {
                       !transaction.refunded && (
                         <button
                           onClick={() => handleRefundClick(transaction)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 refund-button"
                         >
                           Refund
                         </button>

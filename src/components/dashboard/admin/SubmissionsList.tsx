@@ -35,6 +35,7 @@ const SubmissionsList = () => {
     pages: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [selectedSubmission, setSelectedSubmission] =
@@ -123,13 +124,14 @@ const SubmissionsList = () => {
     if (!selectedSubmission || !actionType) return;
 
     try {
-      setLoading(true);
+      setActionLoading(true);
 
       if (actionType === "approve") {
         await updateSubmissionStatus(selectedSubmission._id, "approved");
       } else if (actionType === "reject") {
         if (!rejectionReason.trim()) {
           alert("Please provide a reason for rejection");
+          setActionLoading(false);
           return;
         }
         await updateSubmissionStatus(
@@ -140,6 +142,7 @@ const SubmissionsList = () => {
       } else if (actionType === "reply") {
         if (!rejectionReason.trim()) {
           alert("Please provide a message for the reply");
+          setActionLoading(false);
           return;
         }
 
@@ -164,7 +167,7 @@ const SubmissionsList = () => {
         error
       );
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -236,8 +239,8 @@ const SubmissionsList = () => {
       )}
 
       {loading && submissions.length === 0 ? (
-        <div className="px-4 py-5 sm:p-6 text-center">
-          <p className="text-gray-500">Loading submissions...</p>
+        <div className="px-4 py-5 sm:p-6 text-center loader-container">
+          <div className="spinner"></div>
         </div>
       ) : submissions.length === 0 ? (
         <div className="px-4 py-5 sm:p-6 text-center">
@@ -739,30 +742,38 @@ const SubmissionsList = () => {
                 </div>
               </div>
               <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                <button
-                  type="button"
-                  onClick={handleSubmissionAction}
-                  className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${
-                    actionType === "approve"
-                      ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
-                      : actionType === "reject"
-                      ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
-                      : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
-                  }`}
-                >
-                  {actionType === "approve"
-                    ? "Approve"
-                    : actionType === "reject"
-                    ? "Reject"
-                    : "Send Reply"}
-                </button>
-                <button
-                  type="button"
-                  onClick={closeModal}
-                  className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                >
-                  Cancel
-                </button>
+                {actionLoading ? (
+                  <div className="w-full flex justify-center sm:w-auto">
+                    <div className="spinner spinner-sm"></div>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleSubmissionAction}
+                      className={`w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm ${
+                        actionType === "approve"
+                          ? "bg-green-600 hover:bg-green-700 focus:ring-green-500"
+                          : actionType === "reject"
+                          ? "bg-red-600 hover:bg-red-700 focus:ring-red-500"
+                          : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-500"
+                      }`}
+                    >
+                      {actionType === "approve"
+                        ? "Approve"
+                        : actionType === "reject"
+                        ? "Reject"
+                        : "Send Reply"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={closeModal}
+                      className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           </div>

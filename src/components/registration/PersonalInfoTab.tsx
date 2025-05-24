@@ -290,6 +290,8 @@ export default function PersonalInfoTab({
 
   // State for tracking if files are being uploaded
   const [isUploading, setIsUploading] = useState(false);
+  // State for tracking if form is being saved or navigating to next tab
+  const [isSaving, setIsSaving] = useState(false);
 
   // Function to fetch submission data using submissionId
   const fetchSubmissionData = useCallback(async (submissionId: string) => {
@@ -822,7 +824,7 @@ export default function PersonalInfoTab({
   // Handle save button click
   const handleSave = async () => {
     console.log("Saving form data...");
-    alert("Saving form data...");
+    setIsSaving(true);
     if (isFormValid()) {
       console.log("Form data is valid. Proceeding to save...");
       try {
@@ -991,17 +993,19 @@ export default function PersonalInfoTab({
           });
         }
 
-        alert("Form data saved successfully! 5555");
+        //alert("Form data saved successfully! 3333");
+        setIsSaving(false);
       } catch (error) {
         console.error("Error saving form data:", error);
         alert("Failed to save form data. Please try again.");
+        setIsSaving(false);
       }
     }
   };
 
   // Handle next button click
   const handleNext = async () => {
-    alert("Next button clicked!");
+    setIsSaving(true);
     if (isFormValid()) {
       const shouldSave = window.confirm(
         "Do you want to save your changes before proceeding to the next tab?"
@@ -1185,6 +1189,7 @@ export default function PersonalInfoTab({
 
         // Proceed to the next tab
         setActiveTab("income-source");
+        setIsSaving(false);
       }
     }
   };
@@ -1195,48 +1200,73 @@ export default function PersonalInfoTab({
 
       {/* Hide save button for alteration_of_share_capital */}
       {serviceUniqueId !== "alteration_of_share_capital" && (
-        <div className="flex justify-end space-x-4 mt-6">
+        <div className="flex justify-end space-x-4 mt-6 save-next-buttons">
           <button
             type="button"
             onClick={handleSave}
-            disabled={!isFormValid() || submissionStatus === "approved"}
+            disabled={
+              !isFormValid() || submissionStatus === "approved" || isSaving
+            }
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              !isFormValid() || submissionStatus === "approved"
+              !isFormValid() || submissionStatus === "approved" || isSaving
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-600 hover:bg-green-700"
             }`}
           >
-            Save
+            {isSaving ? (
+              <span className="flex items-center">
+                <span className="mr-2">Saving</span>
+                <div className="spinner spinner-sm inline-loader"></div>
+              </span>
+            ) : (
+              "Save"
+            )}
           </button>
           <button
             type="button"
             onClick={handleNext}
-            disabled={!isFormValid() || submissionStatus === "approved"}
+            disabled={
+              !isFormValid() || submissionStatus === "approved" || isSaving
+            }
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              !isFormValid() || submissionStatus === "approved"
+              !isFormValid() || submissionStatus === "approved" || isSaving
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            Next
+            {isSaving ? (
+              <span className="flex items-center">
+                <span className="mr-2">Processing</span>
+                <div className="spinner spinner-sm inline-loader"></div>
+              </span>
+            ) : (
+              "Next"
+            )}
           </button>
         </div>
       )}
 
       {/* Only show Next button for alteration_of_share_capital */}
       {serviceUniqueId === "alteration_of_share_capital" && (
-        <div className="flex justify-end space-x-4 mt-6">
+        <div className="flex justify-end space-x-4 mt-6 save-next-buttons">
           <button
             type="button"
             onClick={handleNext}
-            disabled={!isFormValid()}
+            disabled={!isFormValid() || isSaving}
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              isFormValid()
+              isFormValid() && !isSaving
                 ? "bg-blue-600 hover:bg-blue-700"
                 : "bg-gray-400 cursor-not-allowed"
             }`}
           >
-            Next
+            {isSaving ? (
+              <span className="flex items-center">
+                <span className="mr-2">Processing</span>
+                <div className="spinner spinner-sm inline-loader"></div>
+              </span>
+            ) : (
+              "Next"
+            )}
           </button>
         </div>
       )}

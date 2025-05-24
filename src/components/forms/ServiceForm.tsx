@@ -532,7 +532,14 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
                 isSubmitting ? "opacity-70 cursor-not-allowed" : ""
               }`}
             >
-              {isSubmitting ? "Submitting..." : "Submit"}
+              {isSubmitting ? (
+                <span className="flex items-center">
+                  <span className="mr-2">Submitting</span>
+                  <div className="spinner spinner-sm inline-loader"></div>
+                </span>
+              ) : (
+                "Submit"
+              )}
             </button>
           </div>
         </form>

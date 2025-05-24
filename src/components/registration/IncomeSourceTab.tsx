@@ -687,9 +687,12 @@ export default function IncomeSourceTab({
 
   // State for tracking if files are being uploaded
   const [isUploading, setIsUploading] = useState(false);
+  // State for tracking if form is being saved or navigating to next tab
+  const [isSaving, setIsSaving] = useState(false);
 
   // Handle save functionality
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       const data: any = { files };
 
@@ -819,7 +822,8 @@ export default function IncomeSourceTab({
 
         const result = await response.json();
         console.log("Updated existing submission:", submissionId);
-        alert("Form data saved successfully! 3333");
+        // alert("Form data saved successfully! 3333");
+        setIsSaving(false);
       } else {
         // Create new submission
         const response = await fetch("/api/submissions", {
@@ -851,7 +855,8 @@ export default function IncomeSourceTab({
         }
 
         console.log("Created new submission:", result.id);
-        alert("Form data saved successfully! 4444");
+        // alert("Form data saved successfully! 3333");
+        setIsSaving(false);
       }
 
       // Update parent component if needed
@@ -869,10 +874,12 @@ export default function IncomeSourceTab({
     } catch (error) {
       console.error("Error saving form data:", error);
       alert("Failed to save form data. Please try again.");
+      setIsSaving(false);
     }
   };
 
   const handleNext = async () => {
+    setIsSaving(true);
     const shouldSave = window.confirm(
       "Do you want to save your changes before proceeding to the next tab?"
     );
@@ -1080,10 +1087,12 @@ export default function IncomeSourceTab({
 
       // Move to next tab
       setActiveTab("tax-savings");
+      setIsSaving(false);
     }
   };
 
   const handleBack = async () => {
+    setIsSaving(true);
     const shouldSave = window.confirm(
       "Do you want to save your changes before going back to the previous tab?"
     );
@@ -1102,6 +1111,7 @@ export default function IncomeSourceTab({
     }
 
     setActiveTab("personal-info");
+    setIsSaving(false);
   };
 
   return (
@@ -1293,39 +1303,60 @@ export default function IncomeSourceTab({
         <button
           type="button"
           onClick={handleBack}
-          disabled={submissionStatus === "approved"}
+          disabled={submissionStatus === "approved" || isSaving}
           className={`px-4 py-2 rounded-md border font-medium ${
-            submissionStatus === "approved"
+            submissionStatus === "approved" || isSaving
               ? "text-gray-400 border-gray-300 cursor-not-allowed"
               : "text-gray-700 border-gray-300 hover:bg-gray-50"
           }`}
         >
-          Back
+          {isSaving ? (
+            <span className="flex items-center">
+              <span className="mr-2">Processing</span>
+              <div className="spinner spinner-sm inline-loader"></div>
+            </span>
+          ) : (
+            "Back"
+          )}
         </button>
         <div className="space-x-4">
           <button
             type="button"
             onClick={handleSave}
-            disabled={submissionStatus === "approved"}
+            disabled={submissionStatus === "approved" || isSaving}
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              submissionStatus === "approved"
+              submissionStatus === "approved" || isSaving
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-green-600 hover:bg-green-700"
             }`}
           >
-            Save
+            {isSaving ? (
+              <span className="flex items-center">
+                <span className="mr-2">Saving</span>
+                <div className="spinner spinner-sm inline-loader"></div>
+              </span>
+            ) : (
+              "Save"
+            )}
           </button>
           <button
             type="button"
             onClick={handleNext}
-            disabled={submissionStatus === "approved"}
+            disabled={submissionStatus === "approved" || isSaving}
             className={`px-4 py-2 rounded-md text-white font-medium ${
-              submissionStatus === "approved"
+              submissionStatus === "approved" || isSaving
                 ? "bg-gray-400 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
           >
-            Finish
+            {isSaving ? (
+              <span className="flex items-center">
+                <span className="mr-2">Processing</span>
+                <div className="spinner spinner-sm inline-loader"></div>
+              </span>
+            ) : (
+              "Finish"
+            )}
           </button>
         </div>
       </div>

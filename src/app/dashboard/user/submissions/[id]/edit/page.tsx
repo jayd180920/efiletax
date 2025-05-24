@@ -252,10 +252,19 @@ export default function EditSubmissionPage({
                 {/* Header */}
                 <div className="px-6 py-5 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    {submission.serviceName}
+                    {submission.serviceName
+                      ? submission.serviceName
+                          .toLowerCase()
+                          .split("_")
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1)
+                          )
+                          .join(" ")
+                      : ""}
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    Edit your submission details below
+                    Edit your Request details below
                   </p>
                 </div>
 

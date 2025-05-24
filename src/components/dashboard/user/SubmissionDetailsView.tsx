@@ -38,6 +38,7 @@ export default function SubmissionDetailsView({
 }: SubmissionDetailsViewProps) {
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
+  const [loading, setLoading] = useState(false);
 
   // Function to check if a section is empty (all values are null, undefined, or empty strings)
   const isSectionEmpty = (section: Record<string, any>): boolean => {

@@ -3,7 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions, authenticate } from "@/lib/auth";
-import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import nodemailer from "nodemailer";
 
 // This is a special API endpoint to create a region admin user
@@ -54,20 +54,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate a temporary password
-    const tempPassword = generateTemporaryPassword();
+    // Generate a password reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create the user
+    // Create the user without a password
     const user = await User.create({
       name,
       email,
       phone,
-      password: tempPassword, // This will be hashed by the pre-save hook
       role: "regionAdmin",
+      resetToken,
+      resetTokenExpiry,
     });
 
-    // Send email with temporary password
-    await sendPasswordEmail(email, name, tempPassword);
+    // Send email with password setup link
+    await sendPasswordSetupEmail(email, name, resetToken);
 
     // Return success response
     return NextResponse.json({
@@ -90,37 +92,11 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// Generate a temporary password
-function generateTemporaryPassword(): string {
-  const length = 12;
-  const charset =
-    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+";
-  let password = "";
-
-  // Ensure at least one uppercase, one lowercase, and one special character
-  password += "A"; // Uppercase
-  password += "a"; // Lowercase
-  password += "!"; // Special character
-  password += "1"; // Number
-
-  // Fill the rest with random characters
-  for (let i = 4; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * charset.length);
-    password += charset[randomIndex];
-  }
-
-  // Shuffle the password
-  return password
-    .split("")
-    .sort(() => Math.random() - 0.5)
-    .join("");
-}
-
-// Send email with temporary password
-async function sendPasswordEmail(
+// Send email with password setup link
+async function sendPasswordSetupEmail(
   email: string,
   name: string,
-  password: string
+  token: string
 ): Promise<void> {
   try {
     // Create a transporter using SMTP
@@ -134,29 +110,32 @@ async function sendPasswordEmail(
       },
     });
 
+    const setupUrl = `${
+      process.env.NEXT_PUBLIC_APP_URL
+    }/auth/set-password?token=${token}&email=${encodeURIComponent(email)}`;
+
     // Send the email
     await transporter.sendMail({
       from: `"eFileTax Admin" <${process.env.SMTP_FROM}>`,
       to: email,
-      subject: "Your eFileTax Admin Account",
+      subject: "Set Up Your eFileTax Region Admin Account",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Welcome to eFileTax Admin</h2>
           <p>Hello ${name},</p>
-          <p>Your account has been created as a Region Admin. Please use the following credentials to log in:</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Temporary Password:</strong> ${password}</p>
-          <p>Please log in and change your password as soon as possible.</p>
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL}/auth/login" style="display: inline-block; background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Login Now</a></p>
+          <p>Your account has been created as a Region Admin. Please click the button below to set up your password:</p>
+          <p><a href="${setupUrl}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Password</a></p>
+          <p>This link will expire in 24 hours for security reasons.</p>
+          <p>If you did not request this account, please ignore this email.</p>
           <p>If you have any questions, please contact the administrator.</p>
           <p>Thank you,<br>eFileTax Team</p>
         </div>
       `,
     });
 
-    console.log(`Password email sent to ${email}`);
+    console.log(`Password setup email sent to ${email}`);
   } catch (error) {
-    console.error("Error sending password email:", error);
-    throw new Error("Failed to send password email");
+    console.error("Error sending password setup email:", error);
+    throw new Error("Failed to send password setup email");
   }
 }

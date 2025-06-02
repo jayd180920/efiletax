@@ -9,6 +9,8 @@ export interface IUser extends mongoose.Document {
   role: "user" | "admin" | "regionAdmin";
   region?: mongoose.Types.ObjectId;
   provider?: string;
+  resetToken?: string;
+  resetTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword?: (candidatePassword: string) => Promise<boolean>;
@@ -41,30 +43,48 @@ const UserSchema = new mongoose.Schema<IUser>(
     },
     password: {
       type: String,
-      required: function () {
-        // Password is required only if provider is not set
-        return !this.provider;
-      },
-      minlength: [10, "Password must be at least 10 characters"],
-      validate: {
-        validator: function (value: string) {
-          // Skip validation if provider is set
-          if (this.provider) return true;
-
-          // Check for at least one uppercase letter
-          const hasUppercase = /[A-Z]/.test(value);
-          // Check for at least one lowercase letter
-          const hasLowercase = /[a-z]/.test(value);
-          // Check for at least one special character
-          const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
-            value
-          );
-
-          return hasUppercase && hasLowercase && hasSpecialChar;
+      // Use a custom validator instead of required function
+      validate: [
+        {
+          validator: function (this: any, value: string) {
+            // Password is required only if provider is not set and no reset token
+            if (!this.provider && !this.resetToken && !value) {
+              return false;
+            }
+            return true;
+          },
+          message: "Password is required",
         },
-        message:
-          "Password must contain at least one uppercase letter, one lowercase letter, and one special character",
-      },
+        {
+          validator: function (this: any, value: string) {
+            // Skip validation if provider is set or if there's a reset token or if no value
+            if (this.provider || this.resetToken || !value) return true;
+
+            // Check for at least one uppercase letter
+            const hasUppercase = /[A-Z]/.test(value);
+            // Check for at least one lowercase letter
+            const hasLowercase = /[a-z]/.test(value);
+            // Check for at least one special character
+            const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
+              value
+            );
+
+            return hasUppercase && hasLowercase && hasSpecialChar;
+          },
+          message:
+            "Password must contain at least one uppercase letter, one lowercase letter, and one special character",
+        },
+        {
+          validator: function (this: any, value: string) {
+            // Skip validation if provider is set or if there's a reset token or if no value
+            if (this.provider || this.resetToken || !value) return true;
+
+            // Check minimum length
+            return value.length >= 10;
+          },
+          message: "Password must be at least 10 characters",
+        },
+      ],
       select: false, // Don't return password by default in queries
     },
     provider: {
@@ -80,6 +100,14 @@ const UserSchema = new mongoose.Schema<IUser>(
     region: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Region",
+    },
+    resetToken: {
+      type: String,
+      select: false, // Don't return reset token by default in queries
+    },
+    resetTokenExpiry: {
+      type: Date,
+      select: false, // Don't return token expiry by default in queries
     },
   },
   { timestamps: true }

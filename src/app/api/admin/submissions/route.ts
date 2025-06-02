@@ -3,156 +3,110 @@ import dbConnect from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { authenticate } from "@/lib/auth";
-import { getToken } from "next-auth/jwt";
+import { authOptions, authenticate } from "@/lib/auth";
 
-// GET /api/admin/submissions - Get all submissions (admin or regionAdmin only)
 export async function GET(req: NextRequest) {
   try {
-    console.log("GET /api/admin/submissions: Starting authentication check");
+    // Get query parameters
+    const url = new URL(req.url);
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const status = url.searchParams.get("status");
+    const serviceId = url.searchParams.get("serviceId");
+    const isRegionAdmin = url.searchParams.get("isRegionAdmin") === "true";
 
-    // Try multiple authentication methods
-    let isAuthenticated = false;
-    let userRole = null;
-    let userId = null;
-    let userEmail = null;
-
-    // 1. Try NextAuth session first
-    console.log("GET /api/admin/submissions: Checking NextAuth session");
+    // Check if user is authenticated and has appropriate role
+    // First try NextAuth session
     const session = await getServerSession(authOptions);
-    console.log(
-      "GET /api/admin/submissions: Session:",
-      JSON.stringify(session, null, 2)
-    );
+    let userRole = "";
+    let userId = "";
+    let userRegion = null;
 
-    if (session?.user) {
-      console.log("GET /api/admin/submissions: Session found with user");
-      isAuthenticated = true;
+    // If session exists and user is admin or regionAdmin, proceed
+    if (
+      session &&
+      (session.user.role === "admin" || session.user.role === "regionAdmin")
+    ) {
+      console.log(
+        "User authenticated via NextAuth session as admin or regionAdmin"
+      );
       userRole = session.user.role;
       userId = session.user.id;
-      userEmail = session.user.email;
-    }
 
-    // 2. If no session, try NextAuth JWT token
-    if (!isAuthenticated) {
-      console.log("GET /api/admin/submissions: Checking NextAuth JWT token");
-      const nextAuthToken = await getToken({
-        req,
-        secret: process.env.NEXTAUTH_SECRET,
-      });
+      // If user is a region admin, get their region
+      if (session.user.role === "regionAdmin") {
+        const user = await User.findById(session.user.id).populate("region");
+        if (user && user.region) {
+          userRegion = user.region._id;
+        }
+      }
+    } else {
+      // If no valid NextAuth session, try custom auth
+      const auth = await authenticate(req);
 
-      if (nextAuthToken) {
-        console.log("GET /api/admin/submissions: NextAuth token found");
-        isAuthenticated = true;
-        userRole = nextAuthToken.role as string;
-        userId = nextAuthToken.sub;
-        userEmail = nextAuthToken.email as string;
+      // If no valid auth or user is not admin or regionAdmin, return unauthorized
+      if (!auth || (auth.role !== "admin" && auth.role !== "regionAdmin")) {
+        console.log("User not authenticated or not admin/regionAdmin");
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+
+      console.log("User authenticated via custom auth as admin or regionAdmin");
+      userRole = auth.role;
+      userId = auth.userId;
+
+      // If user is a region admin, get their region
+      if (auth.role === "regionAdmin") {
+        const user = await User.findById(auth.userId).populate("region");
+        if (user && user.region) {
+          userRegion = user.region._id;
+        }
       }
     }
-
-    // 3. If still not authenticated, try custom token
-    if (!isAuthenticated) {
-      console.log("GET /api/admin/submissions: Checking custom token");
-      const customAuth = await authenticate(req);
-
-      if (customAuth) {
-        console.log("GET /api/admin/submissions: Custom token found");
-        isAuthenticated = true;
-        userRole = customAuth.role;
-        userId = customAuth.userId;
-        // Note: email might not be available in custom token
-      }
-    }
-
-    // Check if we have authentication
-    if (!isAuthenticated) {
-      console.log("GET /api/admin/submissions: No authentication found");
-      return NextResponse.json(
-        { error: "Unauthorized - No authentication" },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has appropriate role
-    if (userRole !== "admin" && userRole !== "regionAdmin") {
-      console.log(
-        `GET /api/admin/submissions: User role '${userRole}' is not admin or regionAdmin`
-      );
-      return NextResponse.json(
-        { error: "Unauthorized - Not an admin or region admin" },
-        { status: 401 }
-      );
-    }
-
-    console.log("GET /api/admin/submissions: Authentication successful");
 
     // Connect to the database
     await dbConnect();
 
-    // Get query parameters
-    const searchParams = req.nextUrl.searchParams;
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
-    const status = searchParams.get("status");
-    const search = searchParams.get("search");
-    const regionId = searchParams.get("regionId");
-
     // Build query
     const query: any = {};
 
-    // Filter by status if provided
+    // If status is provided, filter by status
     if (status) {
       query.status = status;
     }
 
-    // Filter by search term if provided
-    if (search) {
-      query.$or = [
-        { serviceName: { $regex: search, $options: "i" } },
-        { "formData.name": { $regex: search, $options: "i" } },
-        { "formData.email": { $regex: search, $options: "i" } },
-      ];
+    // If serviceId is provided, filter by serviceId
+    if (serviceId) {
+      query.serviceId = serviceId;
     }
 
-    // If user is regionAdmin, only show submissions from their region
-    if (userRole === "regionAdmin") {
-      // Get the admin's user record to find their region
-      const admin = await User.findOne({ email: userEmail });
-      if (!admin || !admin.region) {
-        return NextResponse.json(
-          { error: "Region admin not assigned to any region" },
-          { status: 400 }
-        );
-      }
-
-      // Filter submissions by region
-      query.region = admin.region;
-    } else if (regionId) {
-      // If admin is filtering by region
-      query.region = regionId;
+    // If user is a region admin, filter by region
+    if (userRole === "regionAdmin" && userRegion) {
+      query.region = userRegion;
     }
-
-    // Calculate pagination
-    const skip = (page - 1) * limit;
-
-    // Get submissions with pagination
-    const submissions = await Submission.find(query)
-      .populate("userId", "name email")
-      .skip(skip)
-      .limit(limit)
-      .sort({ createdAt: -1 });
 
     // Get total count
     const total = await Submission.countDocuments(query);
 
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    const pages = Math.ceil(total / limit);
+
+    // Get submissions with pagination
+    const submissions = await Submission.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate("region", "name");
+
+    // Return success response
     return NextResponse.json({
+      success: true,
       submissions,
       pagination: {
         total,
         page,
         limit,
-        pages: Math.ceil(total / limit),
+        pages,
       },
     });
   } catch (error: any) {

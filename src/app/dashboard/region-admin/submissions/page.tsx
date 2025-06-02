@@ -3,18 +3,18 @@
 import React, { useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
-import RegionAdminsList from "@/components/dashboard/admin/RegionAdminsList";
+import RegionSubmissionsList from "@/components/dashboard/admin/RegionSubmissionsList";
 
-export default function RegionAdminPage() {
+export default function RegionAdminSubmissionsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect non-admin users
+  // Redirect non-region-admin users
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push("/auth/login");
-      } else if (user.role !== "admin") {
+      } else if (user.role !== "regionAdmin") {
         router.push("/dashboard/user");
       }
     }
@@ -31,22 +31,24 @@ export default function RegionAdminPage() {
     );
   }
 
-  if (user.role !== "admin") {
+  if (user.role !== "regionAdmin") {
     return null; // Will redirect in useEffect
   }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Region Admins</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">
+          Region Submissions
+        </h1>
 
         <div className="bg-white rounded-lg shadow-md">
-          <RegionAdminsList />
+          <RegionSubmissionsList />
         </div>
 
         <div className="mt-8 bg-white rounded-lg shadow-md p-6">
           <h2 className="text-lg font-medium text-gray-900 mb-4">
-            About Region Admins
+            About Region Submissions
           </h2>
           <div className="bg-blue-50 border-l-4 border-blue-400 p-4">
             <div className="flex">
@@ -65,13 +67,17 @@ export default function RegionAdminPage() {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-blue-700">Region admins can:</p>
+                <p className="text-sm text-blue-700">
+                  As a Region Admin, you can:
+                </p>
                 <ul className="list-disc list-inside mt-2 text-sm text-blue-700">
-                  <li>View and manage submissions for their assigned region</li>
-                  <li>Reply to users and provide feedback on submissions</li>
+                  <li>View submissions from users in your assigned region</li>
+                  <li>Review submission details and attached documents</li>
                   <li>
-                    Access the admin dashboard with region-specific permissions
+                    Reply to users with comments or request additional
+                    information
                   </li>
+                  <li>Update submission status as needed</li>
                 </ul>
               </div>
             </div>

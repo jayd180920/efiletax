@@ -39,12 +39,12 @@ export async function GET(req: NextRequest) {
         nextAuthToken.email
       );
       user = await User.findOne({ email: nextAuthToken.email }).select(
-        "-password"
+        "+resetToken"
       );
     } else if (auth) {
       // Otherwise, use custom token
       console.log("API /auth/me: Using custom token with userId:", auth.userId);
-      user = await User.findById(auth.userId).select("-password");
+      user = await User.findById(auth.userId).select("+resetToken");
     }
 
     if (!user) {
@@ -67,6 +67,8 @@ export async function GET(req: NextRequest) {
         name: user.name,
         email: user.email,
         role: user.role,
+        isPasswordSet: user.isPasswordSet || false,
+        resetToken: user.resetToken || null,
       },
     });
   });

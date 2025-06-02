@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find user by email and include password for comparison
-    const user = await User.findOne({ email }).select("+password");
+    // Find user by email and include password and resetToken for comparison
+    const user = await User.findOne({ email }).select("+password +resetToken");
     if (!user) {
       console.log("User not found for email:", email);
       return NextResponse.json(
@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
       name: user.name,
       email: user.email,
       role: user.role,
+      isPasswordSet: user.isPasswordSet || false,
+      resetToken: user.resetToken || null,
     };
     console.log("User data prepared:", userData);
 
@@ -84,12 +86,18 @@ export async function POST(req: NextRequest) {
       name: "token",
       value: token,
       httpOnly: true,
-      secure: false, // Set to false since we don't have SSL
-      sameSite: "lax", // Changed to 'lax' to work better with redirects
+      secure: process.env.NODE_ENV === "production", // Only secure in production
+      sameSite: "lax", // 'lax' works better with redirects
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
-    console.log("Cookie set");
+    console.log("Cookie set with configuration:", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: "/",
+    });
 
     // Log the final response headers
     console.log(

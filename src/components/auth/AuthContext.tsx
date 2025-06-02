@@ -84,6 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             name: session.user.name || "",
             email: session.user.email || "",
             role: (session.user as any).role || "user",
+            isPasswordSet: (session.user as any).isPasswordSet || true,
+            resetToken: (session.user as any).resetToken || null,
           };
 
           setUser(userWithRole);
@@ -138,7 +140,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Use window.location for direct navigation
       if (typeof window !== "undefined") {
-        // Add a small delay to ensure cookies are properly set before navigation
+        // Add a larger delay to ensure cookies are properly set before navigation
+        // This is especially important after clearing cookies
         setTimeout(() => {
           // Force navigation to the target URL
           console.log(
@@ -146,7 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             targetUrl
           );
           window.location.href = targetUrl;
-        }, 100);
+        }, 500); // Increased from 100ms to 500ms
       }
     } catch (error: any) {
       console.error("AuthContext: Login error:", error);

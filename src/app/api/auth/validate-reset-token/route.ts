@@ -20,11 +20,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Find user with the given email and token
+    // Explicitly select resetToken and resetTokenExpiry fields since they have select: false in the model
     const user = await User.findOne({
       email,
       resetToken: token,
       resetTokenExpiry: { $gt: new Date() }, // Token must not be expired
-    });
+    }).select("+resetToken +resetTokenExpiry");
 
     if (!user) {
       return NextResponse.json(

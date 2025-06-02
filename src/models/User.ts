@@ -11,6 +11,7 @@ export interface IUser extends mongoose.Document {
   provider?: string;
   resetToken?: string;
   resetTokenExpiry?: Date;
+  isPasswordSet?: boolean;
   createdAt: Date;
   updatedAt: Date;
   comparePassword?: (candidatePassword: string) => Promise<boolean>;
@@ -41,24 +42,42 @@ const UserSchema = new mongoose.Schema<IUser>(
         "Please provide a valid phone number",
       ],
     },
+    isPasswordSet: {
+      type: Boolean,
+      default: false,
+    },
     password: {
       type: String,
       // Use a custom validator instead of required function
       validate: [
         {
           validator: function (this: any, value: string) {
-            // Password is required only if provider is not set and no reset token
-            if (!this.provider && !this.resetToken && !value) {
-              return false;
+            // Password is required only if provider is not set, no reset token, and not a regionAdmin
+            // Check if resetToken is being set in this operation or already exists
+            const hasResetToken =
+              this.resetToken ||
+              this.$__get("resetToken") ||
+              this.$__parent?.get("resetToken");
+
+            const isRegionAdmin = this.role === "regionAdmin";
+
+            // Allow empty password for regionAdmin or when resetToken is present
+            if (isRegionAdmin || this.provider || hasResetToken || value) {
+              return true;
             }
-            return true;
+            return false;
           },
           message: "Password is required",
         },
         {
           validator: function (this: any, value: string) {
             // Skip validation if provider is set or if there's a reset token or if no value
-            if (this.provider || this.resetToken || !value) return true;
+            const hasResetToken =
+              this.resetToken ||
+              this.$__get("resetToken") ||
+              this.$__parent?.get("resetToken");
+
+            if (this.provider || hasResetToken || !value) return true;
 
             // Check for at least one uppercase letter
             const hasUppercase = /[A-Z]/.test(value);
@@ -77,7 +96,12 @@ const UserSchema = new mongoose.Schema<IUser>(
         {
           validator: function (this: any, value: string) {
             // Skip validation if provider is set or if there's a reset token or if no value
-            if (this.provider || this.resetToken || !value) return true;
+            const hasResetToken =
+              this.resetToken ||
+              this.$__get("resetToken") ||
+              this.$__parent?.get("resetToken");
+
+            if (this.provider || hasResetToken || !value) return true;
 
             // Check minimum length
             return value.length >= 10;
@@ -115,8 +139,9 @@ const UserSchema = new mongoose.Schema<IUser>(
 
 // Hash password before saving
 UserSchema.pre("save", async function (next) {
-  // Skip password hashing if provider is set or password is not modified
-  if (this.provider || !this.isModified("password")) return next();
+  // Skip password hashing if provider is set, password is not modified, or password is undefined/null
+  if (this.provider || !this.isModified("password") || !this.password)
+    return next();
 
   try {
     const salt = await bcrypt.genSalt(10);
@@ -132,8 +157,17 @@ UserSchema.methods.comparePassword = async function (
   candidatePassword: string
 ): Promise<boolean> {
   try {
-    return await bcrypt.compare(candidatePassword, this.password);
+    // If user has no password (e.g., regionAdmin before setting password), return false
+    if (!this.password) {
+      console.log("User has no password set, authentication failed");
+      return false;
+    }
+
+    const isMatch = await bcrypt.compare(candidatePassword, this.password);
+    console.log("Password comparison result:", isMatch);
+    return isMatch;
   } catch (error) {
+    console.error("Error comparing passwords:", error);
     throw error;
   }
 };

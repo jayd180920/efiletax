@@ -78,14 +78,19 @@ export async function middleware(request: NextRequest) {
     // Check custom token
     else if (customToken) {
       console.log("Verifying custom token");
-      const payload = await verifyTokenEdge(customToken);
+      try {
+        const payload = await verifyTokenEdge(customToken);
 
-      if (payload) {
-        console.log("Custom token verified, user role:", payload.role);
-        isAuthenticated = true;
-        userRole = payload.role;
-      } else {
-        console.log("Custom token verification failed");
+        if (payload) {
+          console.log("Custom token verified, user role:", payload.role);
+          isAuthenticated = true;
+          userRole = payload.role;
+        } else {
+          console.log("Custom token verification failed");
+        }
+      } catch (tokenError) {
+        console.error("Error verifying token:", tokenError);
+        // Continue to try other authentication methods
       }
     }
 

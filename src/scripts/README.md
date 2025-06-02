@@ -1,6 +1,39 @@
-# MongoDB Data Persistence Scripts
+# Admin Scripts
 
-This directory contains scripts to help diagnose and fix issues with MongoDB data being deleted automatically.
+This directory contains utility scripts for database management and administrative tasks.
+
+## Password Reset Scripts
+
+### Reset User Password Token
+
+This script generates a new password reset token for a user, allowing them to set or reset their password.
+
+```bash
+node src/scripts/reset-user-token.js <email>
+```
+
+For example:
+
+```bash
+node src/scripts/reset-user-token.js upendra.0825@gmail.com
+```
+
+This script will:
+
+- Find the user with the specified email
+- Generate a new reset token with a 72-hour expiry
+- Update the user's record in the database
+- Output a new password reset link that can be sent to the user
+
+Use this script when:
+
+- A user's password reset link has expired
+- A user needs to reset their password
+- A new region admin needs to set their initial password
+
+**Important Update**: Password reset tokens are now reusable until they expire (72 hours). See [PASSWORD_RESET_TOKENS.md](./PASSWORD_RESET_TOKENS.md) for detailed documentation on the token system and recent changes.
+
+## MongoDB Data Persistence Scripts
 
 ## Problem Description
 

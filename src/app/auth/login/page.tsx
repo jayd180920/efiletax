@@ -64,11 +64,31 @@ function LoginContent() {
     setIsLoading(true);
 
     try {
+      console.log("Login page: Submitting login form with email:", email);
+
+      // Clear any existing error messages
+      const errorElement = document.getElementById("login-error");
+      if (errorElement) {
+        errorElement.textContent = "";
+        errorElement.style.display = "none";
+      }
+
       await login(email, password, callbackUrl);
       // The redirect is handled in the AuthContext
+      console.log("Login page: Login successful, waiting for redirect");
     } catch (error: any) {
-      console.error("Login error:", error);
-      alert(error.message || "Failed to login. Please try again.");
+      console.error("Login page: Login error:", error);
+
+      // Display error in a more user-friendly way
+      const errorElement = document.getElementById("login-error");
+      if (errorElement) {
+        errorElement.textContent =
+          error.message || "Failed to login. Please try again.";
+        errorElement.style.display = "block";
+      } else {
+        // Fallback to alert if the error element doesn't exist
+        alert(error.message || "Failed to login. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -168,6 +188,9 @@ function LoginContent() {
                 </a>
               </div>
             </div>
+
+            {/* Error message display */}
+            <div id="login-error" className="text-red-500 text-sm hidden"></div>
 
             <div>
               <button

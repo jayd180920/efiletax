@@ -53,11 +53,12 @@ export async function POST(req: NextRequest) {
     }
 
     // Find user with the given email and token
+    // Explicitly select resetToken and resetTokenExpiry fields since they have select: false in the model
     const user = await User.findOne({
       email,
       resetToken: token,
       resetTokenExpiry: { $gt: new Date() }, // Token must not be expired
-    });
+    }).select("+resetToken +resetTokenExpiry");
 
     if (!user) {
       return NextResponse.json(
@@ -70,10 +71,11 @@ export async function POST(req: NextRequest) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Update user with new password and clear reset token
+    // Update user with new password and set isPasswordSet to true
+    // Note: We're no longer clearing the reset token to allow reuse
     user.password = hashedPassword;
-    user.resetToken = undefined;
-    user.resetTokenExpiry = undefined;
+    user.isPasswordSet = true;
+    // Keep the reset token and expiry date to allow reuse
     await user.save();
 
     // Return success response

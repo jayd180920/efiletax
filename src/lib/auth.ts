@@ -32,16 +32,22 @@ declare module "next-auth" {
     id: string;
     role?: string;
     email?: string;
+    isPasswordSet?: boolean;
+    resetToken?: string;
   }
   interface Session {
     user: User & {
       id: string;
       role?: string;
       email?: string;
+      isPasswordSet?: boolean;
+      resetToken?: string;
     };
   }
   interface JWT {
     role?: string;
+    isPasswordSet?: boolean;
+    resetToken?: string;
   }
 }
 
@@ -127,13 +133,23 @@ export const authOptions: NextAuthOptions = {
         if (token.role) {
           session.user.role = token.role as string;
         }
+        // Add isPasswordSet to the session from token
+        if (token.isPasswordSet !== undefined) {
+          session.user.isPasswordSet = token.isPasswordSet as boolean;
+        }
+        // Add resetToken to the session from token
+        if (token.resetToken) {
+          session.user.resetToken = token.resetToken as string;
+        }
       }
       return session;
     },
     jwt: async ({ token, user }) => {
-      // Add role to the token when a user signs in
+      // Add user properties to the token when a user signs in
       if (user) {
         token.role = user.role;
+        token.isPasswordSet = user.isPasswordSet;
+        token.resetToken = user.resetToken;
       }
       return token;
     },

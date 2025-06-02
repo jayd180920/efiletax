@@ -11,6 +11,8 @@ export interface User {
   phone?: string;
   role: "user" | "admin" | "regionAdmin";
   region?: string;
+  isPasswordSet?: boolean;
+  resetToken?: string;
 }
 
 // Google login function
@@ -32,6 +34,15 @@ export async function login(
   );
 
   try {
+    // Clear any existing cookies first to prevent conflicts
+    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+    document.cookie =
+      "next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+    document.cookie =
+      "__Secure-next-auth.session-token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;";
+
+    console.log("auth-client: Cleared existing cookies");
+
     // Try the improved v2 login endpoint first
     console.log("auth-client: Attempting to login with v2 API");
     const v2Response = await fetch("/api/auth/login-v2", {
@@ -49,13 +60,16 @@ export async function login(
 
     console.log(
       "auth-client: Login v2 API response status:",
-      v2Response.status,
-      v2Response
+      v2Response.status
     );
 
     if (v2Response.ok) {
       const data = await v2Response.json();
       console.log("auth-client: Login v2 API success, user data:", data.user);
+
+      // Verify the cookie was set
+      console.log("auth-client: Cookies after login:", document.cookie);
+
       return data.user;
     }
 

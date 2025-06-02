@@ -49,9 +49,9 @@ export const authOptions = {
             role: user.role,
           });
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password
+          // Use the User model's comparePassword method for consistency
+          const isPasswordValid = await user.comparePassword(
+            credentials.password
           );
 
           if (!isPasswordValid) {

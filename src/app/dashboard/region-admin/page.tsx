@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import PasswordResetPopup from "@/components/dashboard/region-admin/PasswordResetPopup";
 
 export default function RegionAdminDashboardPage() {
   const { user, loading } = useAuth();
@@ -14,14 +15,18 @@ export default function RegionAdminDashboardPage() {
     inProgressSubmissions: 0,
     completedSubmissions: 0,
   });
+  const [showPasswordPopup, setShowPasswordPopup] = useState(false);
 
-  // Redirect non-region-admin users
+  // Redirect non-region-admin users and check if password needs to be set
   useEffect(() => {
     if (!loading) {
       if (!user) {
         router.push("/auth/login");
       } else if (user.role !== "regionAdmin") {
         router.push("/dashboard/user");
+      } else if (user.isPasswordSet === false) {
+        // Show password reset popup if password is not set
+        setShowPasswordPopup(true);
       }
     }
   }, [user, loading, router]);
@@ -55,6 +60,22 @@ export default function RegionAdminDashboardPage() {
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
+      </div>
+    );
+  }
+
+  // If password is not set, show only the password reset popup
+  if (user.isPasswordSet === false) {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <PasswordResetPopup
+          isOpen={showPasswordPopup}
+          user={{
+            id: user.id,
+            email: user.email,
+            resetToken: user.resetToken || "",
+          }}
+        />
       </div>
     );
   }

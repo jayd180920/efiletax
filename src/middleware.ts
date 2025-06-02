@@ -64,15 +64,20 @@ export async function middleware(request: NextRequest) {
     // First try to verify the custom token
     if (token) {
       console.log("Verifying custom token");
-      const payload = await verifyTokenEdge(token);
+      try {
+        const payload = await verifyTokenEdge(token);
 
-      console.log("Custom token verified, payload", payload);
-      if (payload) {
-        console.log("Custom token verified, user role:", payload.role);
-        isAuthenticated = true;
-        userRole = payload.role;
-      } else {
-        console.log("Custom token verification failed");
+        console.log("Custom token verified, payload", payload);
+        if (payload) {
+          console.log("Custom token verified, user role:", payload.role);
+          isAuthenticated = true;
+          userRole = payload.role;
+        } else {
+          console.log("Custom token verification failed");
+        }
+      } catch (tokenError) {
+        console.error("Error verifying token:", tokenError);
+        // Continue to try NextAuth authentication
       }
     }
 

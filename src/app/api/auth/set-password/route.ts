@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
-import bcrypt from "bcryptjs";
 
 export async function POST(req: NextRequest) {
   try {
@@ -67,13 +66,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hash the new password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
     // Update user with new password and set isPasswordSet to true
     // Note: We're no longer clearing the reset token to allow reuse
-    user.password = hashedPassword;
+    user.password = password; // Let the pre-save hook handle the hashing
     user.isPasswordSet = true;
     // Keep the reset token and expiry date to allow reuse
     await user.save();

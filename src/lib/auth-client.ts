@@ -425,6 +425,7 @@ export async function getSubmissions(
     throw new Error(error.error || "Failed to fetch submissions");
   }
 
+  console.log("Region Admin getSubmissions: Response status:", response.status);
   const data = await response.json();
   return {
     submissions:

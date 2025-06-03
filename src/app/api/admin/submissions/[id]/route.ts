@@ -219,10 +219,15 @@ export async function PUT(
       );
     }
 
-    // Get request body
-    const { status, rejectionReason, admin_comments, tax_summary } =
-      await req.json();
+    // Get request body - read it once and store it
+    const requestBody = await req.json();
+    const { status, rejectionReason, admin_comments, tax_summary_file } =
+      requestBody;
 
+    console.log(
+      "PUT /api/admin/submissions/[id]: Request body: ABCD",
+      requestBody
+    );
     // Validate status
     if (
       !status ||
@@ -284,7 +289,7 @@ export async function PUT(
         );
       }
     }
-
+    console.log("admin_comments status ", status, submission);
     // Update submission status
     submission.status = status;
 
@@ -292,11 +297,33 @@ export async function PUT(
     if (status === "approved") {
       submission.approvedAt = new Date();
       submission.rejectionReason = undefined;
+
+      if (tax_summary_file) {
+        submission.tax_summary = tax_summary_file;
+
+        // Get user details for notification
+        const user = await User.findById(submission.userId);
+        if (user) {
+          // Send notification to user with file
+          await sendSubmissionUpdateNotification(
+            {
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+            },
+            submission._id.toString(),
+            status,
+            undefined, // No comments for approved status
+            tax_summary_file // Pass the file URL
+          );
+        }
+      }
     } else if (status === "rejected") {
       submission.rejectedAt = new Date();
       submission.rejectionReason = rejectionReason;
     } else if (status === "sent for revision") {
       // Add admin comments for "sent for revision" status
+      console.log("admin_comments ", admin_comments, submission);
       if (admin_comments) {
         submission.admin_comments = admin_comments;
 
@@ -318,11 +345,12 @@ export async function PUT(
       }
     } else if (status === "in-progress") {
       // No additional fields needed for "in-progress" status
+      // No notifications sent for "in-progress" status
     }
 
-    // Add tax_summary if provided (for "completed" status)
-    if (tax_summary) {
-      submission.tax_summary = tax_summary;
+    // Add tax_summary if provided (for any status)
+    if (tax_summary_file) {
+      submission.tax_summary = tax_summary_file;
     }
 
     // Save submission

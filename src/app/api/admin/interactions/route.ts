@@ -6,6 +6,11 @@ import { authenticate } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import AdminUserInteraction from "@/models/AdminUserInteraction";
 import Submission from "@/models/Submission";
+import User from "@/models/User";
+import {
+  sendSubmissionUpdateNotification,
+  sendWhatsAppMessage,
+} from "@/lib/notification-utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -81,6 +86,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
+    console.log("POST /api/admin/interactions: Parsing request body", body);
     const { submissionId, status, admin_comments, tax_summary_file } = body;
 
     // Validate required fields
@@ -122,6 +128,10 @@ export async function POST(req: NextRequest) {
       submissionStatus = "in-progress";
     } else if (status === "Completed") {
       submissionStatus = "approved";
+    } else if (status === "sent for revision") {
+      submissionStatus = "sent for revision";
+    } else if (status === "In-progress") {
+      submissionStatus = "in-progress";
     }
 
     // Update submission
@@ -131,6 +141,58 @@ export async function POST(req: NextRequest) {
       tax_summary: tax_summary_file,
       ...(status === "Completed" ? { approvedAt: new Date() } : {}),
     });
+
+    // Get user information to send notifications
+    const user = await User.findById(submission.userId);
+
+    console.log("user abcd ", user, status, "submission ", submission);
+    if (user) {
+      // Send WhatsApp notification based on status
+      if (status === "sent for revision" && admin_comments) {
+        // Send notification for revision request
+        await sendSubmissionUpdateNotification(
+          {
+            name: user.name,
+            email:
+              user.email || submission?.formData?.permanentInfo?.mobileNumber,
+            phone:
+              submission?.formData?.permanentInfo?.mobileNumber || user.phone,
+          },
+          submissionId,
+          "sent for revision",
+          admin_comments
+        );
+      } else if (status === "Completed" && tax_summary_file) {
+        // Send notification for completed submission with tax summary file
+        await sendSubmissionUpdateNotification(
+          {
+            name: user.name,
+            email:
+              user.email || submission?.formData?.permanentInfo?.mobileNumber,
+            phone:
+              submission?.formData?.permanentInfo?.mobileNumber || user.phone,
+          },
+          submissionId,
+          "approved",
+          admin_comments,
+          tax_summary_file
+        );
+      } else if (user.phone) {
+        // For other statuses, send a simple WhatsApp message if phone is available
+        const baseUrl =
+          process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
+        const submissionUrl = `${baseUrl}/dashboard/user/submissions/${submissionId}`;
+
+        const message =
+          `Hello ${user.name},\n\n` +
+          `Your submission status has been updated to: ${status}.\n\n` +
+          `${admin_comments ? `Admin Comments: ${admin_comments}\n\n` : ""}` +
+          `You can check your submission details here: ${submissionUrl}\n\n` +
+          `Thank you,\nThe eFileTax Team`;
+
+        await sendWhatsAppMessage(user.phone, message);
+      }
+    }
 
     return NextResponse.json({
       success: true,

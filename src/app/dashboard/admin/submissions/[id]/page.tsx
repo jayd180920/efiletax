@@ -110,6 +110,7 @@ export default function SubmissionDetailPage({
 
   // Handle submission action (approve/reject/reply)
   const handleSubmissionAction = async () => {
+    console.log("ABCD handleSubmissionAction called");
     if (!submission || !actionType) return;
 
     try {
@@ -165,7 +166,7 @@ export default function SubmissionDetailPage({
           const uploadResult = await uploadResponse.json();
 
           body = {
-            status: "approved",
+            status: "Completed",
             tax_summary: uploadResult.key,
           };
         }

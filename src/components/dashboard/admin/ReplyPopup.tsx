@@ -96,9 +96,9 @@ const ReplyPopup: React.FC<ReplyPopupProps> = ({
       if (status === "Need more info") {
         apiStatus = "sent for revision";
       } else if (status === "Completed") {
-        apiStatus = "approved";
+        apiStatus = "Completed";
       } else if (status === "Under review") {
-        apiStatus = "in-progress";
+        apiStatus = "In-progress";
       }
 
       // Submit the form data

@@ -4,9 +4,22 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:debug": "NODE_OPTIONS='--inspect' next dev",
+    "dev:staging": "NODE_ENV=staging next dev",
+    "dev:prod": "NODE_ENV=production next dev",
     "build": "next build",
+    "build:staging": "NODE_ENV=staging next build",
+    "build:prod": "NODE_ENV=production next build",
     "start": "next start",
-    "lint": "next lint"
+    "start:staging": "NODE_ENV=staging next start",
+    "start:prod": "NODE_ENV=production next start",
+    "lint": "next lint",
+    "debug": "NODE_OPTIONS='--inspect' next dev",
+    "debug:script": "node src/scripts/debug.js",
+    "debug:env": "node src/scripts/debug.js env",
+    "debug:db": "node src/scripts/debug.js db",
+    "debug:api": "node src/scripts/debug.js api",
+    "debug:system": "node src/scripts/debug.js system"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.779.0",

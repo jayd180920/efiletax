@@ -35,7 +35,24 @@ const UserReplyPopup: React.FC<UserReplyPopupProps> = ({
         return;
       }
 
-      // Submit the form data
+      // Submit the form data to the API
+      const response = await fetch("/api/submissions/reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          submissionId,
+          user_comments: String(userComments),
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to submit reply");
+      }
+
+      // Call the onSubmit callback
       onSubmit({
         user_comments: String(userComments),
       });
@@ -100,7 +117,7 @@ const UserReplyPopup: React.FC<UserReplyPopupProps> = ({
                     </div>
                   )}
 
-                  <div className="mb-4">
+                  <div className="mb-4 reply-popup-status">
                     <label
                       htmlFor="user-comments"
                       className="block text-sm font-medium text-gray-700 mb-1"

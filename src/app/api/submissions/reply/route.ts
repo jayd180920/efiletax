@@ -6,15 +6,16 @@ import { authenticate } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import AdminUserInteraction from "@/models/AdminUserInteraction";
 import Submission from "@/models/Submission";
-import mongoose from "mongoose";
+import User from "@/models/User";
+import { sendUserReplyNotification } from "@/lib/notification-utils";
 
-// This is a Next.js App Router API route handler
 export async function POST(req: NextRequest) {
   try {
     console.log("POST /api/submissions/reply: Starting authentication check");
 
     // Try multiple authentication methods
     let isAuthenticated = false;
+    let userRole = null;
     let userId = null;
 
     // 1. Try NextAuth session first
@@ -25,6 +26,7 @@ export async function POST(req: NextRequest) {
     if (session?.user) {
       console.log("POST /api/submissions/reply: Session found with user");
       isAuthenticated = true;
+      userRole = session.user.role;
       userId = session.user.id;
     }
 
@@ -39,6 +41,7 @@ export async function POST(req: NextRequest) {
       if (nextAuthToken) {
         console.log("POST /api/submissions/reply: NextAuth token found");
         isAuthenticated = true;
+        userRole = nextAuthToken.role as string;
         userId = nextAuthToken.sub;
       }
     }
@@ -51,6 +54,7 @@ export async function POST(req: NextRequest) {
       if (customAuth) {
         console.log("POST /api/submissions/reply: Custom token found");
         isAuthenticated = true;
+        userRole = customAuth.role;
         userId = customAuth.userId;
       }
     }
@@ -63,8 +67,6 @@ export async function POST(req: NextRequest) {
         { status: 401 }
       );
     }
-
-    console.log("POST /api/submissions/reply: Authentication successful");
 
     // Parse request body
     const body = await req.json();
@@ -81,127 +83,80 @@ export async function POST(req: NextRequest) {
     // Connect to database
     await dbConnect();
 
-    // Check if submission exists and belongs to the user
-    // Convert submissionId to ObjectId to ensure proper comparison
-    console.log(
-      "POST /api/submissions/reply: Checking submission with ID:",
-      submissionId,
-      "for user:",
-      userId
-    );
-
-    // Try to convert submissionId to ObjectId if it's a string
-    let submissionObjectId;
-    try {
-      submissionObjectId = new mongoose.Types.ObjectId(submissionId);
-    } catch (error) {
-      console.error("Invalid submission ID format:", error);
-      return NextResponse.json(
-        { error: "Invalid submission ID format" },
-        { status: 400 }
-      );
-    }
-
-    // Try to convert userId to ObjectId if it's a string
-    let userObjectId;
-    try {
-      userObjectId = new mongoose.Types.ObjectId(userId);
-    } catch (error) {
-      console.error("Invalid user ID format, using as string:", error);
-      userObjectId = userId.toString();
-    }
-
-    console.log(
-      "submissionObjectId :",
-      submissionObjectId,
-      "userObjectId :",
-      userObjectId
-    );
-    // Try to find the submission with different userId formats
-    let submission = await Submission.findOne({
-      _id: submissionObjectId,
-      userId: userObjectId,
-    });
-
-    // If not found, try with userId as string
-    if (!submission) {
-      console.log(
-        "Submission not found with ObjectId, trying with string userId",
-        submissionObjectId,
-        userId.toString()
-      );
-      submission = await Submission.findOne({
-        _id: submissionObjectId,
-        userId: userId.toString(),
-      });
-    }
-
-    // If still not found, try finding just by submission ID first to debug
-    if (!submission) {
-      const submissionById = await Submission.findOne({
-        _id: submissionObjectId,
-      });
-
-      if (submissionById) {
-        console.log(
-          "Found submission by ID, but userId doesn't match. Submission userId:",
-          submissionById.userId,
-          "Current userId:",
-          userObjectId
-        );
-
-        // Try with string comparison of both IDs
-        if (submissionById.userId.toString() === userId.toString()) {
-          console.log(
-            "IDs match when converted to strings, using this submission"
-          );
-          submission = submissionById;
-        }
-      } else {
-        console.log("Submission not found with ID:", submissionObjectId);
-      }
-    }
-
-    console.log(
-      "POST /api/submissions/reply: Submission found:",
-      submission ? "Yes" : "No"
-    );
-
+    // Check if submission exists
+    const submission = await Submission.findById(submissionId);
     if (!submission) {
       return NextResponse.json(
-        {
-          error: "Submission not found or does not belong to you",
-          details: `Submission ID: ${submissionId}, User ID: ${userId}. Please contact support with these details.`,
-        },
+        { error: "Submission not found" },
         { status: 404 }
       );
     }
 
-    // Check if the submission status is "sent for revision"
-    if (submission.status !== "sent for revision") {
+    // Verify that the user is the owner of the submission
+    if (submission.userId.toString() !== userId) {
       return NextResponse.json(
-        {
-          error: "This submission is not awaiting your revision",
-          details: `Current submission status: "${submission.status}". Only submissions with status "sent for revision" can be replied to.`,
-        },
-        { status: 400 }
+        { error: "You are not authorized to reply to this submission" },
+        { status: 403 }
       );
     }
 
     // Create new interaction
     const interaction = new AdminUserInteraction({
-      submissionId: submissionObjectId, // Use the converted ObjectId
-      status: "In-progress", // Match the enum value in the model (capital I)
-      user_comments: String(user_comments), // Ensure user_comments is a string
+      submissionId,
+      status: "In-progress", // Set status to In-progress when user replies
+      user_comments,
     });
 
     // Save interaction
     await interaction.save();
 
-    // Update submission status
-    await Submission.findByIdAndUpdate(submissionObjectId, {
-      status: "in-progress", // Keep lowercase for Submission model
+    // Update submission status to in-progress
+    await Submission.findByIdAndUpdate(submissionId, {
+      status: "in-progress",
     });
+
+    // Get user details for notification
+    const user = await User.findById(userId);
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Find the admin who last interacted with this submission
+    const lastAdminInteraction = await AdminUserInteraction.find({
+      submissionId,
+      admin_comments: { $exists: true, $ne: null },
+    })
+      .sort({ createdAt: -1 })
+      .limit(1);
+
+    // If we found an admin interaction, send notification to that admin
+    if (lastAdminInteraction.length > 0) {
+      // Get the admin's user record
+      const adminUsers = await User.find({
+        role: { $in: ["admin", "regionAdmin"] },
+      });
+
+      // If we have admin users, send notification to the first one
+      // In a real-world scenario, you would need to determine which admin to notify
+      if (adminUsers.length > 0) {
+        const admin = adminUsers[0];
+
+        // Send notification to admin
+        await sendUserReplyNotification(
+          {
+            name: admin.name,
+            email: admin.email,
+            phone: admin.phone,
+          },
+          {
+            name: user.name,
+            email: user.email,
+          },
+          submissionId,
+          user_comments
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,
@@ -209,16 +164,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: any) {
     console.error("Error creating user reply:", error);
-
-    // Provide more detailed error information
-    const errorMessage = error.message || "Internal server error";
-    const errorDetails = {
-      error: errorMessage,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-      code: error.code,
-      name: error.name,
-    };
-
-    return NextResponse.json(errorDetails, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || "Internal server error" },
+      { status: 500 }
+    );
   }
 }

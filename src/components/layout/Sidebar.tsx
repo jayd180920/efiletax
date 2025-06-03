@@ -374,7 +374,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           {/* Sidebar footer */}
           {user && (
             <div className="border-t px-4 py-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between sidebar-profile-section">
                 <div
                   className="flex items-center cursor-pointer flex-grow"
                   onClick={() => setIsProfilePopupOpen(true)}

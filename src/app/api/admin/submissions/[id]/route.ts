@@ -7,6 +7,7 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { authenticate } from "@/lib/auth";
 import { getToken } from "next-auth/jwt";
 import { isValidObjectId } from "mongoose";
+import { sendSubmissionUpdateNotification } from "@/lib/notification-utils";
 
 // GET /api/admin/submissions/[id] - Get a specific submission (admin or regionAdmin only)
 export async function GET(
@@ -298,6 +299,22 @@ export async function PUT(
       // Add admin comments for "sent for revision" status
       if (admin_comments) {
         submission.admin_comments = admin_comments;
+
+        // Get user details for notification
+        const user = await User.findById(submission.userId);
+        if (user) {
+          // Send notification to user
+          await sendSubmissionUpdateNotification(
+            {
+              name: user.name,
+              email: user.email,
+              phone: user.phone,
+            },
+            submission._id.toString(),
+            status,
+            admin_comments
+          );
+        }
       }
     } else if (status === "in-progress") {
       // No additional fields needed for "in-progress" status

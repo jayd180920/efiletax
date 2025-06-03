@@ -90,9 +90,20 @@ const ReplyPopup: React.FC<ReplyPopupProps> = ({
         setIsUploading(false);
       }
       console.log("Tax summary file key:", taxSummaryFileKey);
+
+      // Map UI status to API status
+      let apiStatus: string = status;
+      if (status === "Need more info") {
+        apiStatus = "sent for revision";
+      } else if (status === "Completed") {
+        apiStatus = "approved";
+      } else if (status === "Under review") {
+        apiStatus = "in-progress";
+      }
+
       // Submit the form data
       onSubmit({
-        status,
+        status: apiStatus,
         admin_comments: adminComments || undefined,
         tax_summary_file: taxSummaryFileKey || undefined,
       });

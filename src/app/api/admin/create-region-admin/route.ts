@@ -6,6 +6,7 @@ import { authOptions, authenticate } from "@/lib/auth";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import axios from "axios";
+import { sendWhatsAppMessage as sendWhatsAppMessageUtil } from "@/lib/notification-utils";
 
 // This is a special API endpoint to create a region admin user
 // It should only be accessible to admins
@@ -200,55 +201,14 @@ async function sendWhatsAppMessage(
   name: string,
   tempPassword: string
 ): Promise<void> {
-  try {
-    if (!phone) {
-      console.log("No phone number provided, skipping WhatsApp message");
-      return;
-    }
-
-    // Format phone number (remove any non-digit characters and ensure it has country code)
-    let formattedPhone = phone.replace(/\D/g, "");
-    if (!formattedPhone.startsWith("+")) {
-      // If no country code, assume India (+91)
-      if (!formattedPhone.startsWith("91")) {
-        formattedPhone = "91" + formattedPhone;
-      }
-    } else {
-      // Remove the + if present
-      formattedPhone = formattedPhone.substring(1);
-    }
-
-    // Check if ULTRA_MESSAGE_API_KEY is configured
-    if (!process.env.ULTRA_MESSAGE_API_KEY) {
-      console.log(
-        "ULTRA_MESSAGE_API_KEY not configured, skipping WhatsApp message"
-      );
-      return;
-    }
-
-    // Prepare the message
-    const message = `Hello ${name},\n\nYour eFileTax Region Admin account has been created.\n\nYour temporary password is: ${tempPassword}\n\nPlease use this password to log in, and you will be prompted to set a new password immediately.\n\nThank you,\neFileTax Team`;
-
-    // Send the WhatsApp message using Ultra Message API
-    const response = await axios.post(
-      "https://api.ultramsg.com/instance43416/messages/chat",
-      new URLSearchParams({
-        token: process.env.ULTRA_MESSAGE_API_KEY,
-        to: formattedPhone,
-        body: message,
-        priority: "10",
-        referenceId: "",
-      }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
-
-    console.log(`WhatsApp message sent to ${phone}:`, response.data);
-  } catch (error) {
-    // Log the error but don't throw, as this is a secondary notification method
-    console.error("Error sending WhatsApp message:", error);
+  if (!phone) {
+    console.log("No phone number provided, skipping WhatsApp message");
+    return;
   }
+
+  // Prepare the message
+  const message = `Hello ${name},\n\nYour eFileTax Region Admin account has been created.\n\nYour temporary password is: ${tempPassword}\n\nPlease use this password to log in, and you will be prompted to set a new password immediately.\n\nThank you,\neFileTax Team`;
+
+  // Use the utility function from notification-utils.ts
+  await sendWhatsAppMessageUtil(phone, message);
 }

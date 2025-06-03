@@ -281,7 +281,7 @@ const RegionSubmissionsList = () => {
                     <div className="flex items-center space-x-2">
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.status
+                          submission?.status
                         )}`}
                       >
                         {submission?.status?.charAt(0)?.toUpperCase() +
@@ -289,11 +289,11 @@ const RegionSubmissionsList = () => {
                       </span>
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.paymentStatus
+                          submission?.paymentStatus
                         )}`}
                       >
-                        {submission.paymentStatus.charAt(0).toUpperCase() +
-                          submission.paymentStatus.slice(1)}
+                        {submission?.paymentStatus?.charAt(0)?.toUpperCase() +
+                          submission?.paymentStatus?.slice(1)}
                       </span>
                     </div>
                     <div className="flex flex-col">

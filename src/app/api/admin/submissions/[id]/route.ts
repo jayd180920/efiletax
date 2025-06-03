@@ -113,33 +113,8 @@ export async function GET(
       );
     }
 
-    // If user is regionAdmin, check if they have access to this submission
-    if (userRole === "regionAdmin") {
-      // Get the admin's user record to find their region
-      // Find the admin user by userId or email depending on what we have
-      const admin = userId
-        ? await User.findById(userId)
-        : session?.user?.email
-        ? await User.findOne({ email: session.user.email })
-        : null;
-      if (!admin || !admin.region) {
-        return NextResponse.json(
-          { error: "Region admin not assigned to any region" },
-          { status: 400 }
-        );
-      }
-
-      // Check if submission is from admin's region
-      if (
-        !submission.region ||
-        submission.region.toString() !== admin.region.toString()
-      ) {
-        return NextResponse.json(
-          { error: "You don't have access to this submission" },
-          { status: 403 }
-        );
-      }
-    }
+    // For GET requests, region admins can access all submissions for review
+    // No region check needed for viewing submissions
 
     return NextResponse.json({ submission });
   } catch (error: any) {

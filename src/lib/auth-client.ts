@@ -377,7 +377,9 @@ export async function getSubmissions(
     serviceId?: string;
     page?: number;
     limit?: number;
-    isAdmin?: boolean; // New parameter to indicate if the request is from an admin
+    isAdmin?: boolean; // Parameter to indicate if the request is from an admin
+    isRegionAdmin?: boolean; // Parameter to indicate if the request is from a region admin
+    region?: string; // Parameter to specify the region for filtering
     _t?: number; // Timestamp to prevent caching
   } = {}
 ): Promise<{
@@ -395,6 +397,8 @@ export async function getSubmissions(
     page = 1,
     limit = 10,
     isAdmin = false,
+    isRegionAdmin = false,
+    region,
     _t,
   } = options;
 
@@ -405,6 +409,8 @@ export async function getSubmissions(
 
   if (status) url += `&status=${status}`;
   if (serviceId) url += `&serviceId=${serviceId}`;
+  if (isRegionAdmin) url += `&isRegionAdmin=true`;
+  if (region) url += `&region=${region}`;
   if (_t) url += `&_t=${_t}`; // Add timestamp to prevent caching
 
   const response = await fetch(url, {

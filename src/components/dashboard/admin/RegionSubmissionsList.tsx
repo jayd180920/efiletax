@@ -76,6 +76,11 @@ const RegionSubmissionsList = () => {
       // Set isRegionAdmin to true for region admin dashboard
       options.isRegionAdmin = true;
 
+      // Add region if available from user
+      if (user?.region) {
+        options.region = user.region;
+      }
+
       // Add a timestamp to prevent caching
       const timestamp = new Date().getTime();
       const result = await getSubmissions({ ...options, _t: timestamp });

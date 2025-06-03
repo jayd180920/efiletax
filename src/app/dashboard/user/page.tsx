@@ -163,59 +163,63 @@ export default function UserDashboard() {
 
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
           <div className="px-4 py-6 sm:px-0">
-            {/* Services Categories with Hover Submenu */}
-            <div className="mb-8">
-              {/* <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                Our Services
-              </h2> */}
+            {/* Services Categories with Hover Submenu - Hide for region admins */}
+            {user.role !== "regionAdmin" && (
+              <div className="mb-8">
+                {/* <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                  Our Services
+                </h2> */}
 
-              <div className="flex flex-wrap gap-4">
-                {Object.keys(servicesByCategory).map((category) => (
-                  <div
-                    key={category}
-                    className="relative"
-                    onMouseOver={() => handleCategoryMouseEnter(category)}
-                    onMouseLeave={handleCategoryMouseLeave}
-                    style={{ cursor: "pointer" }}
-                    ref={(el) => {
-                      submenuRefs.current[category] = el;
-                    }}
-                  >
-                    <div className="px-4 py-2 bg-white rounded-md shadow cursor-pointer hover:bg-gray-50">
-                      <span className="font-medium">{category}</span>
-                    </div>
-
-                    {/* Submenu */}
+                <div className="flex flex-wrap gap-4">
+                  {Object.keys(servicesByCategory).map((category) => (
                     <div
-                      className={`absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 py-2 transition-all duration-200 ease-in-out ${
-                        activeCategory === category
-                          ? "opacity-100 visible"
-                          : "opacity-0 invisible"
-                      }`}
+                      key={category}
+                      className="relative"
+                      onMouseOver={() => handleCategoryMouseEnter(category)}
+                      onMouseLeave={handleCategoryMouseLeave}
+                      style={{ cursor: "pointer" }}
+                      ref={(el) => {
+                        submenuRefs.current[category] = el;
+                      }}
                     >
-                      {servicesByCategory[category].map((service) => (
-                        <Link
-                          key={service._id}
-                          href={formatPath(
-                            category,
-                            service.service_unique_name
-                          )}
-                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          onClick={() => handleServiceClick(service, category)}
-                        >
-                          <div className="flex justify-between items-center">
-                            <span>{service.name}</span>
-                            <span className="text-xs font-semibold text-gray-500">
-                              ₹{service.charge.toLocaleString()}
-                            </span>
-                          </div>
-                        </Link>
-                      ))}
+                      <div className="px-4 py-2 bg-white rounded-md shadow cursor-pointer hover:bg-gray-50">
+                        <span className="font-medium">{category}</span>
+                      </div>
+
+                      {/* Submenu */}
+                      <div
+                        className={`absolute left-0 mt-2 w-64 bg-white rounded-md shadow-lg z-10 py-2 transition-all duration-200 ease-in-out ${
+                          activeCategory === category
+                            ? "opacity-100 visible"
+                            : "opacity-0 invisible"
+                        }`}
+                      >
+                        {servicesByCategory[category].map((service) => (
+                          <Link
+                            key={service._id}
+                            href={formatPath(
+                              category,
+                              service.service_unique_name
+                            )}
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() =>
+                              handleServiceClick(service, category)
+                            }
+                          >
+                            <div className="flex justify-between items-center">
+                              <span>{service.name}</span>
+                              <span className="text-xs font-semibold text-gray-500">
+                                ₹{service.charge.toLocaleString()}
+                              </span>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Featured Services */}
             {/* <div className="mb-8">

@@ -10,6 +10,7 @@ interface TokenPayload {
   id: string;
   email: string;
   role: string;
+  region?: string;
   iat?: number;
   exp?: number;
 }
@@ -18,6 +19,7 @@ interface TokenPayload {
 interface AuthResult {
   userId: string;
   role: string;
+  region?: string;
 }
 
 // Define the user type for token generation
@@ -25,6 +27,7 @@ interface UserForToken {
   _id: string;
   email: string;
   role: string;
+  region?: string;
 }
 
 declare module "next-auth" {
@@ -34,6 +37,7 @@ declare module "next-auth" {
     email?: string;
     isPasswordSet?: boolean;
     resetToken?: string;
+    region?: string;
   }
   interface Session {
     user: User & {
@@ -42,12 +46,14 @@ declare module "next-auth" {
       email?: string;
       isPasswordSet?: boolean;
       resetToken?: string;
+      region?: string;
     };
   }
   interface JWT {
     role?: string;
     isPasswordSet?: boolean;
     resetToken?: string;
+    region?: string;
   }
 }
 
@@ -62,6 +68,7 @@ export function generateToken(user: UserForToken): string {
     id: user._id.toString(),
     email: user.email,
     role: user.role,
+    region: user.region,
   };
 
   return jwt.sign(payload, secret, { expiresIn: "7d" });
@@ -95,6 +102,7 @@ export async function authenticate(
   return {
     userId: payload.id,
     role: payload.role,
+    region: payload.region,
   };
 }
 
@@ -141,6 +149,10 @@ export const authOptions: NextAuthOptions = {
         if (token.resetToken) {
           session.user.resetToken = token.resetToken as string;
         }
+        // Add region to the session from token
+        if (token.region) {
+          session.user.region = token.region as string;
+        }
       }
       return session;
     },
@@ -150,6 +162,7 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.isPasswordSet = user.isPasswordSet;
         token.resetToken = user.resetToken;
+        token.region = user.region;
       }
       return token;
     },

@@ -1,10 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
-
+import ProfilePopup from "@/components/dashboard/user/ProfilePopup";
+import PasswordChangePopup from "@/components/dashboard/user/PasswordChangePopup";
 import Image from "next/image";
 
 interface SidebarProps {
@@ -15,6 +16,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
+  const [isPasswordPopupOpen, setIsPasswordPopupOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -220,6 +223,48 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       ),
       roles: ["user"],
     },
+    {
+      title: "View Profile",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+      onClick: () => {
+        setIsProfilePopupOpen(true);
+      },
+      roles: ["admin", "regionAdmin", "user"],
+    },
+    {
+      title: "Update Password",
+      icon: (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-5 w-5"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+            clipRule="evenodd"
+          />
+        </svg>
+      ),
+      onClick: () => {
+        setIsPasswordPopupOpen(true);
+      },
+      roles: ["admin", "regionAdmin", "user"],
+    },
     // {
     //   title: "Common Services",
     //   href: "/dashboard/user/common-submissions",
@@ -300,17 +345,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ul className="space-y-2 sidebar-list">
               {filteredMenuItems.map((item, index) => (
                 <li key={index}>
-                  <Link
-                    href={item.href}
-                    className={`flex items-center rounded-md px-4 py-2 text-sm font-medium ${
-                      pathname === item.href
-                        ? "bg-primary-50 text-primary"
-                        : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                    }`}
-                  >
-                    <span className="mr-3">{item.icon}</span>
-                    {item.title}
-                  </Link>
+                  {item.href ? (
+                    <Link
+                      href={item.href}
+                      className={`flex items-center rounded-md px-4 py-2 text-sm font-medium ${
+                        pathname === item.href
+                          ? "bg-primary-50 text-primary"
+                          : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                      }`}
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      {item.title}
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={item.onClick}
+                      className="flex w-full items-center rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      <span className="mr-3">{item.icon}</span>
+                      {item.title}
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -320,12 +375,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           {user && (
             <div className="border-t px-4 py-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary">
+                <div
+                  className="flex items-center cursor-pointer flex-grow"
+                  onClick={() => setIsProfilePopupOpen(true)}
+                >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary flex-shrink-0">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-700">
+                  <div className="ml-3 overflow-hidden">
+                    <p className="text-sm font-medium text-gray-700 truncate">
                       {user.name}
                     </p>
                     <p className="text-xs text-gray-500">
@@ -333,44 +391,59 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={handleLogout}
-                  className="text-gray-500 hover:text-gray-700"
-                  title="Logout"
-                >
-                  {/* <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+                <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                  <button
+                    onClick={() => setIsProfilePopupOpen(true)}
+                    className="text-gray-500 hover:text-gray-700"
+                    title="Profile"
                   >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 1a1 1 0 011 1v7a1 1 0 11-2 0V2a1 1 0 011-1z"
-                      clipRule="evenodd"
-                    />
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm0-2a6 6 0 110-12 6 6 0 010 12z"
-                      clipRule="evenodd"
-                    />
-                  </svg> */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    fill="none"
-                    stroke="red"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="feather feather-power"
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    className="text-gray-500 hover:text-gray-700"
+                    title="Logout"
                   >
-                    <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
-                    <line x1="12" y1="2" x2="12" y2="12" />
-                  </svg>
-                </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke="red"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="feather feather-power"
+                    >
+                      <path d="M18.36 6.64a9 9 0 1 1-12.73 0" />
+                      <line x1="12" y1="2" x2="12" y2="12" />
+                    </svg>
+                  </button>
+                </div>
               </div>
+
+              {/* Profile Popup */}
+              <ProfilePopup
+                isOpen={isProfilePopupOpen}
+                onClose={() => setIsProfilePopupOpen(false)}
+              />
+
+              {/* Password Change Popup */}
+              <PasswordChangePopup
+                isOpen={isPasswordPopupOpen}
+                onClose={() => setIsPasswordPopupOpen(false)}
+              />
             </div>
           )}
         </div>

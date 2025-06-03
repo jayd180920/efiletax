@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/db";
 import { ObjectId } from "mongodb";
 import { authenticate } from "@/lib/auth";
+import mongoose from "mongoose";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,6 +14,8 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const status = url.searchParams.get("status");
     const search = url.searchParams.get("search");
+    const isRegionAdmin = url.searchParams.get("isRegionAdmin") === "true";
+    const region = url.searchParams.get("region");
 
     // Calculate skip for pagination
     const skip = (page - 1) * limit;
@@ -20,9 +23,17 @@ export async function GET(request: NextRequest) {
     // Get user session or authenticate with custom token
     const session = await getServerSession(authOptions);
     let userId;
-
+    let userRole;
+    let userRegion;
+    console.log("ABCD", session);
     if (session?.user) {
       userId = session.user.id;
+      userRole = (session.user as any).role;
+      userRegion = (session.user as any).region;
+      console.log(
+        "User authenticated via NextAuth session: ABCD",
+        session.user
+      );
     } else {
       // Try custom authentication
       const auth = await authenticate(request);
@@ -32,22 +43,107 @@ export async function GET(request: NextRequest) {
       }
 
       userId = auth.userId;
+      userRole = auth.role;
+      userRegion = auth.region;
     }
 
     // Connect to database
     const db = await connectToDatabase();
     const submissionsCollection = db.collection("submissions");
+    const addressesCollection = db.collection("addresses");
 
     // Build query
-    const query: any = { userId };
-    if (status) {
-      query.status = status;
-    }
+    let query: any = {};
 
-    // Add search functionality
-    if (search) {
-      // Search in serviceName field
-      query.serviceName = { $regex: search, $options: "i" };
+    if (userRole === "regionAdmin" || isRegionAdmin) {
+      // For region admin, get the region name
+      const usersCollection = db.collection("users");
+      const regionsCollection = db.collection("regions");
+
+      // Get the region document for the region admin
+      let regionDoc = null;
+
+      // If userRegion is provided, try to find by ID first
+      if (userRegion) {
+        try {
+          regionDoc = await regionsCollection.findOne({
+            _id: new ObjectId(userRegion),
+          });
+        } catch (error) {
+          console.error("Error finding region by ID:", error);
+        }
+      }
+
+      // If region not found by ID and user is authenticated, try to find by user ID
+      if (!regionDoc && userId) {
+        // Find the user to get their region
+        const userDoc = await usersCollection.findOne({
+          _id: new ObjectId(userId),
+        });
+
+        if (userDoc && userDoc.region) {
+          // Try to find the region using the user's region reference
+          try {
+            regionDoc = await regionsCollection.findOne({
+              _id: new ObjectId(userDoc.region),
+            });
+          } catch (error) {
+            console.error("Error finding region from user document:", error);
+          }
+        }
+      }
+
+      // If region parameter is provided, try to find by name
+      if (!regionDoc && region) {
+        regionDoc = await regionsCollection.findOne({
+          name: region,
+        });
+      }
+
+      console.log("Region Document:", regionDoc, userRegion);
+      if (!regionDoc) {
+        return NextResponse.json(
+          { error: "Region not found" },
+          { status: 404 }
+        );
+      }
+
+      // Get all users with addresses in this region
+      const addresses = await addressesCollection
+        .find({
+          $or: [{ city: regionDoc.name }, { state: regionDoc.name }],
+        })
+        .toArray();
+      console.log("Region Document: addresses", addresses, regionDoc.name);
+      // Extract user IDs from addresses
+      const userIds = addresses.map((addr) => addr.userId);
+
+      // Filter submissions by these user IDs
+      query = {
+        userId: { $in: userIds.map((id) => id.toString()) },
+      };
+
+      // Add status filter if provided
+      if (status) {
+        query.status = status;
+      }
+
+      // Add search functionality
+      if (search) {
+        query.serviceName = { $regex: search, $options: "i" };
+      }
+    } else {
+      // For regular users, filter by their own user ID
+      query = { userId };
+
+      if (status) {
+        query.status = status;
+      }
+
+      // Add search functionality
+      if (search) {
+        query.serviceName = { $regex: search, $options: "i" };
+      }
     }
 
     // Get total count for pagination

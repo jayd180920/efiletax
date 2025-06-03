@@ -168,18 +168,18 @@ async function sendPasswordSetupEmail(
 
     // Send the email
     await transporter.sendMail({
-      from: `"eFileTax Admin" <${process.env.SMTP_EMAIL}>`,
+      from: `"eFileTax" <${process.env.SMTP_EMAIL}>`,
       to: email,
       subject: "Set Up Your eFileTax Region Admin Account",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Welcome to eFileTax Admin</h2>
+          <h2>Welcome to eFileTax</h2>
           <p>Hello ${name},</p>
           <p>Your account has been created as a Region Admin.</p>
           <p><strong>Your temporary password is: ${tempPassword}</strong></p>
           <p>Please use this password to log in, and you will be prompted to set a new password immediately.</p>
           <p>Alternatively, you can click the button below to set up your password directly:</p>
-          <p><a href="${setupUrl}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Password</a></p>
+          <p><a href="${setupUrl}" style="display: inline-block; background-color: #21b2aa; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Set Password</a></p>
           <p>This link will expire in 72 hours (3 days) for security reasons.</p>
           <p>If you did not request this account, please ignore this email.</p>
           <p>If you have any questions, please contact the administrator.</p>

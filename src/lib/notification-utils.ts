@@ -70,7 +70,7 @@ export async function sendWhatsAppMessage(
           const options = {
             method: "POST",
             hostname: "api.ultramsg.com",
-            path: `/instance${instanceId}/messages/chat`,
+            path: `/${instanceId}/messages/chat`,
             headers: {
               "Content-Type": "application/x-www-form-urlencoded",
               "Content-Length": Buffer.byteLength(postData),

@@ -294,7 +294,7 @@ async function sendPasswordSetupEmail(email: string, tempPassword: string) {
     subject: "Welcome to eFileTax - Set Your Password",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #4a5568;">Welcome to eFileTax!</h2>
+        <h2 style="color: #21b2aa;">Welcome to eFileTax!</h2>
         <p>Your account has been created. Please set your password by clicking the link below:</p>
         <p style="margin: 20px 0;">
           <a href="${resetUrl}" style="background-color: #4299e1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">

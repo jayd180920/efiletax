@@ -10,7 +10,7 @@ export interface User {
   email: string;
   phone?: string;
   role: "user" | "admin" | "regionAdmin";
-  region?: string;
+  region?: string | { _id: string; name: string };
   isPasswordSet?: boolean;
   resetToken?: string;
 }

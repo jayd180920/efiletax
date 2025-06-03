@@ -76,9 +76,22 @@ const RegionSubmissionsList = () => {
       // Set isRegionAdmin to true for region admin dashboard
       options.isRegionAdmin = true;
 
+      console.log("Fetching submissions with options:", options, "User:", user);
+
       // Add region if available from user
       if (user?.region) {
-        options.region = user.region;
+        // If region is an object with a name property, use the name
+        if (typeof user.region === "object" && user.region.name) {
+          options.region = user.region.name;
+          console.log("Using region name from user object:", user.region.name);
+        }
+        // If region is a string (ID), use it directly
+        else if (typeof user.region === "string") {
+          options.region = user.region;
+          console.log("Using region ID from user string:", user.region);
+        }
+      } else {
+        console.log("No region found in user object:", user);
       }
 
       // Add a timestamp to prevent caching
@@ -271,8 +284,8 @@ const RegionSubmissionsList = () => {
                           submission.status
                         )}`}
                       >
-                        {submission.status.charAt(0).toUpperCase() +
-                          submission.status.slice(1)}
+                        {submission?.status?.charAt(0)?.toUpperCase() +
+                          submission?.status?.slice(1)}
                       </span>
                       <span
                         className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(

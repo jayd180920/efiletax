@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
 
       // Get the region document for the region admin
       let regionDoc = null;
+      let regionName = null;
 
       // If userRegion is provided, try to find by ID first
       if (userRegion) {
@@ -69,6 +70,9 @@ export async function GET(request: NextRequest) {
           regionDoc = await regionsCollection.findOne({
             _id: new ObjectId(userRegion),
           });
+          if (regionDoc) {
+            regionName = regionDoc.name;
+          }
         } catch (error) {
           console.error("Error finding region by ID:", error);
         }
@@ -87,6 +91,9 @@ export async function GET(request: NextRequest) {
             regionDoc = await regionsCollection.findOne({
               _id: new ObjectId(userDoc.region),
             });
+            if (regionDoc) {
+              regionName = regionDoc.name;
+            }
           } catch (error) {
             console.error("Error finding region from user document:", error);
           }
@@ -98,30 +105,41 @@ export async function GET(request: NextRequest) {
         regionDoc = await regionsCollection.findOne({
           name: region,
         });
+        if (regionDoc) {
+          regionName = regionDoc.name;
+        }
       }
 
-      console.log("Region Document:", regionDoc, userRegion);
-      if (!regionDoc) {
+      console.log("Region Document:", regionDoc, "Region Name:", regionName);
+      if (!regionDoc || !regionName) {
         return NextResponse.json(
           { error: "Region not found" },
           { status: 404 }
         );
       }
 
-      // Get all users with addresses in this region
-      const addresses = await addressesCollection
-        .find({
-          $or: [{ city: regionDoc.name }, { state: regionDoc.name }],
-        })
-        .toArray();
-      console.log("Region Document: addresses", addresses, regionDoc.name);
-      // Extract user IDs from addresses
-      const userIds = addresses.map((addr) => addr.userId);
+      // Convert region name to lowercase for case-insensitive comparison
+      const lowercaseRegionName = regionName.toLowerCase();
+      console.log("Lowercase Region Name:", lowercaseRegionName);
 
-      // Filter submissions by these user IDs
+      // Directly query submissions collection for matching address.city or address.state
+      // This is more efficient than querying a separate addresses collection
       query = {
-        userId: { $in: userIds.map((id) => id.toString()) },
+        $or: [
+          {
+            "formData.address.city": {
+              $regex: new RegExp(lowercaseRegionName, "i"),
+            },
+          },
+          {
+            "formData.address.state": {
+              $regex: new RegExp(lowercaseRegionName, "i"),
+            },
+          },
+        ],
       };
+
+      console.log("Query for submissions with matching address:", query);
 
       // Add status filter if provided
       if (status) {

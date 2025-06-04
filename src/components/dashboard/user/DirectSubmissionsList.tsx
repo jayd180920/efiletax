@@ -349,7 +349,7 @@ const DirectSubmissionsList = () => {
           <p className="text-sm text-gray-500">
             {debouncedSearchTerm
               ? `Search results for "${debouncedSearchTerm}"`
-              : "All submissions"}
+              : "All Requests"}
             {statusFilter && statusFilter !== "all"
               ? ` with status "${statusFilter}"`
               : ""}

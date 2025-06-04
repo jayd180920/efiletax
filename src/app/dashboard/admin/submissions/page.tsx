@@ -381,7 +381,7 @@ const SubmissionsPage = () => {
             </div>
 
             {/* Filters */}
-            <div className="bg-white shadow-md rounded-lg p-4 mb-6">
+            <div className="bg-white shadow-md rounded-lg p-4 mb-6 top-ribbon">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
                 <div className="flex flex-col sm:flex-row sm:items-center space-y-4 sm:space-y-0 sm:space-x-4 form-accrodion-1">
                   <div className="flex items-center space-x-2 ">
@@ -433,13 +433,13 @@ const SubmissionsPage = () => {
                   <input
                     type="text"
                     placeholder="Search "
-                    className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                    className="search-input rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+                    className="search-button px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
                   >
                     Search
                   </button>
@@ -525,8 +525,9 @@ const SubmissionsPage = () => {
                         <div className="sm:flex">
                           <p className="flex items-center text-sm text-gray-500">
                             <span className="truncate">
-                              By: {submission.userId.name} (
-                              {submission.userId.email})
+                              By:{" "}
+                              {submission?.formData?.permanentInfo?.firstName} (
+                              {submission?.formData?.permanentInfo?.email})
                             </span>
                           </p>
                         </div>
@@ -616,7 +617,7 @@ const SubmissionsPage = () => {
                               `/dashboard/admin/submissions/${submission._id}`
                             )
                           }
-                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                          className="action-button-style inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                           View
                         </button>

@@ -502,3 +502,33 @@ aside.green-backgroung nav ul li a:hover {
   color: #21b2aa !important;
   box-shadow: rgb(84 84 84) 0px 7px 29px 0px;
 }
+div.profile-bg {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+div.profile-container {
+  width: 48%;
+  box-shadow: rgb(1 57 57) 0px 7px 29px 0px;
+}
+button.bg-green-100,
+button.bg-red-100,
+button.cancel-2fa,
+button.continue-2fa,
+button.change-password,
+button.update-profile {
+  box-shadow: rgb(130 136 136) 0px 7px 29px 0px;
+}
+
+div.mt-6.border-t.pt-6 {
+  margin: 10px;
+  padding: 10px;
+  border: none;
+  margin-top: 0;
+  padding: 0;
+}
+p.text-gray-600.mb-4.\32 fa-text {
+  font-size: 14px;
+  color: #267974;
+}
+div.qr-div {
+  padding-top: 0;
+}

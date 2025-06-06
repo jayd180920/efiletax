@@ -3,6 +3,7 @@
 import { ReactNode, useState } from "react";
 import Sidebar from "./Sidebar";
 import { useAuth } from "@/components/auth/AuthContext";
+import UserSettingsModal from "@/components/dashboard/user/UserSettingsModal";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,6 +12,10 @@ interface LayoutProps {
 const Layout = ({ children }: LayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { user } = useAuth();
+  const [isUserSettingsModalOpen, setIsUserSettingsModalOpen] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<
+    "profile" | "password" | "2fa"
+  >("profile");
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -27,7 +32,14 @@ const Layout = ({ children }: LayoutProps) => {
     <div className="flex min-h-screen">
       {/* Sidebar for admin, regionAdmin, and user */}
       {showSidebar && (
-        <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          toggleSidebar={toggleSidebar}
+          openUserSettings={(tab: "profile" | "password" | "2fa") => {
+            setActiveSettingsTab(tab);
+            setIsUserSettingsModalOpen(true);
+          }}
+        />
       )}
 
       {/* Main content */}
@@ -61,6 +73,15 @@ const Layout = ({ children }: LayoutProps) => {
 
         <main className="flex-grow">{children}</main>
       </div>
+
+      {/* User Settings Modal - Rendered at the layout level */}
+      {user && (
+        <UserSettingsModal
+          isOpen={isUserSettingsModalOpen}
+          onClose={() => setIsUserSettingsModalOpen(false)}
+          initialTab={activeSettingsTab}
+        />
+      )}
     </div>
   );
 };

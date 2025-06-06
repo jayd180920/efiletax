@@ -341,7 +341,7 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="update-profile w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Updating..." : "Update Profile"}

@@ -1,41 +1,120 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import Image from "next/image";
+import TwoFactorSetup from "@/components/auth/TwoFactorSetup";
+import { disable2FA } from "@/lib/auth-client";
 
-interface ProfileSidebarProps {
+interface UserSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: "profile" | "password" | "2fa";
 }
 
-const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
+const UserSettingsModal: React.FC<UserSettingsModalProps> = ({
+  isOpen,
+  onClose,
+  initialTab = "profile",
+}) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<"profile" | "password">("profile");
-  const [formData, setFormData] = useState({
+  const [activeTab, setActiveTab] = useState<"profile" | "password" | "2fa">(
+    initialTab
+  );
+
+  // Profile state
+  const [profileFormData, setProfileFormData] = useState({
     name: user?.name || "",
     phone: user?.phone || "",
     profilePicture: null as File | null,
+  });
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  // Password state
+  const [passwordFormData, setPasswordFormData] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Common state
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(false);
 
-  // Handle input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Check if 2FA is enabled
+  useEffect(() => {
+    const checkTwoFactorStatus = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user && data.user.twoFactorEnabled) {
+            setTwoFactorEnabled(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking 2FA status:", error);
+      }
+    };
+
+    if (isOpen) {
+      checkTwoFactorStatus();
+    }
+  }, [isOpen]);
+
+  // Reset form state when modal is opened
+  useEffect(() => {
+    if (isOpen) {
+      setProfileFormData({
+        name: user?.name || "",
+        phone: user?.phone || "",
+        profilePicture: null,
+      });
+      setPasswordFormData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+      setPreviewUrl(null);
+      setError(null);
+      setSuccess(null);
+      setActiveTab(initialTab);
+
+      if (initialTab === "2fa") {
+        setShowTwoFactorSetup(!twoFactorEnabled);
+      } else {
+        setShowTwoFactorSetup(false);
+      }
+    }
+  }, [isOpen, initialTab, user, twoFactorEnabled]);
+
+  // Handle profile input change
+  const handleProfileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setProfileFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Handle password input change
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setPasswordFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   // Handle file input change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setFormData((prev) => ({ ...prev, profilePicture: file }));
+      setProfileFormData((prev) => ({ ...prev, profilePicture: file }));
 
       // Create a preview URL
       const reader = new FileReader();
@@ -56,12 +135,12 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
     try {
       // Create form data for file upload
       const formDataObj = new FormData();
-      formDataObj.append("name", formData.name);
-      if (formData.phone) {
-        formDataObj.append("phone", formData.phone);
+      formDataObj.append("name", profileFormData.name);
+      if (profileFormData.phone) {
+        formDataObj.append("phone", profileFormData.phone);
       }
-      if (formData.profilePicture) {
-        formDataObj.append("profilePicture", formData.profilePicture);
+      if (profileFormData.profilePicture) {
+        formDataObj.append("profilePicture", profileFormData.profilePicture);
       }
 
       // Send request to update profile
@@ -97,7 +176,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
     setSuccess(null);
 
     // Validate passwords
-    if (formData.newPassword !== formData.confirmPassword) {
+    if (passwordFormData.newPassword !== passwordFormData.confirmPassword) {
       setError("New password and confirm password do not match");
       setIsSubmitting(false);
       return;
@@ -111,8 +190,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          currentPassword: formData.currentPassword,
-          newPassword: formData.newPassword,
+          currentPassword: passwordFormData.currentPassword,
+          newPassword: passwordFormData.newPassword,
         }),
         credentials: "include",
       });
@@ -123,12 +202,11 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
       }
 
       // Reset password fields
-      setFormData((prev) => ({
-        ...prev,
+      setPasswordFormData({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
-      }));
+      });
 
       setSuccess("Password updated successfully");
     } catch (error: any) {
@@ -138,26 +216,22 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
     }
   };
 
+  if (!isOpen) return null;
+
   return (
     <>
       {/* Overlay */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black bg-opacity-50"
-          onClick={onClose}
-        ></div>
-      )}
-
-      {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-lg transform transition-transform duration-300 ease-in-out overflow-hidden ${
-          isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      >
-        <div className="flex flex-col h-full">
+        className="fixed inset-0 z-40 bg-black bg-opacity-50 profile-bg"
+        onClick={onClose}
+      ></div>
+
+      {/* Modal */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 overflow-hidden profile-container">
           {/* Header */}
-          <div className="flex items-center justify-between border-b px-4 py-5">
-            <h2 className="text-xl font-bold text-gray-900">User Profile</h2>
+          <div className="flex items-center justify-between border-b px-6 py-4">
+            <h2 className="text-2xl font-bold text-gray-900">User Settings</h2>
             <button
               onClick={onClose}
               className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
@@ -182,29 +256,51 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
           {/* Tabs */}
           <div className="flex border-b">
             <button
-              className={`flex-1 py-3 text-center font-medium ${
+              className={`px-6 py-3 text-sm font-medium ${
                 activeTab === "profile"
-                  ? "text-primary border-b-2 border-primary"
+                  ? "border-b-2 border-primary text-primary"
                   : "text-gray-500 hover:text-gray-700"
               }`}
-              onClick={() => setActiveTab("profile")}
+              onClick={() => {
+                setActiveTab("profile");
+                setError(null);
+                setSuccess(null);
+              }}
             >
               Profile
             </button>
             <button
-              className={`flex-1 py-3 text-center font-medium ${
+              className={`px-6 py-3 text-sm font-medium ${
                 activeTab === "password"
-                  ? "text-primary border-b-2 border-primary"
+                  ? "border-b-2 border-primary text-primary"
                   : "text-gray-500 hover:text-gray-700"
               }`}
-              onClick={() => setActiveTab("password")}
+              onClick={() => {
+                setActiveTab("password");
+                setError(null);
+                setSuccess(null);
+              }}
             >
               Change Password
+            </button>
+            <button
+              className={`px-6 py-3 text-sm font-medium ${
+                activeTab === "2fa"
+                  ? "border-b-2 border-primary text-primary"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+              onClick={() => {
+                setActiveTab("2fa");
+                setError(null);
+                setSuccess(null);
+              }}
+            >
+              Two-Factor Authentication
             </button>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="p-6 max-h-[70vh] overflow-y-auto">
             {/* Error and Success Messages */}
             {error && (
               <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
@@ -260,8 +356,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                     type="text"
                     id="name"
                     name="name"
-                    value={formData.name}
-                    onChange={handleChange}
+                    value={profileFormData.name}
+                    onChange={handleProfileChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                     required
                   />
@@ -299,8 +395,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                     type="tel"
                     id="phone"
                     name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
+                    value={profileFormData.phone}
+                    onChange={handleProfileChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -329,7 +425,7 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="update-profile w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  className="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Updating..." : "Update Profile"}
@@ -352,8 +448,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                     type="password"
                     id="currentPassword"
                     name="currentPassword"
-                    value={formData.currentPassword}
-                    onChange={handleChange}
+                    value={passwordFormData.currentPassword}
+                    onChange={handlePasswordChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                     required
                   />
@@ -371,8 +467,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                     type="password"
                     id="newPassword"
                     name="newPassword"
-                    value={formData.newPassword}
-                    onChange={handleChange}
+                    value={passwordFormData.newPassword}
+                    onChange={handlePasswordChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                     required
                     minLength={8}
@@ -394,8 +490,8 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                     type="password"
                     id="confirmPassword"
                     name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
+                    value={passwordFormData.confirmPassword}
+                    onChange={handlePasswordChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary focus:border-primary"
                     required
                   />
@@ -404,12 +500,88 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
                 {/* Submit Button */}
                 <button
                   type="submit"
-                  className="update-profile w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  className="w-full py-2 px-4 bg-primary text-white rounded-md hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? "Updating..." : "Update Password"}
                 </button>
               </form>
+            )}
+
+            {/* 2FA Tab */}
+            {activeTab === "2fa" && (
+              <div>
+                <div className="mb-6">
+                  <div className="flex items-center justify-between bg-gray-50 p-4 rounded-md">
+                    <div>
+                      <p className="text-sm font-medium">
+                        {twoFactorEnabled
+                          ? "Two-factor authentication is enabled"
+                          : "Two-factor authentication is disabled"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {twoFactorEnabled
+                          ? "Your account is protected with an authenticator app"
+                          : "Add an extra layer of security to your account"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (twoFactorEnabled) {
+                          // Disable 2FA
+                          try {
+                            setIsSubmitting(true);
+                            const success = await disable2FA();
+                            if (success) {
+                              setTwoFactorEnabled(false);
+                              setSuccess(
+                                "Two-factor authentication disabled successfully"
+                              );
+                              setShowTwoFactorSetup(false);
+                            }
+                          } catch (error: any) {
+                            setError(error.message || "Failed to disable 2FA");
+                          } finally {
+                            setIsSubmitting(false);
+                          }
+                        } else {
+                          // Show 2FA setup
+                          setShowTwoFactorSetup(!showTwoFactorSetup);
+                        }
+                      }}
+                      className={`px-4 py-2 rounded-md text-sm font-medium ${
+                        twoFactorEnabled
+                          ? "bg-red-100 text-red-700 hover:bg-red-200"
+                          : "bg-green-100 text-green-700 hover:bg-green-200"
+                      }`}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting
+                        ? "Processing..."
+                        : twoFactorEnabled
+                        ? "Disable"
+                        : "Enable"}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Two-Factor Setup */}
+                {showTwoFactorSetup && !twoFactorEnabled && (
+                  <div className="mt-6 border-t pt-6">
+                    <TwoFactorSetup
+                      onSuccess={() => {
+                        setShowTwoFactorSetup(false);
+                        setTwoFactorEnabled(true);
+                        setSuccess(
+                          "Two-factor authentication enabled successfully"
+                        );
+                      }}
+                      onCancel={() => setShowTwoFactorSetup(false)}
+                    />
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -418,4 +590,4 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({ isOpen, onClose }) => {
   );
 };
 
-export default ProfileSidebar;
+export default UserSettingsModal;

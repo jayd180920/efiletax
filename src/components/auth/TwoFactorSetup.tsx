@@ -70,14 +70,14 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   }
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-xl font-semibold mb-4">
+    <div className="bg-white p-6 rounded-lg shadow-md qr-div">
+      {/* <h2 className="text-xl font-semibold mb-4">
         Setup Two-Factor Authentication
-      </h2>
+      </h2> */}
 
       {step === "setup" && (
         <div>
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-4 2fa-text">
             Scan the QR code below with your authenticator app (like Google
             Authenticator, Authy, or Microsoft Authenticator).
           </p>
@@ -109,14 +109,14 @@ const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
             <button
               type="button"
               onClick={onCancel}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="cancel-2fa inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={() => setStep("verify")}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="continue-2fa inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
             >
               Continue
             </button>

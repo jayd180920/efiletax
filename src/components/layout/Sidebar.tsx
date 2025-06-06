@@ -1,24 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
-import ProfilePopup from "@/components/dashboard/user/ProfilePopup";
-import PasswordChangePopup from "@/components/dashboard/user/PasswordChangePopup";
 import Image from "next/image";
 
 interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
+  openUserSettings: (tab: "profile" | "password" | "2fa") => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
+const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  toggleSidebar,
+  openUserSettings,
+}) => {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
-  const [isPasswordPopupOpen, setIsPasswordPopupOpen] = useState(false);
-  const [isTwoFactorSetupOpen, setIsTwoFactorSetupOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -242,7 +242,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </svg>
       ),
       onClick: () => {
-        setIsProfilePopupOpen(true);
+        openUserSettings("profile");
       },
       roles: ["admin", "regionAdmin", "user"],
     },
@@ -263,7 +263,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </svg>
       ),
       onClick: () => {
-        setIsPasswordPopupOpen(true);
+        openUserSettings("password");
       },
       roles: ["admin", "regionAdmin", "user"],
     },
@@ -284,7 +284,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </svg>
       ),
       onClick: () => {
-        setIsTwoFactorSetupOpen(true);
+        openUserSettings("2fa");
       },
       roles: ["admin", "regionAdmin", "user"],
     },
@@ -400,7 +400,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <div className="flex items-center justify-between sidebar-profile-section">
                 <div
                   className="flex items-center cursor-pointer flex-grow"
-                  onClick={() => setIsProfilePopupOpen(true)}
+                  onClick={() => {
+                    openUserSettings("profile");
+                  }}
                 >
                   <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary-100 text-primary flex-shrink-0">
                     {user.name.charAt(0).toUpperCase()}
@@ -416,7 +418,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                 </div>
                 <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
                   <button
-                    onClick={() => setIsProfilePopupOpen(true)}
+                    onClick={() => {
+                      openUserSettings("profile");
+                    }}
                     className="text-gray-500 hover:text-gray-700"
                     title="Profile"
                   >
@@ -456,24 +460,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                 </div>
               </div>
 
-              {/* Profile Popup */}
-              <ProfilePopup
-                isOpen={isProfilePopupOpen}
-                onClose={() => setIsProfilePopupOpen(false)}
-              />
-
-              {/* Password Change Popup */}
-              <PasswordChangePopup
-                isOpen={isPasswordPopupOpen}
-                onClose={() => setIsPasswordPopupOpen(false)}
-              />
-
-              {/* Two Factor Setup Popup */}
-              <ProfilePopup
-                isOpen={isTwoFactorSetupOpen}
-                onClose={() => setIsTwoFactorSetupOpen(false)}
-                initialShowTwoFactorSetup={true}
-              />
+              {/* User Settings Modal is now rendered at the Layout level */}
             </div>
           )}
         </div>

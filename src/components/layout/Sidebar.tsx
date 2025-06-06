@@ -225,6 +225,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     },
     {
       title: "View Profile",
+      href: "",
       icon: (
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -312,7 +313,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           <div className="flex items-center justify-between border-b px-4 py-5">
             <Link href="/" className="text-xl font-bold text-primary">
               <Image
-                src="/efiletax-logo.svg"
+                src="/efiletax-logo-white.svg"
                 alt="eFileTax Logo"
                 width={150}
                 height={40}
@@ -358,13 +359,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
                       {item.title}
                     </Link>
                   ) : (
-                    <button
+                    <a
                       onClick={item.onClick}
                       className="flex w-full items-center rounded-md px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 hover:text-gray-900"
                     >
                       <span className="mr-3">{item.icon}</span>
                       {item.title}
-                    </button>
+                    </a>
                   )}
                 </li>
               ))}

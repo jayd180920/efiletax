@@ -37,7 +37,7 @@ const TwoFactorVerification: React.FC<TwoFactorVerificationProps> = ({
   console.log("TwoFactorVerification component rendering for email:", email);
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="bg-white p-6 rounded-lg shadow-md login-2fa-page">
       <div className="text-center mb-4">
         <h2 className="text-xl font-semibold">Two-Factor Authentication</h2>
         <p className="text-gray-600">

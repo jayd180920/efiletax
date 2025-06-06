@@ -514,7 +514,8 @@ button.bg-red-100,
 button.cancel-2fa,
 button.continue-2fa,
 button.change-password,
-button.update-profile {
+button.update-profile,
+div .twofa-login-parent button {
   box-shadow: rgb(130 136 136) 0px 7px 29px 0px;
 }
 
@@ -531,4 +532,31 @@ p.text-gray-600.mb-4.\32 fa-text {
 }
 div.qr-div {
   padding-top: 0;
+}
+div .twofa-login-parent {
+  box-shadow: rgb(136 138 137) 0px 7px 29px 0px !important;
+}
+div.login-2fa-page h2 {
+  color: #21b2aa;
+  font-weight: 600;
+  font-size: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+div.login-2fa-page p {
+  color: #4a5565;
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+div.flex.justify-between {
+  padding-top: 20px;
+}
+@media (min-width: 992px) {
+  div.mt-8.sm\:mx-auto.sm\:w-full.sm\:max-w-md.twofa-login-parent {
+    max-width: 450px;
+  }
+}
+div .twofa-login-parent button.border-gray-300 {
+  color: #4a5565;
 }

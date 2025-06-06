@@ -12,6 +12,9 @@ export interface IUser extends mongoose.Document {
   resetToken?: string;
   resetTokenExpiry?: Date;
   isPasswordSet?: boolean;
+  twoFactorSecret?: string;
+  twoFactorEnabled?: boolean;
+  twoFactorTempSecret?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword?: (candidatePassword: string) => Promise<boolean>;
@@ -45,6 +48,18 @@ const UserSchema = new mongoose.Schema<IUser>(
     isPasswordSet: {
       type: Boolean,
       default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false, // Don't return by default in queries
+    },
+    twoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorTempSecret: {
+      type: String,
+      select: false, // Don't return by default in queries
     },
     password: {
       type: String,

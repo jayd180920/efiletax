@@ -4,6 +4,27 @@ import User from "@/models/User";
 import { generateToken } from "@/lib/auth";
 import { apiHandler, ValidationError } from "@/lib/api-utils";
 
+// Function to verify reCAPTCHA token
+async function verifyRecaptcha(token: string): Promise<boolean> {
+  try {
+    const secretKey =
+      process.env.GOOGLE_RECAPTCHA_SECRET_KEY ||
+      "6Ld96FcrAAAAAEmoXHTpTZSrWxzrYXw-BTN0d6Ct";
+    const response = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`,
+      {
+        method: "POST",
+      }
+    );
+
+    const data = await response.json();
+    return data.success;
+  } catch (error) {
+    console.error("reCAPTCHA verification error:", error);
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   return apiHandler(async () => {
     // Connect to database
@@ -11,11 +32,22 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { name, email, password } = body;
+    const { name, email, password, recaptchaToken } = body;
 
     // Validate input
     if (!name || !email || !password) {
       throw new ValidationError("Please provide name, email, and password");
+    }
+
+    // Verify reCAPTCHA token if provided
+    if (recaptchaToken) {
+      const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+      if (!isRecaptchaValid) {
+        console.log("reCAPTCHA validation failed");
+        throw new ValidationError(
+          "reCAPTCHA validation failed. Please try again."
+        );
+      }
     }
 
     // Check if user already exists

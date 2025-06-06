@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getSubmission } from "@/lib/auth-client";
 import SubmissionDetailsView from "@/components/dashboard/user/SubmissionDetailsView";
 import Layout from "@/components/layout/Layout";
+import { useAuth } from "@/components/auth/AuthContext";
 
 interface Submission {
   _id: string;
@@ -31,6 +32,7 @@ export default function SubmissionDetailsPage({
   // Store the id from params using React.use() to unwrap the Promise
   const unwrappedParams = React.use(params as any) as { id: string };
   const submissionId = unwrappedParams.id;
+  const { user } = useAuth();
 
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [loading, setLoading] = useState(true);
@@ -256,7 +258,7 @@ export default function SubmissionDetailsPage({
             </div>
           )}
 
-          <SubmissionDetailsView submission={submission} />
+          <SubmissionDetailsView submission={submission} role={user?.role} />
         </div>
       </div>
     </Layout>

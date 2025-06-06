@@ -13,6 +13,7 @@ export interface User {
   region?: string | { _id: string; name: string };
   isPasswordSet?: boolean;
   resetToken?: string;
+  requiresTwoFactor?: boolean; // Added for 2FA flow
 }
 
 // Google login function
@@ -24,7 +25,8 @@ export async function loginWithGoogle(callbackUrl: string = "/") {
 export async function login(
   email: string,
   password: string,
-  callbackUrl?: string
+  callbackUrl?: string,
+  recaptchaToken?: string
 ): Promise<User> {
   console.log(
     "auth-client: login called with email:",
@@ -55,7 +57,7 @@ export async function login(
         Pragma: "no-cache",
         Expires: "0",
       },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, recaptchaToken }),
     });
 
     console.log(
@@ -65,7 +67,21 @@ export async function login(
 
     if (v2Response.ok) {
       const data = await v2Response.json();
-      console.log("auth-client: Login v2 API success, user data:", data.user);
+      console.log("auth-client: Login v2 API success, data:", data);
+
+      // Check if 2FA is required
+      if (data.requiresTwoFactor) {
+        console.log("auth-client: 2FA is required for user:", email);
+        // Instead of throwing an error, return a special object that indicates 2FA is required
+        // Include required User properties with placeholder values
+        return {
+          requiresTwoFactor: true,
+          email,
+          id: "", // Empty placeholder
+          name: "", // Empty placeholder
+          role: "user", // Default role
+        };
+      }
 
       // Verify the cookie was set
       console.log("auth-client: Cookies after login:", document.cookie);
@@ -81,6 +97,7 @@ export async function login(
       email,
       password,
       callbackUrl,
+      recaptchaToken,
     });
 
     console.log("auth-client: NextAuth login result:", result);
@@ -152,7 +169,8 @@ export async function login(
 // Original custom auth login function (last resort fallback)
 async function loginWithOriginalCustomAuth(
   email: string,
-  password: string
+  password: string,
+  recaptchaToken?: string
 ): Promise<User> {
   console.log("auth-client: loginWithOriginalCustomAuth called");
 
@@ -166,7 +184,7 @@ async function loginWithOriginalCustomAuth(
       Pragma: "no-cache",
       Expires: "0",
     },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, recaptchaToken }),
   });
 
   console.log(
@@ -181,19 +199,175 @@ async function loginWithOriginalCustomAuth(
   }
 
   const data = await response.json();
-  console.log(
-    "auth-client: Original custom login API success, user data:",
-    data.user
-  );
+  console.log("auth-client: Original custom login API success, data:", data);
+
+  // Check if 2FA is required
+  if (data.requiresTwoFactor) {
+    console.log("auth-client: 2FA is required for user:", email);
+    // Return a special object that indicates 2FA is required
+    return {
+      requiresTwoFactor: true,
+      email,
+      id: "", // Empty placeholder
+      name: "", // Empty placeholder
+      role: "user", // Default role
+    };
+  }
 
   return data.user;
+}
+
+// Verify 2FA token
+export async function verify2FA(email: string, token: string): Promise<User> {
+  console.log("auth-client: verify2FA called for email:", email);
+
+  try {
+    const response = await fetch("/api/auth/2fa/verify", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      body: JSON.stringify({ email, token }),
+    });
+
+    console.log("auth-client: 2FA verify response status:", response.status);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("auth-client: 2FA verification error:", error);
+      throw new Error(error.error || "2FA verification failed");
+    }
+
+    const data = await response.json();
+    console.log("auth-client: 2FA verification success, user data:", data.user);
+
+    return data.user;
+  } catch (error) {
+    console.error("auth-client: 2FA verification exception:", error);
+    throw error;
+  }
+}
+
+// Setup 2FA
+export async function setup2FA(): Promise<{ secret: string; qrCode: string }> {
+  console.log("auth-client: setup2FA called");
+
+  try {
+    const response = await fetch("/api/auth/2fa/setup", {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
+    console.log("auth-client: 2FA setup response status:", response.status);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("auth-client: 2FA setup error:", error);
+      throw new Error(error.error || "2FA setup failed");
+    }
+
+    const data = await response.json();
+    console.log("auth-client: 2FA setup success");
+
+    return {
+      secret: data.secret,
+      qrCode: data.qrCode,
+    };
+  } catch (error) {
+    console.error("auth-client: 2FA setup exception:", error);
+    throw error;
+  }
+}
+
+// Confirm 2FA setup
+export async function confirm2FA(token: string): Promise<boolean> {
+  console.log("auth-client: confirm2FA called");
+
+  try {
+    const response = await fetch("/api/auth/2fa/setup", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+      body: JSON.stringify({ token }),
+    });
+
+    console.log("auth-client: 2FA confirm response status:", response.status);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("auth-client: 2FA confirm error:", error);
+      throw new Error(error.error || "2FA confirmation failed");
+    }
+
+    const data = await response.json();
+    console.log("auth-client: 2FA confirm success");
+
+    return data.success;
+  } catch (error) {
+    console.error("auth-client: 2FA confirm exception:", error);
+    throw error;
+  }
+}
+
+// Disable 2FA
+export async function disable2FA(): Promise<boolean> {
+  console.log("auth-client: disable2FA called");
+
+  try {
+    const response = await fetch("/api/auth/2fa/disable", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // Add Cache-Control header to prevent caching
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
+
+    console.log("auth-client: 2FA disable response status:", response.status);
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("auth-client: 2FA disable error:", error);
+      throw new Error(error.error || "Failed to disable 2FA");
+    }
+
+    const data = await response.json();
+    console.log("auth-client: 2FA disable success");
+
+    return data.success;
+  } catch (error) {
+    console.error("auth-client: 2FA disable exception:", error);
+    throw error;
+  }
 }
 
 // Register function
 export async function register(
   name: string,
   email: string,
-  password: string
+  password: string,
+  recaptchaToken?: string
 ): Promise<User> {
   const response = await fetch("/api/auth/register", {
     method: "POST",
@@ -205,7 +379,7 @@ export async function register(
       Pragma: "no-cache",
       Expires: "0",
     },
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, recaptchaToken }),
   });
 
   if (!response.ok) {

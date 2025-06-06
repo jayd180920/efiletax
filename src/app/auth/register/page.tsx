@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthContext";
+import ReCAPTCHA from "react-google-recaptcha";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -18,6 +19,8 @@ export default function RegisterPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [captchaVerified, setCaptchaVerified] = useState(false);
+  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [passwordStrength, setPasswordStrength] = useState({
     score: 0,
     hasMinLength: false,
@@ -72,8 +75,17 @@ export default function RegisterPage() {
     });
   };
 
+  const handleCaptchaChange = (token: string | null) => {
+    setCaptchaVerified(!!token);
+  };
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
+
+    // Check if reCAPTCHA is verified
+    if (!captchaVerified) {
+      newErrors.captcha = "Please verify that you are not a robot.";
+    }
 
     if (!formData.firstName.trim()) {
       newErrors.firstName = "First name is required";
@@ -130,9 +142,17 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
+      // Get the reCAPTCHA token
+      const recaptchaToken = recaptchaRef.current?.getValue() || "";
+
       // Prepare registration data and call the register function from auth context
       const name = `${formData.firstName} ${formData.lastName}`;
-      await registerUser(name, formData.email, formData.password);
+      await registerUser(
+        name,
+        formData.email,
+        formData.password,
+        recaptchaToken
+      );
       // The redirect is handled in the AuthContext
     } catch (error: any) {
       console.error("Registration error:", error);
@@ -403,12 +423,28 @@ export default function RegisterPage() {
               <p className="mt-1 text-sm text-red-600">{errors.agreeToTerms}</p>
             )}
 
+            {/* Google reCAPTCHA */}
+            <div className="flex justify-center my-4">
+              <ReCAPTCHA
+                ref={recaptchaRef}
+                sitekey="6Ld96FcrAAAAAHokJ9JDw7-kVEG6snnSItMKDDlE"
+                onChange={handleCaptchaChange}
+              />
+            </div>
+            {errors.captcha && (
+              <p className="text-red-500 text-sm text-center">
+                {errors.captcha}
+              </p>
+            )}
+
             <div>
               <button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !captchaVerified}
                 className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  isLoading ? "opacity-70 cursor-not-allowed" : ""
+                  isLoading || !captchaVerified
+                    ? "opacity-70 cursor-not-allowed"
+                    : ""
                 }`}
               >
                 {isLoading ? "Creating account..." : "Create account"}

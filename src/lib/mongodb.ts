@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { initModels } from "@/models";
 
 if (!process.env.MONGODB_URI) {
   throw new Error("Please define the MONGODB_URI environment variable");
@@ -39,6 +40,8 @@ async function dbConnect() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      // Initialize all models after connection is established
+      initModels();
       return mongoose;
     });
   }

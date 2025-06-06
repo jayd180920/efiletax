@@ -31,10 +31,12 @@ interface SubmissionDetailsViewProps {
     admin_comments?: string;
     tax_summary?: string;
   };
+  role?: "user" | "admin" | "regionAdmin";
 }
 
 export default function SubmissionDetailsView({
   submission,
+  role = "user",
 }: SubmissionDetailsViewProps) {
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
@@ -607,8 +609,8 @@ export default function SubmissionDetailsView({
         <Accordion type="multiple" className="w-full">
           {renderAdminComments()}
           {renderTaxSummary()}
-          {renderFormDataSections()}
-          {renderFileUrls()}
+          {role !== "user" && renderFormDataSections()}
+          {role !== "user" && renderFileUrls()}
         </Accordion>
       </div>
     </div>

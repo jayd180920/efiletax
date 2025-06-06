@@ -19,9 +19,15 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-    callbackUrl?: string
+    callbackUrl?: string,
+    recaptchaToken?: string
+  ) => Promise<User>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    recaptchaToken?: string
   ) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
   loginWithGoogle: (callbackUrl?: string) => Promise<void>;
   logout: () => Promise<void>;
   error: string | null;
@@ -31,7 +37,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
-  login: async () => {},
+  login: async () => ({ id: "", name: "", email: "", role: "user" }), // Return a minimal User object
   register: async () => {},
   loginWithGoogle: async () => {},
   logout: async () => {},
@@ -110,8 +116,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const login = async (
     email: string,
     password: string,
-    callbackUrl?: string
-  ) => {
+    callbackUrl?: string,
+    recaptchaToken?: string
+  ): Promise<User> => {
     try {
       console.log(
         "AuthContext: login called with email:",
@@ -123,11 +130,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setError(null);
 
       // Call the login API
-      const user = await loginApi(email, password, callbackUrl);
+      const user = await loginApi(email, password, callbackUrl, recaptchaToken);
       console.log("AuthContext: login API returned user:", user);
 
       // Set the user in state
       setUser(user);
+
+      // If 2FA is required, return the user object immediately without redirecting
+      if (user.requiresTwoFactor) {
+        console.log(
+          "AuthContext: 2FA is required, returning user without redirect"
+        );
+        return user;
+      }
 
       // Determine the target URL
       const targetUrl =
@@ -151,6 +166,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           window.location.href = targetUrl;
         }, 500); // Increased from 100ms to 500ms
       }
+
+      return user;
     } catch (error: any) {
       console.error("AuthContext: Login error:", error);
       setError(error.message || "Login failed");
@@ -161,11 +178,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Register function
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    recaptchaToken?: string
+  ) => {
     try {
       setLoading(true);
       setError(null);
-      const user = await registerApi(name, email, password);
+      const user = await registerApi(name, email, password, recaptchaToken);
       setUser(user);
       router.push("/dashboard/user");
     } catch (error: any) {

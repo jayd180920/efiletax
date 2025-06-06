@@ -1,15 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
 import Image from "next/image";
+import TwoFactorSetup from "@/components/auth/TwoFactorSetup";
+import { disable2FA } from "@/lib/auth-client";
 
 interface ProfilePopupProps {
   isOpen: boolean;
   onClose: () => void;
+  initialShowTwoFactorSetup?: boolean;
 }
 
-const ProfilePopup: React.FC<ProfilePopupProps> = ({ isOpen, onClose }) => {
+const ProfilePopup: React.FC<ProfilePopupProps> = ({
+  isOpen,
+  onClose,
+  initialShowTwoFactorSetup = false,
+}) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -20,6 +27,36 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [showTwoFactorSetup, setShowTwoFactorSetup] = useState(
+    initialShowTwoFactorSetup
+  );
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
+
+  // Check if 2FA is enabled
+  useEffect(() => {
+    const checkTwoFactorStatus = async () => {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.user && data.user.twoFactorEnabled) {
+            setTwoFactorEnabled(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error checking 2FA status:", error);
+      }
+    };
+
+    checkTwoFactorStatus();
+  }, []);
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -243,6 +280,64 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ isOpen, onClose }) => {
                 />
               </div>
 
+              {/* Two-Factor Authentication */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Two-Factor Authentication
+                </label>
+                <div className="flex items-center justify-between bg-gray-50 p-3 rounded-md">
+                  <div>
+                    <p className="text-sm font-medium">
+                      {twoFactorEnabled
+                        ? "Two-factor authentication is enabled"
+                        : "Two-factor authentication is disabled"}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {twoFactorEnabled
+                        ? "Your account is protected with an authenticator app"
+                        : "Add an extra layer of security to your account"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (twoFactorEnabled) {
+                        // Disable 2FA
+                        try {
+                          setIsSubmitting(true);
+                          const success = await disable2FA();
+                          if (success) {
+                            setTwoFactorEnabled(false);
+                            setSuccess(
+                              "Two-factor authentication disabled successfully"
+                            );
+                          }
+                        } catch (error: any) {
+                          setError(error.message || "Failed to disable 2FA");
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      } else {
+                        // Show 2FA setup
+                        setShowTwoFactorSetup(!showTwoFactorSetup);
+                      }
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm font-medium ${
+                      twoFactorEnabled
+                        ? "bg-red-100 text-red-700 hover:bg-red-200"
+                        : "bg-green-100 text-green-700 hover:bg-green-200"
+                    }`}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting
+                      ? "Processing..."
+                      : twoFactorEnabled
+                      ? "Disable"
+                      : "Enable"}
+                  </button>
+                </div>
+              </div>
+
               {/* Submit Button */}
               <button
                 type="submit"
@@ -252,6 +347,22 @@ const ProfilePopup: React.FC<ProfilePopupProps> = ({ isOpen, onClose }) => {
                 {isSubmitting ? "Updating..." : "Update Profile"}
               </button>
             </form>
+
+            {/* Two-Factor Setup */}
+            {showTwoFactorSetup && !twoFactorEnabled && (
+              <div className="mt-6 border-t pt-6">
+                <TwoFactorSetup
+                  onSuccess={() => {
+                    setShowTwoFactorSetup(false);
+                    setTwoFactorEnabled(true);
+                    setSuccess(
+                      "Two-factor authentication enabled successfully"
+                    );
+                  }}
+                  onCancel={() => setShowTwoFactorSetup(false)}
+                />
+              </div>
+            )}
           </div>
         </div>
       </div>

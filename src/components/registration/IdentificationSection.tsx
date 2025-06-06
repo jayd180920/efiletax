@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import FormSection from "./FormSection";
+import PANInput from "../forms/PANInput";
+import AadhaarInput from "../forms/AadhaarInput";
 
 interface IdentificationData {
   aadhaarType: "number" | "enrollment";
@@ -133,15 +135,17 @@ export default function IdentificationSection({
 
           {data.aadhaarType === "number" ? (
             <div>
-              <input
-                type="text"
-                id="aadhaarNumber"
-                name="aadhaarNumber"
+              <AadhaarInput
                 value={data.aadhaarNumber}
-                onChange={handleChange}
-                placeholder="Enter Aadhaar Number"
+                onChange={(value, isValid) => {
+                  onChange({
+                    ...data,
+                    aadhaarNumber: value,
+                  });
+                }}
                 required
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                label=""
+                placeholder="Enter Aadhaar Number (12 digits)"
               />
             </div>
           ) : (
@@ -233,21 +237,17 @@ export default function IdentificationSection({
         </div>
 
         <div>
-          <label
-            htmlFor="panNumber"
-            className="block text-sm font-medium text-gray-700"
-          >
-            PAN <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="panNumber"
-            name="panNumber"
+          <PANInput
             value={data.panNumber}
-            onChange={handleChange}
-            placeholder="Enter PAN Number"
+            onChange={(value, isValid) => {
+              onChange({
+                ...data,
+                panNumber: value,
+              });
+            }}
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+            label="PAN"
+            placeholder="Enter PAN Number (e.g., ABCDE1234F)"
           />
 
           <div className="mt-3">

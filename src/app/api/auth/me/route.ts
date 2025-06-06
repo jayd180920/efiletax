@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
         role: user.role,
         isPasswordSet: user.isPasswordSet || false,
         resetToken: user.resetToken || null,
+        twoFactorEnabled: user.twoFactorEnabled || false,
       },
     });
   });

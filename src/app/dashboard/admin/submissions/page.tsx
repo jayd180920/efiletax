@@ -33,6 +33,14 @@ interface Region {
   name: string;
 }
 
+interface Service {
+  _id: string;
+  name: string;
+  service_unique_name: string;
+  category: "GST filing" | "ITR filing" | "ROC filing";
+  charge: number;
+}
+
 interface Pagination {
   total: number;
   page: number;
@@ -45,6 +53,7 @@ const SubmissionsPage = () => {
   const router = useRouter();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [regions, setRegions] = useState<Region[]>([]);
+  const [services, setServices] = useState<Service[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
     page: 1,
@@ -55,6 +64,7 @@ const SubmissionsPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
   const [regionFilter, setRegionFilter] = useState<string | null>(null);
+  const [serviceFilter, setServiceFilter] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] =
@@ -91,6 +101,9 @@ const SubmissionsPage = () => {
       }
       if (regionFilter) {
         url += `&regionId=${regionFilter}`;
+      }
+      if (serviceFilter) {
+        url += `&serviceId=${serviceFilter}`;
       }
       if (searchTerm) {
         url += `&search=${encodeURIComponent(searchTerm)}`;
@@ -151,13 +164,40 @@ const SubmissionsPage = () => {
     }
   };
 
+  // Fetch services
+  const fetchServices = async () => {
+    try {
+      const response = await fetch("/api/common-services", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          // Add Cache-Control header to prevent caching
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to fetch services");
+      }
+
+      const data = await response.json();
+      setServices(data.services);
+    } catch (error: any) {
+      console.error("Error fetching services:", error);
+    }
+  };
+
   // Initial fetch
   useEffect(() => {
     if (user && (user.role === "admin" || user.role === "regionAdmin")) {
       fetchSubmissions();
       fetchRegions();
+      fetchServices();
     }
-  }, [pagination.page, statusFilter, regionFilter, user]);
+  }, [pagination.page, statusFilter, regionFilter, serviceFilter, user]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -181,6 +221,15 @@ const SubmissionsPage = () => {
   ) => {
     const value = e.target.value;
     setRegionFilter(value === "all" ? null : value);
+    setPagination({ ...pagination, page: 1 }); // Reset to first page
+  };
+
+  // Handle service filter change
+  const handleServiceFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
+    const value = e.target.value;
+    setServiceFilter(value === "all" ? null : value);
     setPagination({ ...pagination, page: 1 }); // Reset to first page
   };
 
@@ -427,6 +476,28 @@ const SubmissionsPage = () => {
                       </select>
                     </div>
                   )}
+
+                  <div className="flex items-center space-x-2">
+                    <label
+                      htmlFor="service-filter"
+                      className="text-sm text-gray-700"
+                    >
+                      Service:
+                    </label>
+                    <select
+                      id="service-filter"
+                      className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                      value={serviceFilter || "all"}
+                      onChange={handleServiceFilterChange}
+                    >
+                      <option value="all">All Services</option>
+                      {services.map((service) => (
+                        <option key={service._id} value={service._id}>
+                          {service.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <form onSubmit={handleSearch} className="flex space-x-2">

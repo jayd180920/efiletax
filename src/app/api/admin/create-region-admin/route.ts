@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
+import "@/models"; // Import models to ensure they're registered
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
 import { authOptions, authenticate } from "@/lib/auth";

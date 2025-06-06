@@ -3,6 +3,27 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { generateToken } from "@/lib/auth";
 
+// Function to verify reCAPTCHA token
+async function verifyRecaptcha(token: string): Promise<boolean> {
+  try {
+    const secretKey =
+      process.env.GOOGLE_RECAPTCHA_SECRET_KEY ||
+      "6Ld96FcrAAAAAEmoXHTpTZSrWxzrYXw-BTN0d6Ct";
+    const response = await fetch(
+      `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${token}`,
+      {
+        method: "POST",
+      }
+    );
+
+    const data = await response.json();
+    return data.success;
+  } catch (error) {
+    console.error("reCAPTCHA verification error:", error);
+    return false;
+  }
+}
+
 // Simple direct login API without using the apiHandler wrapper
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { email, password } = body;
+    const { email, password, recaptchaToken } = body;
     console.log("Login attempt for email:", email);
 
     // Validate input
@@ -24,6 +45,20 @@ export async function POST(req: NextRequest) {
         { error: "Please provide email and password" },
         { status: 400 }
       );
+    }
+
+    // Verify reCAPTCHA token if provided
+    if (recaptchaToken) {
+      console.log("Verifying reCAPTCHA token");
+      const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
+      if (!isRecaptchaValid) {
+        console.log("reCAPTCHA validation failed");
+        return NextResponse.json(
+          { error: "reCAPTCHA validation failed. Please try again." },
+          { status: 400 }
+        );
+      }
+      console.log("reCAPTCHA validation successful");
     }
 
     // Find user by email and include password and resetToken for comparison
@@ -47,6 +82,19 @@ export async function POST(req: NextRequest) {
       );
     }
     console.log("Password validated successfully");
+
+    // Check if 2FA is enabled for the user
+    if (user.twoFactorEnabled) {
+      console.log("2FA is enabled for user:", email);
+      // Return a special response indicating 2FA is required
+      return NextResponse.json({
+        success: true,
+        requiresTwoFactor: true,
+        user: {
+          email: user.email,
+        },
+      });
+    }
 
     // Generate JWT token
     const token = generateToken(user);

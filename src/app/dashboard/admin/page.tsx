@@ -181,11 +181,11 @@ export default function AdminDashboard() {
                     <div className="ml-5 w-0 flex-1">
                       <dl>
                         <dt className="text-sm font-medium text-gray-500 truncate">
-                          Submissions Management
+                          Request Management
                         </dt>
                         <dd>
                           <div className="text-lg font-medium text-gray-900">
-                            Manage Submissions
+                            Manage Requests
                           </div>
                         </dd>
                       </dl>
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
                       href="/dashboard/admin/submissions"
                       className="font-medium text-primary hover:text-primary-700"
                     >
-                      View all submissions
+                      View all Service Requests
                     </Link>
                   </div>
                 </div>

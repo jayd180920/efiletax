@@ -20,6 +20,8 @@ interface Submission {
     | "sent for revision"
     | "in-progress";
   paymentStatus: "pending" | "paid" | "refunded";
+  latestPaymentStatus?: "success" | "failure" | "pending";
+  serviceUniqueName?: string;
   createdAt: string;
   updatedAt: string;
   rejectionReason?: string;
@@ -185,9 +187,12 @@ const DirectSubmissionsList = () => {
       case "in-progress":
         return "bg-indigo-100 text-indigo-800";
       case "paid":
-        return "bg-blue-100 text-blue-800";
+      case "success":
+        return "bg-green-100 text-green-800";
       case "refunded":
         return "bg-purple-100 text-purple-800";
+      case "failure":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -436,10 +441,17 @@ const DirectSubmissionsList = () => {
                         </p>
                         <span
                           className={`ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                            submission.paymentStatus || "pending"
+                            submission.latestPaymentStatus ||
+                              submission.paymentStatus ||
+                              "pending"
                           )}`}
                         >
-                          {submission.paymentStatus
+                          {submission.latestPaymentStatus
+                            ? submission.latestPaymentStatus
+                                .charAt(0)
+                                .toUpperCase() +
+                              submission.latestPaymentStatus.slice(1)
+                            : submission.paymentStatus
                             ? submission.paymentStatus.charAt(0).toUpperCase() +
                               submission.paymentStatus.slice(1)
                             : "Pending"}

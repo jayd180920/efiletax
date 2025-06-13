@@ -21,6 +21,8 @@ interface Submission {
   files: Record<string, string[]>;
   rejectionReason?: string;
   paymentStatus: "pending" | "paid";
+  latestPaymentStatus?: "success" | "failure" | "pending";
+  serviceUniqueName?: string;
   amount: number;
   createdAt: string;
   updatedAt: string;
@@ -395,7 +397,10 @@ const SubmissionsPage = () => {
       case "pending":
         return "bg-yellow-100 text-yellow-800";
       case "paid":
-        return "bg-blue-100 text-blue-800";
+      case "success":
+        return "bg-green-100 text-green-800";
+      case "failure":
+        return "bg-red-100 text-red-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -491,9 +496,9 @@ const SubmissionsPage = () => {
                       onChange={handleServiceFilterChange}
                     >
                       <option value="all">All Services</option>
-                      {services.map((service) => (
-                        <option key={service._id} value={service._id}>
-                          {service.name}
+                      {services?.map((service) => (
+                        <option key={service?._id} value={service?._id}>
+                          {service?.name}
                         </option>
                       ))}
                     </select>
@@ -582,13 +587,20 @@ const SubmissionsPage = () => {
                           </span>
                           <span
                             className={`payment-status  px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                              submission.paymentStatus
+                              submission.latestPaymentStatus ||
+                                submission.paymentStatus ||
+                                "pending"
                             )}`}
                           >
-                            {submission?.paymentStatus
-                              ?.charAt(0)
-                              ?.toUpperCase() +
-                              submission?.paymentStatus?.slice(1)}
+                            {submission.latestPaymentStatus
+                              ? submission.latestPaymentStatus
+                                  .charAt(0)
+                                  .toUpperCase() +
+                                submission.latestPaymentStatus.slice(1)
+                              : submission?.paymentStatus
+                                  ?.charAt(0)
+                                  ?.toUpperCase() +
+                                submission?.paymentStatus?.slice(1)}
                           </span>
                         </div>
                       </div>

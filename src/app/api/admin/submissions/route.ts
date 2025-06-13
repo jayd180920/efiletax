@@ -91,12 +91,117 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
     const pages = Math.ceil(total / limit);
 
-    // Get submissions with pagination
-    const submissions = await Submission.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .populate("region", "name");
+    // Get submissions with pagination and join with payment transactions and services
+    const submissions = await Submission.aggregate([
+      { $match: query },
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit },
+      // Join with services collection to match serviceName with service_unique_name
+      {
+        $lookup: {
+          from: "services",
+          localField: "serviceName",
+          foreignField: "service_unique_name",
+          as: "matchedServices",
+        },
+      },
+      // Add a field to get the matched service _id
+      {
+        $addFields: {
+          matchedServiceId: {
+            $cond: {
+              if: { $gt: [{ $size: "$matchedServices" }, 0] },
+              then: { $arrayElemAt: ["$matchedServices._id", 0] },
+              else: null,
+            },
+          },
+        },
+      },
+      // Join with paymenttransactions collection using the matched service _id
+      {
+        $lookup: {
+          from: "paymenttransactions",
+          localField: "matchedServiceId",
+          foreignField: "serviceId",
+          as: "paymentTransactions",
+        },
+      },
+      // Join with users collection to get user details
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      // Join with regions collection
+      {
+        $lookup: {
+          from: "regions",
+          localField: "region",
+          foreignField: "_id",
+          as: "regionDetails",
+        },
+      },
+      // Add computed fields for payment status and service info
+      {
+        $addFields: {
+          // Get the latest payment transaction status
+          latestPaymentStatus: {
+            $cond: {
+              if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+              then: { $arrayElemAt: ["$paymentTransactions.status", -1] },
+              else: "pending",
+            },
+          },
+          // Get service unique name from services collection
+          serviceUniqueName: {
+            $cond: {
+              if: { $gt: [{ $size: "$matchedServices" }, 0] },
+              then: {
+                $arrayElemAt: ["$matchedServices.service_unique_name", 0],
+              },
+              else: null,
+            },
+          },
+          // Format user details
+          userId: {
+            $cond: {
+              if: { $gt: [{ $size: "$userDetails" }, 0] },
+              then: {
+                _id: { $arrayElemAt: ["$userDetails._id", 0] },
+                name: { $arrayElemAt: ["$userDetails.name", 0] },
+                email: { $arrayElemAt: ["$userDetails.email", 0] },
+              },
+              else: null,
+            },
+          },
+          // Format region details
+          region: {
+            $cond: {
+              if: { $gt: [{ $size: "$regionDetails" }, 0] },
+              then: {
+                _id: { $arrayElemAt: ["$regionDetails._id", 0] },
+                name: { $arrayElemAt: ["$regionDetails.name", 0] },
+              },
+              else: null,
+            },
+          },
+        },
+      },
+      // Remove the joined arrays to keep response clean
+      {
+        $project: {
+          paymentTransactions: 0,
+          matchedServices: 0,
+          matchedServiceId: 0,
+          userDetails: 0,
+          regionDetails: 0,
+        },
+      },
+    ]);
 
     // Return success response
     return NextResponse.json({

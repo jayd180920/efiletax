@@ -95,13 +95,15 @@ div[role="tabpanel"] {
   padding-right: 0px;
 }
 .action-buttons a,
-.action-buttons button {
+.action-buttons button,
+button.reply-button {
   box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px,
     rgba(0, 0, 0, 0.12) 0px -12px 30px, rgba(0, 0, 0, 0.12) 0px 4px 6px,
     rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
 }
 .action-buttons a:hover,
-.action-buttons button:hover {
+.action-buttons button:hover,
+button.reply-button:hover {
   color: #21b2aa;
   background-color: #ffffff;
 }
@@ -559,4 +561,7 @@ div.flex.justify-between {
 }
 div .twofa-login-parent button.border-gray-300 {
   color: #4a5565;
+}
+div.request-details-header {
+  box-shadow: rgb(202 221 220) 0px 7px 29px 0px;
 }

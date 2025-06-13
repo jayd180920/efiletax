@@ -163,16 +163,79 @@ export async function GET(request: NextRequest) {
         query.serviceName = { $regex: search, $options: "i" };
       }
     }
-
+    console.log("Final query for submissions:", query);
     // Get total count for pagination
     const total = await submissionsCollection.countDocuments(query);
 
-    // Get submissions with pagination
+    // Get submissions with pagination and join with payment transactions and services
     const submissions = await submissionsCollection
-      .find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
+      .aggregate([
+        { $match: query },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        // Join with services collection to match serviceName with service_unique_name
+        {
+          $lookup: {
+            from: "services",
+            localField: "serviceName",
+            foreignField: "service_unique_name",
+            as: "matchedServices",
+          },
+        },
+        // Add a field to get the matched service _id
+        {
+          $addFields: {
+            matchedServiceId: {
+              $cond: {
+                if: { $gt: [{ $size: "$matchedServices" }, 0] },
+                then: { $arrayElemAt: ["$matchedServices._id", 0] },
+                else: null,
+              },
+            },
+          },
+        },
+        // Join with paymenttransactions collection using the matched service _id
+        {
+          $lookup: {
+            from: "paymenttransactions",
+            localField: "matchedServiceId",
+            foreignField: "serviceId",
+            as: "paymentTransactions",
+          },
+        },
+        // Add computed fields for payment status and service info
+        {
+          $addFields: {
+            // Get the latest payment transaction status
+            latestPaymentStatus: {
+              $cond: {
+                if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+                then: { $arrayElemAt: ["$paymentTransactions.status", -1] },
+                else: "pending",
+              },
+            },
+            // Get service unique name from services collection
+            serviceUniqueName: {
+              $cond: {
+                if: { $gt: [{ $size: "$matchedServices" }, 0] },
+                then: {
+                  $arrayElemAt: ["$matchedServices.service_unique_name", 0],
+                },
+                else: null,
+              },
+            },
+          },
+        },
+        // Remove the joined arrays to keep response clean
+        {
+          $project: {
+            paymentTransactions: 0,
+            matchedServices: 0,
+            matchedServiceId: 0,
+          },
+        },
+      ])
       .toArray();
 
     // Calculate total pages

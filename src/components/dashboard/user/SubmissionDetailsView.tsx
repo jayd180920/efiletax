@@ -36,8 +36,12 @@ interface SubmissionDetailsViewProps {
 
 export default function SubmissionDetailsView({
   submission,
-  role = "user",
+  role,
 }: SubmissionDetailsViewProps) {
+  console.log(
+    `Rendering SubmissionDetailsView for submission ID: ${submission._id}`,
+    role
+  );
   const [expandedFile, setExpandedFile] = useState<string | null>(null);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -571,8 +575,8 @@ export default function SubmissionDetailsView({
   };
 
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-      <div className="px-4 py-5 sm:px-6">
+    <div className="bg-white shadow overflow-hidden sm:rounded-lg request-details-header">
+      <div className="px-4 py-5 sm:px-6 ">
         <h3 className="text-lg leading-6 font-medium text-gray-900">
           Request Details
         </h3>
@@ -604,7 +608,6 @@ export default function SubmissionDetailsView({
           </div>
         </div>
       </div>
-
       <div className="border-t border-gray-200">
         <Accordion type="multiple" className="w-full">
           {renderAdminComments()}

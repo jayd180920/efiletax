@@ -180,17 +180,17 @@ export default function TaxSummaryTab({
       <div className="p-6 border rounded-md">
         <h3 className="text-lg font-medium mb-4">Tax Summary</h3>
         <p className="text-gray-500 mb-4">
-          Please find below the tax summary details based on the provide
-          information.
+          Your request is being processed. Our team will review the details and
+          get back to you shortly.
         </p>
 
         <div className="space-y-4">
-          <div className="p-4 border rounded-md bg-gray-50">
+          {/* <div className="p-4 border rounded-md bg-gray-50">
             <h4 className="font-medium text-gray-800 mb-2">Service Type</h4>
             <p className="text-gray-700">
               {serviceUniqueId || "Not specified"}
             </p>
-          </div>
+          </div> */}
 
           {/* Display tax summary file if available */}
           {formData?.tax_summary && (

@@ -311,7 +311,7 @@ export default function SubmissionDetailPage({
                   )}
                   <button
                     onClick={() => openActionModal("reply")}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 reply-button"
                   >
                     Reply
                   </button>
@@ -482,7 +482,10 @@ export default function SubmissionDetailPage({
 
                 {/* Form Data and Files */}
                 <div className="px-6 py-5 border-t border-gray-200">
-                  <SubmissionDetailsView submission={submission} />
+                  <SubmissionDetailsView
+                    submission={submission}
+                    role={user?.role}
+                  />
                 </div>
               </div>
             )}
@@ -516,7 +519,7 @@ export default function SubmissionDetailPage({
               onClick={(e) => e.stopPropagation()}
             >
               <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                <div className="sm:flex sm:items-start">
+                <div className="">
                   <div
                     className={`mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full ${
                       actionType === "approve"
@@ -622,7 +625,7 @@ export default function SubmissionDetailPage({
 
                       {actionType === "reply" && (
                         <>
-                          <div className="mt-2">
+                          <div className="mt-2 reply-popup-status">
                             <label
                               htmlFor="reply-status"
                               className="block text-sm font-medium text-gray-700"
@@ -647,7 +650,7 @@ export default function SubmissionDetailPage({
                           </div>
 
                           {replyStatus === "Need more info" && (
-                            <div className="mt-4">
+                            <div className="mt-4 reply-popup-status">
                               <label
                                 htmlFor="admin-comments"
                                 className="block text-sm font-medium text-gray-700"

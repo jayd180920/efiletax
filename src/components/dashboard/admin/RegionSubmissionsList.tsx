@@ -25,6 +25,7 @@ interface Submission {
     | "sent for revision"
     | "in-progress";
   paymentStatus: "pending" | "paid" | "refunded";
+  paymentAmount?: number;
   createdAt: string;
   updatedAt: string;
   rejectionReason?: string;
@@ -320,7 +321,7 @@ const RegionSubmissionsList = () => {
                 <div className="mt-2 sm:flex sm:justify-between">
                   <div className="sm:flex">
                     <p className="flex items-center text-sm text-gray-500">
-                      Amount: {formatCurrency(submission.amount)}
+                      Amount: {formatCurrency(submission.paymentAmount || 0)}
                     </p>
                   </div>
                   <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-2">

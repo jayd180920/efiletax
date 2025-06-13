@@ -23,6 +23,7 @@ interface Submission {
   fileUrls?: Record<string, any>;
   rejectionReason?: string;
   paymentStatus: "pending" | "paid";
+  latestPaymentStatus: string;
   amount: number;
   createdAt: string;
   updatedAt: string;
@@ -361,12 +362,13 @@ export default function SubmissionDetailPage({
                           submission.status.slice(1)}
                       </span>
                       <span
-                        className={`payment-status px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                          submission.paymentStatus
-                        )}`}
+                        className={
+                          submission.latestPaymentStatus == "success"
+                            ? "ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+                            : "ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+                        }
                       >
-                        {submission.paymentStatus.charAt(0).toUpperCase() +
-                          submission.paymentStatus.slice(1)}
+                        {submission.latestPaymentStatus || "Pending"}
                       </span>
                     </div>
                   </div>
@@ -380,7 +382,7 @@ export default function SubmissionDetailPage({
                     </h3> */}
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-gray-500 green-text">
                           Service
                         </p>
                         <p className="mt-1 text-sm text-gray-900">
@@ -397,7 +399,7 @@ export default function SubmissionDetailPage({
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-gray-500 green-text">
                           Amount
                         </p>
                         <p className="mt-1 text-sm text-gray-900">
@@ -405,7 +407,7 @@ export default function SubmissionDetailPage({
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-gray-500 green-text">
                           Submitted On
                         </p>
                         <p className="mt-1 text-sm text-gray-900">
@@ -414,7 +416,7 @@ export default function SubmissionDetailPage({
                       </div>
                       {submission.status === "approved" && (
                         <div>
-                          <p className="text-sm font-medium text-gray-500">
+                          <p className="text-sm font-medium text-gray-500 green-text">
                             Approved On
                           </p>
                           <p className="mt-1 text-sm text-gray-900">
@@ -425,7 +427,7 @@ export default function SubmissionDetailPage({
                       {submission.status === "rejected" && (
                         <>
                           <div>
-                            <p className="text-sm font-medium text-gray-500">
+                            <p className="text-sm font-medium text-gray-500 green-text">
                               Rejected On
                             </p>
                             <p className="mt-1 text-sm text-gray-900">
@@ -433,7 +435,7 @@ export default function SubmissionDetailPage({
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-gray-500">
+                            <p className="text-sm font-medium text-gray-500 green-text">
                               Rejection Reason
                             </p>
                             <p className="mt-1 text-sm text-gray-900">
@@ -451,28 +453,29 @@ export default function SubmissionDetailPage({
                     </h3> */}
                     <div className="space-y-3">
                       <div>
-                        <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-gray-500 green-text">
                           Name
                         </p>
                         <p className="mt-1 text-sm text-gray-900">
-                          {submission.userId.name}
+                          {`${submission?.formData?.permanentInfo?.firstName} ${submission?.formData?.permanentInfo?.lastName}` ||
+                            "N/A"}
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-gray-500 green-text">
                           Email
                         </p>
                         <p className="mt-1 text-sm text-gray-900">
-                          {submission.userId.email}
+                          {submission?.formData?.permanentInfo?.email || "N/A"}
                         </p>
                       </div>
-                      {submission.userId.phone && (
+                      {submission?.formData?.permanentInfo?.mobileNumber && (
                         <div>
-                          <p className="text-sm font-medium text-gray-500">
+                          <p className="text-sm font-medium text-gray-500 green-text">
                             Phone
                           </p>
                           <p className="mt-1 text-sm text-gray-900">
-                            {submission.userId.phone}
+                            {submission?.formData?.permanentInfo?.mobileNumber}
                           </p>
                         </div>
                       )}

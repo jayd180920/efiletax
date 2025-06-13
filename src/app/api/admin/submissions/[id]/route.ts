@@ -6,7 +6,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { authenticate } from "@/lib/auth";
 import { getToken } from "next-auth/jwt";
-import { isValidObjectId } from "mongoose";
+import mongoose, { isValidObjectId } from "mongoose";
 import { sendSubmissionUpdateNotification } from "@/lib/notification-utils";
 
 // GET /api/admin/submissions/[id] - Get a specific submission (admin or regionAdmin only)
@@ -101,18 +101,110 @@ export async function GET(
       );
     }
 
-    // Find submission
-    const submission = await Submission.findById(id).populate(
-      "userId",
-      "name email phone"
-    );
+    // Get submission with payment status using aggregation pipeline
+    const submissionResult = await Submission.aggregate([
+      { $match: { _id: new mongoose.Types.ObjectId(id) } },
+      // Join with services collection to match serviceName with service_unique_name
+      {
+        $lookup: {
+          from: "services",
+          localField: "serviceName",
+          foreignField: "service_unique_name",
+          as: "matchedServices",
+        },
+      },
+      // Add a field to get the matched service _id
+      {
+        $addFields: {
+          matchedServiceId: {
+            $cond: {
+              if: { $gt: [{ $size: "$matchedServices" }, 0] },
+              then: { $arrayElemAt: ["$matchedServices._id", 0] },
+              else: null,
+            },
+          },
+        },
+      },
+      // Join with paymenttransactions collection using the matched service _id
+      {
+        $lookup: {
+          from: "paymenttransactions",
+          localField: "matchedServiceId",
+          foreignField: "serviceId",
+          as: "paymentTransactions",
+        },
+      },
+      // Join with users collection to get user details
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      // Add computed fields for payment status and service info
+      {
+        $addFields: {
+          // Get the latest payment transaction status
+          latestPaymentStatus: {
+            $cond: {
+              if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+              then: { $arrayElemAt: ["$paymentTransactions.status", -1] },
+              else: "pending",
+            },
+          },
+          paymentAmount: {
+            $cond: {
+              if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+              then: { $arrayElemAt: ["$paymentTransactions.amount", -1] },
+              else: 0, // Default to 0 if no payment transaction exists
+            },
+          },
+          // Get service unique name from services collection
+          serviceUniqueName: {
+            $cond: {
+              if: { $gt: [{ $size: "$matchedServices" }, 0] },
+              then: {
+                $arrayElemAt: ["$matchedServices.service_unique_name", 0],
+              },
+              else: null,
+            },
+          },
+          // Format user details
+          userId: {
+            $cond: {
+              if: { $gt: [{ $size: "$userDetails" }, 0] },
+              then: {
+                _id: { $arrayElemAt: ["$userDetails._id", 0] },
+                name: { $arrayElemAt: ["$userDetails.name", 0] },
+                email: { $arrayElemAt: ["$userDetails.email", 0] },
+                phone: { $arrayElemAt: ["$userDetails.phone", 0] },
+              },
+              else: null,
+            },
+          },
+        },
+      },
+      // Remove the joined arrays to keep response clean
+      {
+        $project: {
+          paymentTransactions: 0,
+          matchedServices: 0,
+          matchedServiceId: 0,
+          userDetails: 0,
+        },
+      },
+    ]);
 
-    if (!submission) {
+    if (!submissionResult || submissionResult.length === 0) {
       return NextResponse.json(
         { error: "Submission not found" },
         { status: 404 }
       );
     }
+
+    const submission = submissionResult[0];
 
     // For GET requests, region admins can access all submissions for review
     // No region check needed for viewing submissions

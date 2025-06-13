@@ -19,9 +19,11 @@ interface Submission {
   amount: number;
   status: "pending" | "approved" | "rejected";
   paymentStatus: "pending" | "paid" | "refunded";
+  latestPaymentStatus: string;
   createdAt: string;
   updatedAt: string;
   rejectionReason?: string;
+  paymentAmount?: number;
 }
 
 export default function SubmissionDetailsPage({
@@ -204,7 +206,13 @@ export default function SubmissionDetailsPage({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-gray-50 p-3 rounded">
               <p className="text-sm font-medium text-gray-500">Service</p>
-              <p className="text-sm font-medium">{submission.serviceName}</p>
+              {submission.serviceName
+                ? submission.serviceName
+                    .toLowerCase()
+                    .split("_")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ")
+                : ""}
             </div>
             <div className="bg-gray-50 p-3 rounded">
               <p className="text-sm font-medium text-gray-500">
@@ -217,12 +225,12 @@ export default function SubmissionDetailsPage({
             <div className="bg-gray-50 p-3 rounded">
               <p className="text-sm font-medium text-gray-500">Amount</p>
               <p className="text-sm font-medium">
-                {formatCurrency(submission.amount)}
+                {formatCurrency(submission.paymentAmount || submission.amount)}
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 mb-6">
+          {/* <div className="flex flex-wrap gap-2 mb-6">
             <div className="flex items-center">
               <span className="text-sm font-medium text-gray-500 mr-2">
                 Status:
@@ -242,14 +250,14 @@ export default function SubmissionDetailsPage({
               </span>
               <span
                 className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(
-                  submission.paymentStatus
+                  submission.latestPaymentStatus || submission.paymentStatus
                 )}`}
               >
                 {submission.paymentStatus.charAt(0).toUpperCase() +
                   submission.paymentStatus.slice(1)}
               </span>
             </div>
-          </div>
+          </div> */}
 
           {submission.status === "rejected" && submission.rejectionReason && (
             <div className="bg-red-50 text-red-700 p-4 rounded-md mb-6">
@@ -258,7 +266,13 @@ export default function SubmissionDetailsPage({
             </div>
           )}
 
-          <SubmissionDetailsView submission={submission} role={user?.role} />
+          <SubmissionDetailsView
+            submission={{
+              ...submission,
+              latestPaymentStatus: submission.latestPaymentStatus || "",
+            }}
+            role={user?.role}
+          />
         </div>
       </div>
     </Layout>

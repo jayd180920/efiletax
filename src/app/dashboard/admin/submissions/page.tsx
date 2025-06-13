@@ -28,6 +28,7 @@ interface Submission {
   updatedAt: string;
   approvedAt?: string;
   rejectedAt?: string;
+  paymentAmount?: number;
 }
 
 interface Region {
@@ -616,7 +617,10 @@ const SubmissionsPage = () => {
                         </div>
                         <div className="mt-2 flex items-center text-sm sm:mt-0">
                           <p className="text-gray-500">
-                            Amount: {formatCurrency(submission.amount)}
+                            Amount:{" "}
+                            {formatCurrency(
+                              submission.paymentAmount || submission.amount
+                            )}
                           </p>
                         </div>
                       </div>

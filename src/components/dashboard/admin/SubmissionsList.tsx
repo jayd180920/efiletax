@@ -17,6 +17,7 @@ interface Submission {
   createdAt: string;
   updatedAt: string;
   rejectionReason?: string;
+  paymentAmount?: number;
 }
 
 interface Pagination {
@@ -288,7 +289,10 @@ const SubmissionsList = () => {
                 <div className="mt-2 sm:flex sm:justify-between">
                   <div className="sm:flex">
                     <p className="flex items-center text-sm text-gray-500">
-                      Amount 123: {formatCurrency(submission.amount)}
+                      Amount 123:{" "}
+                      {formatCurrency(
+                        submission.paymentAmount || submission.amount
+                      )}
                     </p>
                   </div>
                   <div className="mt-2 flex items-center text-sm sm:mt-0 space-x-2">

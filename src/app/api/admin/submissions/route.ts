@@ -156,6 +156,13 @@ export async function GET(req: NextRequest) {
               else: "pending",
             },
           },
+          paymentAmount: {
+            $cond: {
+              if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+              then: { $arrayElemAt: ["$paymentTransactions.amount", -1] },
+              else: 0, // Default to 0 if no payment transaction exists
+            },
+          },
           // Get service unique name from services collection
           serviceUniqueName: {
             $cond: {

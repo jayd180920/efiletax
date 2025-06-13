@@ -26,6 +26,8 @@ interface SubmissionDetailsViewProps {
     status: string;
     amount: number;
     paymentStatus: string;
+    latestPaymentStatus: string;
+    paymentAmount?: number;
     createdAt: string;
     updatedAt: string;
     admin_comments?: string;
@@ -592,10 +594,16 @@ export default function SubmissionDetailsView({
         <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-2">
           <div>
             <span className="text-sm font-medium text-gray-500">
-              Amount Paid:{" "}
+              Payment Status:
             </span>
-            <span className="text-sm text-gray-900">
-              {submission.paymentStatus || "Pending"}
+            <span
+              className={
+                submission.latestPaymentStatus == "success"
+                  ? "ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800"
+                  : "ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+              }
+            >
+              {submission.latestPaymentStatus || "Pending"}
             </span>
           </div>
           <div>

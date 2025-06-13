@@ -108,19 +108,91 @@ export async function GET(
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
-    const submission = await submissions.findOne({
-      _id: new ObjectId(id),
-      userId: userId,
-    });
+    // Get submission with payment status using aggregation pipeline
+    const submissionResult = await submissions
+      .aggregate([
+        { $match: { _id: new ObjectId(id), userId: userId } },
+        // Join with services collection to match serviceName with service_unique_name
+        {
+          $lookup: {
+            from: "services",
+            localField: "serviceName",
+            foreignField: "service_unique_name",
+            as: "matchedServices",
+          },
+        },
+        // Add a field to get the matched service _id
+        {
+          $addFields: {
+            matchedServiceId: {
+              $cond: {
+                if: { $gt: [{ $size: "$matchedServices" }, 0] },
+                then: { $arrayElemAt: ["$matchedServices._id", 0] },
+                else: null,
+              },
+            },
+          },
+        },
+        // Join with paymenttransactions collection using the matched service _id
+        {
+          $lookup: {
+            from: "paymenttransactions",
+            localField: "matchedServiceId",
+            foreignField: "serviceId",
+            as: "paymentTransactions",
+          },
+        },
+        // Add computed fields for payment status and service info
+        {
+          $addFields: {
+            // Get the latest payment transaction status
+            latestPaymentStatus: {
+              $cond: {
+                if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+                then: { $arrayElemAt: ["$paymentTransactions.status", -1] },
+                else: "pending",
+              },
+            },
+            paymentAmount: {
+              $cond: {
+                if: { $gt: [{ $size: "$paymentTransactions" }, 0] },
+                then: { $arrayElemAt: ["$paymentTransactions.amount", -1] },
+                else: 0, // Default to 0 if no payment transaction exists
+              },
+            },
+            // Get service unique name from services collection
+            serviceUniqueName: {
+              $cond: {
+                if: { $gt: [{ $size: "$matchedServices" }, 0] },
+                then: {
+                  $arrayElemAt: ["$matchedServices.service_unique_name", 0],
+                },
+                else: null,
+              },
+            },
+          },
+        },
+        // Remove the joined arrays to keep response clean
+        {
+          $project: {
+            paymentTransactions: 0,
+            matchedServices: 0,
+            matchedServiceId: 0,
+          },
+        },
+      ])
+      .toArray();
 
-    if (!submission) {
+    if (!submissionResult || submissionResult.length === 0) {
       return NextResponse.json(
         { error: "Submission not found or unauthorized" },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(submission);
+    const submission = submissionResult[0];
+
+    return NextResponse.json({ submission });
   } catch (error) {
     console.error("Error fetching submission:", error);
     return NextResponse.json(

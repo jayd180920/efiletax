@@ -565,3 +565,6 @@ div .twofa-login-parent button.border-gray-300 {
 div.request-details-header {
   box-shadow: rgb(202 221 220) 0px 7px 29px 0px;
 }
+p.text-sm.font-medium.text-gray-500.green-text {
+  color: #21b2aa;
+}

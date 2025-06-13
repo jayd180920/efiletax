@@ -21,6 +21,7 @@ interface Submission {
     | "in-progress";
   paymentStatus: "pending" | "paid" | "refunded";
   latestPaymentStatus?: "success" | "failure" | "pending";
+  paymentAmount?: number;
   serviceUniqueName?: string;
   createdAt: string;
   updatedAt: string;
@@ -435,8 +436,8 @@ const DirectSubmissionsList = () => {
                       <div className="mt-2 flex items-center">
                         <p className="text-sm text-gray-500">
                           Amount:{" "}
-                          {typeof submission.amount === "number"
-                            ? formatCurrency(submission.amount)
+                          {typeof submission.paymentAmount === "number"
+                            ? formatCurrency(submission.paymentAmount)
                             : "N/A"}
                         </p>
                         <span

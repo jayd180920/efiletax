@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/auth/AuthContext";
 import ReCAPTCHA from "react-google-recaptcha";
 
 export default function RegisterPage() {
@@ -13,21 +12,14 @@ export default function RegisterPage() {
     firstName: "",
     lastName: "",
     email: "",
-    password: "",
-    confirmPassword: "",
+    phone: "",
     agreeToTerms: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
   const recaptchaRef = useRef<ReCAPTCHA>(null);
-  const [passwordStrength, setPasswordStrength] = useState({
-    score: 0,
-    hasMinLength: false,
-    hasUppercase: false,
-    hasLowercase: false,
-    hasSpecialChar: false,
-  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -43,36 +35,6 @@ export default function RegisterPage() {
         [name]: "",
       });
     }
-
-    // Update password strength if password field is changed
-    if (name === "password") {
-      updatePasswordStrength(value);
-    }
-  };
-
-  // Calculate password strength
-  const updatePasswordStrength = (password: string) => {
-    const hasMinLength = password.length >= 10;
-    const hasUppercase = /[A-Z]/.test(password);
-    const hasLowercase = /[a-z]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
-      password
-    );
-
-    // Calculate score (0-4)
-    let score = 0;
-    if (hasMinLength) score++;
-    if (hasUppercase) score++;
-    if (hasLowercase) score++;
-    if (hasSpecialChar) score++;
-
-    setPasswordStrength({
-      score,
-      hasMinLength,
-      hasUppercase,
-      hasLowercase,
-      hasSpecialChar,
-    });
   };
 
   const handleCaptchaChange = (token: string | null) => {
@@ -101,27 +63,6 @@ export default function RegisterPage() {
       newErrors.email = "Email is invalid";
     }
 
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 10) {
-      newErrors.password = "Password must be at least 10 characters";
-    } else if (!/[A-Z]/.test(formData.password)) {
-      newErrors.password =
-        "Password must contain at least one uppercase letter";
-    } else if (!/[a-z]/.test(formData.password)) {
-      newErrors.password =
-        "Password must contain at least one lowercase letter";
-    } else if (
-      !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(formData.password)
-    ) {
-      newErrors.password =
-        "Password must contain at least one special character";
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
     if (!formData.agreeToTerms) {
       newErrors.agreeToTerms = "You must agree to the terms and conditions";
     }
@@ -129,8 +70,6 @@ export default function RegisterPage() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  const { register: registerUser, loginWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -145,15 +84,42 @@ export default function RegisterPage() {
       // Get the reCAPTCHA token
       const recaptchaToken = recaptchaRef.current?.getValue() || "";
 
-      // Prepare registration data and call the register function from auth context
+      // Prepare registration data
       const name = `${formData.firstName} ${formData.lastName}`;
-      await registerUser(
-        name,
-        formData.email,
-        formData.password,
-        recaptchaToken
-      );
-      // The redirect is handled in the AuthContext
+
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name,
+          email: formData.email,
+          phone: formData.phone,
+          recaptchaToken,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Registration failed");
+      }
+
+      setSuccess(data.message);
+
+      // Clear form
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        agreeToTerms: false,
+      });
+
+      // Reset captcha
+      recaptchaRef.current?.reset();
+      setCaptchaVerified(false);
     } catch (error: any) {
       console.error("Registration error:", error);
       setErrors({
@@ -163,6 +129,11 @@ export default function RegisterPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const loginWithGoogle = () => {
+    // Redirect to Google OAuth
+    window.location.href = "/api/auth/signin/google";
   };
 
   return (
@@ -193,6 +164,54 @@ export default function RegisterPage() {
 
       <div className="twofa-login-parent mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          {success && (
+            <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-green-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-green-700">{success}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {errors.form && (
+            <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-red-400"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-red-700">{errors.form}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div>
@@ -280,116 +299,26 @@ export default function RegisterPage() {
 
             <div>
               <label
-                htmlFor="password"
+                htmlFor="phone"
                 className="block text-sm font-medium text-gray-700"
               >
-                Password
+                Phone number (optional)
               </label>
               <div className="mt-1">
                 <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.password}
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  value={formData.phone}
                   onChange={handleChange}
                   className={`appearance-none block w-full px-3 py-2 border ${
-                    errors.password ? "border-red-300" : "border-gray-300"
+                    errors.phone ? "border-red-300" : "border-gray-300"
                   } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  placeholder="Enter your phone number"
                 />
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password}</p>
-                )}
-
-                {/* Password strength indicator */}
-                <div className="mt-2">
-                  <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs text-gray-500">Password strength:</p>
-                    <p className="text-xs font-medium">
-                      {passwordStrength.score === 0 && "Very Weak"}
-                      {passwordStrength.score === 1 && "Weak"}
-                      {passwordStrength.score === 2 && "Fair"}
-                      {passwordStrength.score === 3 && "Good"}
-                      {passwordStrength.score === 4 && "Strong"}
-                    </p>
-                  </div>
-                  <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${
-                        passwordStrength.score === 0
-                          ? "bg-gray-200"
-                          : passwordStrength.score === 1
-                          ? "bg-red-500"
-                          : passwordStrength.score === 2
-                          ? "bg-yellow-500"
-                          : passwordStrength.score === 3
-                          ? "bg-blue-500"
-                          : "bg-green-500"
-                      }`}
-                      style={{ width: `${passwordStrength.score * 25}%` }}
-                    ></div>
-                  </div>
-                  <ul className="mt-2 text-xs text-gray-500 space-y-1">
-                    <li
-                      className={
-                        passwordStrength.hasMinLength ? "text-green-500" : ""
-                      }
-                    >
-                      • At least 10 characters
-                    </li>
-                    <li
-                      className={
-                        passwordStrength.hasUppercase ? "text-green-500" : ""
-                      }
-                    >
-                      • At least 1 uppercase letter
-                    </li>
-                    <li
-                      className={
-                        passwordStrength.hasLowercase ? "text-green-500" : ""
-                      }
-                    >
-                      • At least 1 lowercase letter
-                    </li>
-                    <li
-                      className={
-                        passwordStrength.hasSpecialChar ? "text-green-500" : ""
-                      }
-                    >
-                      • At least 1 special character
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Confirm password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  autoComplete="new-password"
-                  required
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  className={`appearance-none block w-full px-3 py-2 border ${
-                    errors.confirmPassword
-                      ? "border-red-300"
-                      : "border-gray-300"
-                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
-                />
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.confirmPassword}
-                  </p>
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-600">{errors.phone}</p>
                 )}
               </div>
             </div>
@@ -440,9 +369,9 @@ export default function RegisterPage() {
             <div>
               <button
                 type="submit"
-                disabled={isLoading || !captchaVerified}
+                disabled={isLoading || !captchaVerified || success !== null}
                 className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
-                  isLoading || !captchaVerified
+                  isLoading || !captchaVerified || success !== null
                     ? "opacity-70 cursor-not-allowed"
                     : ""
                 }`}
@@ -467,7 +396,7 @@ export default function RegisterPage() {
             <div className="mt-6 grid grid-cols-1 gap-3">
               <button
                 type="button"
-                onClick={() => loginWithGoogle()}
+                onClick={loginWithGoogle}
                 className="w-full inline-flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-500 hover:bg-gray-50"
               >
                 <svg
@@ -497,6 +426,21 @@ export default function RegisterPage() {
               </button>
             </div>
           </div>
+
+          {success && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Didn't receive the email?{" "}
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="text-blue-600 hover:text-blue-500"
+                >
+                  Try again
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

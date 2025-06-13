@@ -3,6 +3,8 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import { generateToken } from "@/lib/auth";
 import { apiHandler, ValidationError } from "@/lib/api-utils";
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
 // Function to verify reCAPTCHA token
 async function verifyRecaptcha(token: string): Promise<boolean> {
@@ -25,6 +27,54 @@ async function verifyRecaptcha(token: string): Promise<boolean> {
   }
 }
 
+// Send email with password setup link
+async function sendPasswordSetupEmail(
+  email: string,
+  name: string,
+  token: string
+): Promise<void> {
+  try {
+    // Create a transporter using SMTP
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT || "587"),
+      secure: process.env.SMTP_PORT === "465", // Port 465 is typically secure
+      auth: {
+        user: process.env.SMTP_EMAIL,
+        pass: process.env.SMTP_PASSWORD,
+      },
+    });
+
+    const setupUrl = `${
+      process.env.NEXT_PUBLIC_BASE_URL
+    }/auth/set-password?token=${token}&email=${encodeURIComponent(email)}`;
+
+    // Send the email
+    await transporter.sendMail({
+      from: `"eFileTax" <${process.env.SMTP_EMAIL}>`,
+      to: email,
+      subject: "Complete Your eFileTax Registration",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Welcome to eFileTax</h2>
+          <p>Hello ${name},</p>
+          <p>Thank you for registering with eFileTax! To complete your registration, please set up your password by clicking the button below:</p>
+          <p><a href="${setupUrl}" style="display: inline-block; background-color: #21b2aa; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Set Your Password</a></p>
+          <p>This link will expire in 24 hours for security reasons.</p>
+          <p>If you did not create this account, please ignore this email.</p>
+          <p>If you have any questions, please contact our support team.</p>
+          <p>Thank you,<br>eFileTax Team</p>
+        </div>
+      `,
+    });
+
+    console.log(`Password setup email sent to ${email}`);
+  } catch (error) {
+    console.error("Error sending password setup email:", error);
+    throw new Error("Failed to send password setup email");
+  }
+}
+
 export async function POST(req: NextRequest) {
   return apiHandler(async () => {
     // Connect to database
@@ -32,11 +82,11 @@ export async function POST(req: NextRequest) {
 
     // Parse request body
     const body = await req.json();
-    const { name, email, password, recaptchaToken } = body;
+    const { name, email, phone, recaptchaToken } = body;
 
     // Validate input
-    if (!name || !email || !password) {
-      throw new ValidationError("Please provide name, email, and password");
+    if (!name || !email) {
+      throw new ValidationError("Please provide name and email");
     }
 
     // Verify reCAPTCHA token if provided
@@ -56,21 +106,30 @@ export async function POST(req: NextRequest) {
       throw new ValidationError("Email already in use");
     }
 
-    // Create new user
+    // Generate a password reset token
+    const resetToken = crypto.randomBytes(32).toString("hex");
+    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+    // Create new user without password
     const user = await User.create({
       name,
       email,
-      password,
+      phone,
       role: "user", // Default role
+      resetToken,
+      resetTokenExpiry,
+      isPasswordSet: false, // Flag to indicate password needs to be set by user
     });
 
-    // Generate JWT token
-    const token = generateToken(user);
+    // Send email with password setup link
+    await sendPasswordSetupEmail(email, name, resetToken);
 
-    // Create response
-    const response = NextResponse.json(
+    // Return success response
+    return NextResponse.json(
       {
         success: true,
+        message:
+          "Registration successful! Please check your email to set up your password.",
         user: {
           id: user._id,
           name: user.name,
@@ -80,18 +139,5 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-
-    // Set cookie
-    response.cookies.set({
-      name: "token",
-      value: token,
-      httpOnly: true,
-      secure: false, // Set to false since we don't have SSL
-      sameSite: "lax", // Changed to 'lax' to work better with redirects
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
-    });
-
-    return response;
   });
 }

@@ -381,7 +381,7 @@ export async function register(
     },
     body: JSON.stringify({ name, email, password, recaptchaToken }),
   });
-
+  console.log("auth-client: Register API response status:", response);
   if (!response.ok) {
     const error = await response.json();
     console.error("Error registering user:", error);

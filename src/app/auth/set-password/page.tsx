@@ -219,7 +219,7 @@ export default function SetPasswordPage() {
             Set Your Password
           </h2>
           <p className="mt-2 text-gray-600">
-            Create a secure password for your region admin account
+            Create a secure password for your eFileTax account
           </p>
         </div>
 

@@ -148,10 +148,42 @@ export const authOptions = {
       }
       return session;
     },
-    async signIn({ user, account }: any) {
-      if (account.provider === "google") {
-        return true; // Allow Google sign in
+    async signIn({ user, account, profile }: any) {
+      console.log("NextAuth signIn callback:", { user, account, profile });
+
+      if (account?.provider === "google") {
+        try {
+          await dbConnect();
+
+          // Check if user exists
+          let dbUser = await User.findOne({ email: user.email });
+
+          // If user doesn't exist, create a new one
+          if (!dbUser) {
+            console.log("Creating new Google user:", user.email);
+            dbUser = await User.create({
+              name: user.name,
+              email: user.email,
+              role: "user", // Default role
+              provider: "google",
+              // Set a random password for Google users (they'll never use it)
+              password:
+                Math.random().toString(36).slice(-10) +
+                Math.random().toString(36).toUpperCase().slice(-2) +
+                "!@#",
+            });
+            console.log("Google user created successfully:", dbUser._id);
+          } else {
+            console.log("Existing Google user found:", dbUser._id);
+          }
+
+          return true;
+        } catch (error) {
+          console.error("Error in Google signIn callback:", error);
+          return false;
+        }
       }
+
       return true; // Allow all other sign ins
     },
   },

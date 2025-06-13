@@ -63,67 +63,6 @@ const UserSchema = new mongoose.Schema<IUser>(
     },
     password: {
       type: String,
-      // Use a custom validator instead of required function
-      validate: [
-        {
-          validator: function (this: any, value: string) {
-            // Password is required only if provider is not set, no reset token, and not a regionAdmin
-            // Check if resetToken is being set in this operation or already exists
-            const hasResetToken =
-              this.resetToken ||
-              this.$__get("resetToken") ||
-              this.$__parent?.get("resetToken");
-
-            const isRegionAdmin = this.role === "regionAdmin";
-
-            // Allow empty password for regionAdmin or when resetToken is present
-            if (isRegionAdmin || this.provider || hasResetToken || value) {
-              return true;
-            }
-            return false;
-          },
-          message: "Password is required",
-        },
-        {
-          validator: function (this: any, value: string) {
-            // Skip validation if provider is set or if there's a reset token or if no value
-            const hasResetToken =
-              this.resetToken ||
-              this.$__get("resetToken") ||
-              this.$__parent?.get("resetToken");
-
-            if (this.provider || hasResetToken || !value) return true;
-
-            // Check for at least one uppercase letter
-            const hasUppercase = /[A-Z]/.test(value);
-            // Check for at least one lowercase letter
-            const hasLowercase = /[a-z]/.test(value);
-            // Check for at least one special character
-            const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(
-              value
-            );
-
-            return hasUppercase && hasLowercase && hasSpecialChar;
-          },
-          message:
-            "Password must contain at least one uppercase letter, one lowercase letter, and one special character",
-        },
-        {
-          validator: function (this: any, value: string) {
-            // Skip validation if provider is set or if there's a reset token or if no value
-            const hasResetToken =
-              this.resetToken ||
-              this.$__get("resetToken") ||
-              this.$__parent?.get("resetToken");
-
-            if (this.provider || hasResetToken || !value) return true;
-
-            // Check minimum length
-            return value.length >= 10;
-          },
-          message: "Password must be at least 10 characters",
-        },
-      ],
       select: false, // Don't return password by default in queries
     },
     provider: {
@@ -161,6 +100,8 @@ UserSchema.pre("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password as string, salt);
+    // Set isPasswordSet to true when password is set
+    this.isPasswordSet = true;
     next();
   } catch (error: any) {
     next(error);

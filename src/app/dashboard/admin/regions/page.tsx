@@ -312,40 +312,42 @@ const RegionsPage = () => {
                           {formatDate(region.createdAt)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/dashboard/admin/regions/${region._id}`
-                              )
-                            }
-                            className="text-primary hover:text-primary-700 mr-4"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (
-                                window.confirm(
-                                  "Are you sure you want to delete this region?"
+                          <div className="flex justify-end space-x-3">
+                            <button
+                              onClick={() =>
+                                router.push(
+                                  `/dashboard/admin/regions/${region._id}`
                                 )
-                              ) {
-                                deleteRegion(region._id)
-                                  .then(() => {
-                                    fetchRegions();
-                                  })
-                                  .catch((error) => {
-                                    setError(error.message);
-                                    console.error(
-                                      "Error deleting region:",
-                                      error
-                                    );
-                                  });
                               }
-                            }}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            Delete
-                          </button>
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    "Are you sure you want to delete this region?"
+                                  )
+                                ) {
+                                  deleteRegion(region._id)
+                                    .then(() => {
+                                      fetchRegions();
+                                    })
+                                    .catch((error) => {
+                                      setError(error.message);
+                                      console.error(
+                                        "Error deleting region:",
+                                        error
+                                      );
+                                    });
+                                }
+                              }}
+                              className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))

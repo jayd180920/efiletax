@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      console.log("UPLOAD API: Starting file upload process");
+      console.log("UPLOAD API: Starting file upload process", req);
 
       // Parse the multipart form data
       const { fields, files } = await parseMultipartFormData(

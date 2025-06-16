@@ -305,64 +305,19 @@ export default function PersonalInfoTab({
         throw new Error("Failed to fetch submission data");
       }
       const data = await response.json();
-      return data;
+      // Handle the API response structure
+      return data.submission || data;
     } catch (error) {
       console.error("Error fetching submission data:", error);
       return null;
     }
   }, []);
 
-  // Effect to fetch submission data when component mounts or activeTab changes
-  useEffect(() => {
-    const getSubmissionData = async () => {
-      // Check if we have a submission ID
-      let submissionId: any = params.id || null;
-      if (!submissionId) {
-        submissionId = window.formData?.submissionId || null;
-      }
-
-      console.log("123456 Fetching submission data for PersonalInfoTab...");
-      console.log(
-        "123456 Fetching submission data for PersonalInfoTab...",
-        window.formData,
-        submissionId
-      );
-      if (submissionId && activeTab === "personal-info") {
-        const data = await fetchSubmissionData(submissionId);
-        console.log(
-          "jbdkjbDKJsdb Fetching submission data for PersonalInfoTab...",
-          data
-        );
-        if (data && data.formData) {
-          // Update state with data from the database
-          if (data.formData.permanentInfo) {
-            setPermanentInfo(data.formData.permanentInfo);
-          }
-          if (data.formData.identification) {
-            setIdentification(data.formData.identification);
-          }
-          if (data.formData.address) {
-            setAddress(data.formData.address);
-          }
-          if (data.formData.bankDetails) {
-            setBankDetails(data.formData.bankDetails);
-          }
-          if (data.formData.placeOfBusiness) {
-            setPlaceOfBusiness(data.formData.placeOfBusiness);
-          }
-          if (data.formData.files) {
-            setFiles(data.formData.files);
-          }
-        }
-      }
-    };
-
-    getSubmissionData();
-  }, [activeTab, fetchSubmissionData]);
-
   // Update local state when formData props change
   useEffect(() => {
     if (isMounted.current && formData) {
+      console.log("PersonalInfoTab: Updating state with formData:", formData);
+
       if (formData.permanentInfo) {
         setPermanentInfo(formData.permanentInfo);
       }
@@ -380,6 +335,27 @@ export default function PersonalInfoTab({
       }
       if (formData.files) {
         setFiles(formData.files);
+      }
+      if (formData.fileUrls) {
+        setFileUrls(formData.fileUrls);
+      }
+      if (formData.companyName) {
+        setCompanyName(formData.companyName);
+      }
+      if (formData.directors) {
+        setDirectors(formData.directors);
+      }
+      if (formData.partners) {
+        setPartners(formData.partners);
+      }
+      if (formData.nominee) {
+        setNominee(formData.nominee);
+      }
+      if (formData.alterationDetails) {
+        setAlterationDetails(formData.alterationDetails);
+      }
+      if (formData.aadharGST) {
+        setAadharGST(formData.aadharGST);
       }
     }
   }, [formData]);

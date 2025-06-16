@@ -320,25 +320,30 @@ export async function PUT(
       "PUT /api/admin/submissions/[id]: Request body: ABCD",
       requestBody
     );
-    // Validate status
-    if (
-      !status ||
-      ![
-        "pending",
-        "approved",
-        "rejected",
-        "sent for revision",
-        "in-progress",
-      ].includes(status)
-    ) {
+    // Validate status (case-insensitive)
+    const validStatuses = [
+      "pending",
+      "approved",
+      "rejected",
+      "sent for revision",
+      "in-progress",
+      "completed",
+    ];
+
+    if (!status || !validStatuses.includes(status.toLowerCase())) {
       return NextResponse.json(
         { error: "Invalid status value" },
         { status: 400 }
       );
     }
 
+    // Use the exact status value from validStatuses array to match enum
+    const normalizedStatus =
+      validStatuses.find((s) => s.toLowerCase() === status.toLowerCase()) ||
+      status.toLowerCase();
+
     // If status is rejected, require a reason
-    if (status === "rejected" && !rejectionReason) {
+    if (normalizedStatus === "rejected" && !rejectionReason) {
       return NextResponse.json(
         { error: "Rejection reason is required" },
         { status: 400 }
@@ -381,12 +386,12 @@ export async function PUT(
         );
       }
     }
-    console.log("admin_comments status ", status, submission);
-    // Update submission status
-    submission.status = status;
+    console.log("admin_comments status ", normalizedStatus, submission);
+    // Update submission status with normalized value
+    submission.status = normalizedStatus;
 
     // Add timestamps and reason if needed
-    if (status === "approved") {
+    if (normalizedStatus === "approved") {
       submission.approvedAt = new Date();
       submission.rejectionReason = undefined;
 
@@ -404,16 +409,16 @@ export async function PUT(
               phone: user.phone,
             },
             submission._id.toString(),
-            status,
+            normalizedStatus,
             undefined, // No comments for approved status
             tax_summary_file // Pass the file URL
           );
         }
       }
-    } else if (status === "rejected") {
+    } else if (normalizedStatus === "rejected") {
       submission.rejectedAt = new Date();
       submission.rejectionReason = rejectionReason;
-    } else if (status === "sent for revision") {
+    } else if (normalizedStatus === "sent for revision") {
       // Add admin comments for "sent for revision" status
       console.log("admin_comments ", admin_comments, submission);
       if (admin_comments) {
@@ -430,14 +435,31 @@ export async function PUT(
               phone: user.phone,
             },
             submission._id.toString(),
-            status,
+            normalizedStatus,
             admin_comments
           );
         }
       }
-    } else if (status === "in-progress") {
+    } else if (normalizedStatus === "in-progress") {
       // No additional fields needed for "in-progress" status
       // No notifications sent for "in-progress" status
+    } else if (normalizedStatus === "completed") {
+      // Get user details for notification
+      const user = await User.findById(submission.userId);
+      if (user) {
+        // Send notification to user about completion
+        await sendSubmissionUpdateNotification(
+          {
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+          },
+          submission._id.toString(),
+          normalizedStatus,
+          undefined, // No comments for completed status
+          tax_summary_file // Pass the file URL if provided
+        );
+      }
     }
 
     // Add tax_summary if provided (for any status)

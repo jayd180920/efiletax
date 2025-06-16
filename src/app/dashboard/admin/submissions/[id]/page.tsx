@@ -152,7 +152,13 @@ export default function SubmissionDetailPage({
           // First upload the tax summary file
           const formData = new FormData();
           formData.append("file", taxSummaryFile);
+          formData.append("serviceId", submission.serviceId);
 
+          console.log(
+            "ABCD Uploading tax summary file:",
+            taxSummaryFile,
+            formData
+          );
           const uploadResponse = await fetch("/api/upload", {
             method: "POST",
             credentials: "include", // Include credentials to send cookies

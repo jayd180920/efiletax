@@ -326,133 +326,10 @@ export default function IncomeSourceTab({
   // State for tab2 data (from PersonalInfoTab)
   const [tab2Data, setTab2Data] = useState<any>(null);
 
-  // Function to fetch submission data using submissionId
-  const fetchSubmissionData = useCallback(async (submissionId: string) => {
-    try {
-      const response = await fetch(`/api/submissions/${submissionId}`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch submission data");
-      }
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("Error fetching submission data:", error);
-      return null;
-    }
-  }, []);
-
-  // Effect to fetch submission data when component mounts or activeTab changes
-  useEffect(() => {
-    const getSubmissionData = async () => {
-      // Check if we have a submission ID
-      let submissionId: any = params?.id || null;
-      if (!submissionId) {
-        submissionId = window.formData?.submissionId || null;
-      }
-
-      if (submissionId && activeTab === "income-source") {
-        console.log("Fetching submission data for IncomeSourceTab...");
-        const data = await fetchSubmissionData(submissionId);
-        if (data && data.formData) {
-          // Extract tab2 data (PersonalInfoTab data)
-          const personalInfoData = {
-            permanentInfo: data.formData.permanentInfo || {},
-            identification: data.formData.identification || {},
-            address: data.formData.address || {},
-            bankDetails: data.formData.bankDetails || {},
-            placeOfBusiness: data.formData.placeOfBusiness || {},
-          };
-          setTab2Data(personalInfoData);
-
-          // Update service-specific data based on serviceUniqueId
-          if (serviceUniqueId === "new_registration") {
-            if (data.formData.businessKYCData) {
-              console.log(
-                "Setting businessKYCData:",
-                data.formData.businessKYCData
-              );
-              setBusinessKYCData(data.formData.businessKYCData);
-            }
-          } else if (serviceUniqueId === "monthly_filing") {
-            if (data.formData.monthlyFilingData) {
-              console.log(
-                "Setting monthlyFilingData:",
-                data.formData.monthlyFilingData
-              );
-              setMonthlyFilingData(data.formData.monthlyFilingData);
-            }
-          } else if (serviceUniqueId === "annual_return") {
-            if (data.formData.annualReturnData) {
-              console.log(
-                "Setting annualReturnData:",
-                data.formData.annualReturnData
-              );
-              setAnnualReturnData(data.formData.annualReturnData);
-            }
-          } else if (serviceUniqueId === "gst_e_invoice") {
-            if (data.formData.gstEInvoiceData) {
-              console.log(
-                "Setting gstEInvoiceData:",
-                data.formData.gstEInvoiceData
-              );
-              setGstEInvoiceData(data.formData.gstEInvoiceData);
-            }
-          } else if (serviceUniqueId === "claim_gst_refund") {
-            if (data.formData.claimGSTRefundData) {
-              console.log(
-                "Setting claimGSTRefundData:",
-                data.formData.claimGSTRefundData
-              );
-              setClaimGSTRefundData(data.formData.claimGSTRefundData);
-            }
-          } else if (serviceUniqueId === "gst_closure") {
-            if (data.formData.gstClosureData) {
-              console.log(
-                "Setting gstClosureData:",
-                data.formData.gstClosureData
-              );
-              setGSTClosureData(data.formData.gstClosureData);
-            }
-          } else if (serviceUniqueId === "gst_amendment") {
-            if (data.formData.gstAmendmentData) {
-              console.log(
-                "Setting gstAmendmentData:",
-                data.formData.gstAmendmentData
-              );
-              setGSTAmendmentData(data.formData.gstAmendmentData);
-            }
-          } else if (serviceUniqueId === "gst_e_waybill") {
-            if (data.formData.gstEWaybillData) {
-              console.log(
-                "Setting gstEWaybillData:",
-                data.formData.gstEWaybillData
-              );
-              setGSTEWaybillData(data.formData.gstEWaybillData);
-            }
-          }
-
-          // Set files data if available
-          if (data.formData.files) {
-            console.log("Setting files data:", data.formData.files);
-            setFiles(data.formData.files);
-          }
-
-          // Set file URLs if available
-          if (data.fileUrls) {
-            console.log("Setting file URLs:", data.fileUrls);
-            setFileUrls(data.fileUrls);
-          }
-        }
-      }
-    };
-
-    getSubmissionData();
-  }, [activeTab, fetchSubmissionData, serviceUniqueId]);
-
   // Update local state when formData props change
   useEffect(() => {
     if (isMounted.current && formData) {
-      console.log("formData props changed:", formData);
+      console.log("IncomeSourceTab: Updating state with formData:", formData);
       console.log("Current serviceUniqueId:", serviceUniqueId);
 
       if (serviceUniqueId === "new_registration") {
@@ -519,6 +396,14 @@ export default function IncomeSourceTab({
           );
           setGSTEWaybillData(formData.gstEWaybillData);
         }
+      }
+
+      // Update income details and tax savings for ITR services
+      if (formData.incomeDetails) {
+        setIncomeDetails(formData.incomeDetails);
+      }
+      if (formData.taxSavings) {
+        setTaxSavings(formData.taxSavings);
       }
 
       // Set files data if available

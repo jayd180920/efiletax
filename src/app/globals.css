@@ -477,7 +477,12 @@ button.search-button {
 }
 
 button.action-button-style {
-  box-shadow: rgb(64 64 64) 0px 7px 29px 0px;
+  box-shadow: rgb(136 152 148) 0px 7px 29px 0px;
+}
+button.action-button-style:hover {
+  background-color: #ffffff;
+  color: #21b2aa;
+  box-shadow: rgb(165, 167, 167) 0px 7px 29px 0px;
 }
 
 button.action-buttons.text-white {

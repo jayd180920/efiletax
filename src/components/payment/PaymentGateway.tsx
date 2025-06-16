@@ -268,7 +268,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
             ))}
 
             {/* Debug information - remove in production */}
-            <div className="mb-4 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-40">
+            {/* <div className="mb-4 p-3 bg-gray-100 rounded text-xs overflow-auto max-h-40">
               <p className="font-semibold mb-1">
                 Debug Info (remove in production):
               </p>
@@ -277,7 +277,7 @@ const PaymentGateway: React.FC<PaymentGatewayProps> = ({
                 <p className="font-semibold mt-1">Form Data:</p>
                 <pre>{JSON.stringify(paymentData.formData, null, 2)}</pre>
               </div>
-            </div>
+            </div> */}
 
             <div className="mt-6 space-y-3">
               <button

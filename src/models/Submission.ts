@@ -9,7 +9,8 @@ export interface ISubmission extends mongoose.Document {
     | "approved"
     | "rejected"
     | "sent for revision"
-    | "in-progress";
+    | "in-progress"
+    | "completed";
   formData: Record<string, any>;
   files: Record<string, string[]>;
   rejectionReason?: string;
@@ -47,6 +48,7 @@ const SubmissionSchema = new mongoose.Schema<ISubmission>(
         "rejected",
         "sent for revision",
         "in-progress",
+        "completed",
       ],
       default: "pending",
     },
@@ -99,8 +101,11 @@ SubmissionSchema.index({ paymentStatus: 1 });
 SubmissionSchema.index({ region: 1 });
 
 // Check if model exists before creating a new one (for hot reloading in development)
-const Submission =
-  mongoose.models.Submission ||
-  mongoose.model<ISubmission>("Submission", SubmissionSchema);
+// Force model recompilation by deleting cached model if it exists
+if (mongoose.models.Submission) {
+  delete mongoose.models.Submission;
+}
+
+const Submission = mongoose.model<ISubmission>("Submission", SubmissionSchema);
 
 export default Submission;

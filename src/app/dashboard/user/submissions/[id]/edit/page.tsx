@@ -72,14 +72,17 @@ export default function EditSubmissionPage({
 
       const data = await response.json();
       console.log("ABCD Fetched submission data:", data);
-      setSubmission(data);
+
+      // The API returns data wrapped in a submission object
+      const submissionData = data.submission || data;
+      setSubmission(submissionData);
 
       // Initialize form data with submission data
-      if (data && data.formData) {
+      if (submissionData && submissionData.formData) {
         // Include fileUrls in the formData
         setFormData({
-          ...data.formData,
-          fileUrls: data.fileUrls || {},
+          ...submissionData.formData,
+          fileUrls: submissionData.fileUrls || {},
         });
       }
     } catch (error: any) {

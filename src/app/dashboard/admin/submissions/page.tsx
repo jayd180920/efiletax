@@ -706,7 +706,7 @@ const SubmissionsPage = () => {
                           }
                           className="action-button-style inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
-                          View {submission.status}
+                          View
                         </button>
                         {submission.status !== "draft" &&
                           submission.status !== "sent for revision" &&

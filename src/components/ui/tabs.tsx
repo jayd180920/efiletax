@@ -3,7 +3,8 @@
 import * as React from "react";
 
 interface TabsProps {
-  defaultValue: string;
+  defaultValue?: string;
+  value?: string;
   className?: string;
   children: React.ReactNode;
   onValueChange?: (value: string) => void;
@@ -36,18 +37,24 @@ const TabsContext = React.createContext<{
 
 export function Tabs({
   defaultValue,
+  value: controlledValue,
   className = "",
   children,
   onValueChange,
 }: TabsProps) {
-  const [value, setValue] = React.useState(defaultValue);
+  const [internalValue, setInternalValue] = React.useState(defaultValue || "");
+
+  // Use controlled value if provided, otherwise use internal state
+  const value = controlledValue !== undefined ? controlledValue : internalValue;
 
   const handleValueChange = React.useCallback(
     (newValue: string) => {
-      setValue(newValue);
+      if (controlledValue === undefined) {
+        setInternalValue(newValue);
+      }
       onValueChange?.(newValue);
     },
-    [onValueChange]
+    [controlledValue, onValueChange]
   );
 
   return (

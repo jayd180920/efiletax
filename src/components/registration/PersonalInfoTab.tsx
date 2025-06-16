@@ -903,6 +903,7 @@ export default function PersonalInfoTab({
 
         let response;
         let result;
+        let isFirstTimeSave = false;
         console.log("XYZ Submission ID:", submissionId);
         if (submissionId) {
           // Update existing submission
@@ -927,7 +928,8 @@ export default function PersonalInfoTab({
           console.log("Updated existing submission:", submissionId);
         } else {
           console.log("XYZ Create NEW", submissionId);
-          // Create new submission
+          // Create new submission - this is first time save
+          isFirstTimeSave = true;
           response = await fetch("/api/submissions", {
             method: "POST",
             headers: {
@@ -969,7 +971,15 @@ export default function PersonalInfoTab({
           });
         }
 
-        //alert("Form data saved successfully! 3333");
+        // If this is the first time saving personal info, redirect to edit page with second tab
+        if (isFirstTimeSave && result && result.id) {
+          console.log("First time save - redirecting to edit page");
+          // Redirect to edit page with second tab active
+          window.location.href = `/dashboard/user/submissions/${result.id}/edit?tab=income-source`;
+        } else {
+          //alert("Form data saved successfully! 3333");
+        }
+
         setIsSaving(false);
       } catch (error) {
         console.error("Error saving form data:", error);

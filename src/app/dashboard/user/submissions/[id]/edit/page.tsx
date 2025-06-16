@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/components/auth/AuthContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Layout from "@/components/layout/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PersonalInfoTab from "@/components/registration/PersonalInfoTab";
@@ -36,6 +36,7 @@ export default function EditSubmissionPage({
 }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   // Store the id from params using React.use() to unwrap the Promise
   const unwrappedParams = React.use(params as any) as { id: string };
   const submissionId = unwrappedParams.id;
@@ -48,6 +49,17 @@ export default function EditSubmissionPage({
 
   // State for validation errors
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+  // Handle tab query parameter
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (
+      tabParam &&
+      ["personal-info", "income-source", "tax-savings"].includes(tabParam)
+    ) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
 
   // Redirect non-authenticated users
   useEffect(() => {
@@ -177,6 +189,46 @@ export default function EditSubmissionPage({
     }
   };
 
+  // Handle finish - update status to "ready for review"
+  const handleFinish = async () => {
+    try {
+      // Validate form data
+      if (!validateForm()) {
+        // If validation fails, don't proceed with the finish
+        return;
+      }
+
+      setIsLoading(true);
+      setError(null);
+
+      const response = await fetch(`/api/submissions/${submissionId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: submissionId, // Include the ID in the request body
+          formData: formData,
+          fileUrls: formData.fileUrls, // Explicitly include fileUrls
+          status: "ready for review", // Update status to ready for review
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to update submission");
+      }
+
+      alert("Submission marked as ready for review successfully!");
+      router.push(`/dashboard/user/submissions/${submissionId}`);
+    } catch (error: any) {
+      setError(error.message);
+      console.error("Error updating submission:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   if (loading || !user) {
     return (
       <Layout>
@@ -222,17 +274,30 @@ export default function EditSubmissionPage({
                   Edit Submission
                 </h1>
               </div>
-              <button
-                onClick={handleSave}
-                disabled={submission?.status === "approved"}
-                className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
-                  submission?.status === "approved"
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                }`}
-              >
-                Save Changes
-              </button>
+              <div className="flex space-x-3">
+                <button
+                  onClick={handleSave}
+                  disabled={submission?.status === "approved"}
+                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                    submission?.status === "approved"
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  }`}
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={handleFinish}
+                  disabled={submission?.status === "approved"}
+                  className={`inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white ${
+                    submission?.status === "approved"
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                  }`}
+                >
+                  Finish
+                </button>
+              </div>
             </div>
 
             {/* Display API errors */}
@@ -276,7 +341,7 @@ export default function EditSubmissionPage({
                 {/* Form Tabs */}
                 <div className="p-6">
                   <Tabs
-                    defaultValue={activeTab}
+                    value={activeTab}
                     className="w-full"
                     onValueChange={setActiveTab}
                   >

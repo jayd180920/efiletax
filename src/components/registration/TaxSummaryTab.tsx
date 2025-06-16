@@ -126,7 +126,7 @@ export default function TaxSummaryTab({
         return;
       }
 
-      // Update existing submission with completed status
+      // Update existing submission with "ready for review" status
       const response = await fetch(`/api/submissions/${submissionId}`, {
         method: "PUT",
         headers: {
@@ -135,7 +135,7 @@ export default function TaxSummaryTab({
         body: JSON.stringify({
           id: submissionId, // Include the ID in the request body
           formData: formData || {},
-          status: "completed",
+          status: "ready for review",
         }),
       });
 
@@ -143,14 +143,16 @@ export default function TaxSummaryTab({
         throw new Error("Failed to update form data");
       }
 
-      console.log("Completed submission:", submissionId);
-      alert("Form completed successfully! Redirecting to dashboard...");
+      console.log("Submission marked as ready for review:", submissionId);
+      alert(
+        "Form submitted for review successfully! Redirecting to dashboard..."
+      );
 
       // Redirect to dashboard
       window.location.href = "/dashboard/user";
     } catch (error) {
-      console.error("Error completing form:", error);
-      alert("Failed to complete form. Please try again.");
+      console.error("Error submitting form for review:", error);
+      alert("Failed to submit form for review. Please try again.");
     }
   };
 

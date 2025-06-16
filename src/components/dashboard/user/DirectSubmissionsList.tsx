@@ -18,7 +18,10 @@ interface Submission {
     | "approved"
     | "rejected"
     | "sent for revision"
-    | "in-progress";
+    | "in-progress"
+    | "ready for review"
+    | "draft"
+    | "completed";
   paymentStatus: "pending" | "paid" | "refunded";
   latestPaymentStatus?: "success" | "failure" | "pending";
   paymentAmount?: number;
@@ -268,21 +271,21 @@ const DirectSubmissionsList = () => {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/submissions/reply", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          submissionId: selectedSubmission._id,
-          user_comments: data.user_comments,
-        }),
-      });
+      // const response = await fetch("/api/submissions/reply", {
+      //   method: "POST",
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      //   body: JSON.stringify({
+      //     submissionId: selectedSubmission._id,
+      //     user_comments: data.user_comments,
+      //   }),
+      // });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to submit reply");
-      }
+      // if (!response.ok) {
+      //   const errorData = await response.json();
+      //   throw new Error(errorData.error || "Failed to submit reply");
+      // }
 
       // Refresh submissions
       await fetchSubmissions();
@@ -614,28 +617,29 @@ const DirectSubmissionsList = () => {
                           </svg>
                         </Link>
                       )}
-                      {submission.status === "sent for revision" && (
-                        <button
-                          onClick={() => openReplyPopup(submission)}
-                          className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
-                          title="Reply"
-                        >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                      {submission.status !== "completed" &&
+                        submission.status !== "in-progress" && (
+                          <button
+                            onClick={() => openReplyPopup(submission)}
+                            className="inline-flex items-center p-1.5 border border-transparent text-xs font-medium rounded-md shadow-sm text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500"
+                            title="Reply"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-                            />
-                          </svg>
-                        </button>
-                      )}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+                              />
+                            </svg>
+                          </button>
+                        )}
                     </div>
                   </div>
                 </div>

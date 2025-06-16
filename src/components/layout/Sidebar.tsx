@@ -168,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       roles: ["regionAdmin"],
     },
     {
-      title: "Service Pricing",
+      title: "Service & Pricing",
       href: "/dashboard/admin/services",
       icon: (
         <svg

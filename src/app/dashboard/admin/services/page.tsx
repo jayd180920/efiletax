@@ -257,7 +257,9 @@ const ServicesList = () => {
     <Layout>
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-800">Service Pricing</h1>
+          <h1 className="text-2xl font-bold text-gray-800">
+            Services & Pricing
+          </h1>
           <button
             onClick={() => setShowAddModal(true)}
             className="rounded-md bg-primary px-4 py-2 text-white hover:bg-primary-dark"
@@ -293,71 +295,119 @@ const ServicesList = () => {
               if (categoryServices.length === 0) return null;
 
               return (
-                <div key={category} className="rounded-lg border bg-white p-6">
-                  <h2 className="mb-4 text-xl font-semibold text-gray-800">
-                    {category}
-                  </h2>
+                <div
+                  key={category}
+                  className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden"
+                >
+                  <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center">
+                      <div className="w-1 h-6 bg-blue-500 rounded-full mr-3"></div>
+                      {category}
+                    </h2>
+                  </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
                           >
                             Service Name
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
                           >
                             Charge (₹)
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                            className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-600"
                           >
                             Other Info
                           </th>
                           <th
                             scope="col"
-                            className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500"
+                            className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wider text-gray-600"
                           >
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-gray-200 bg-white">
-                        {categoryServices.map((service) => (
-                          <tr key={service._id}>
+                      <tbody className="divide-y divide-gray-100 bg-white">
+                        {categoryServices.map((service, index) => (
+                          <tr
+                            key={service._id}
+                            className={`hover:bg-gray-50 transition-colors duration-150 ${
+                              index % 2 === 0 ? "bg-white" : "bg-gray-25"
+                            }`}
+                          >
                             <td className="whitespace-nowrap px-6 py-4">
-                              <div className="text-sm font-medium text-gray-900">
-                                {service.name}
+                              <div className="flex items-center">
+                                <div className="flex-shrink-0 w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {service.name}
+                                </div>
                               </div>
                             </td>
                             <td className="whitespace-nowrap px-6 py-4">
-                              <div className="text-sm text-gray-900">
+                              <div className="text-sm font-semibold text-gray-900 bg-green-50 px-3 py-1 rounded-full inline-block">
                                 ₹{service.charge.toLocaleString()}
                               </div>
                             </td>
                             <td className="px-6 py-4">
-                              <div className="text-sm text-gray-500">
-                                {service.otherInfo || "-"}
+                              <div className="text-sm text-gray-600 max-w-xs truncate">
+                                {service.otherInfo || (
+                                  <span className="text-gray-400 italic">
+                                    No additional info
+                                  </span>
+                                )}
                               </div>
                             </td>
-                            <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                              <button
-                                onClick={() => openEditModal(service)}
-                                className="mr-2 text-indigo-600 hover:text-indigo-900"
-                              >
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => openDeleteModal(service)}
-                                className="text-red-600 hover:text-red-900"
-                              >
-                                Delete
-                              </button>
+                            <td className="whitespace-nowrap px-6 py-4 text-center text-sm font-medium">
+                              <div className="flex justify-center space-x-2">
+                                <button
+                                  onClick={() => openEditModal(service)}
+                                  className="inline-flex items-center justify-center w-8 h-8 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded-full transition-colors duration-200"
+                                  title="Edit service"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => openDeleteModal(service)}
+                                  className="inline-flex items-center justify-center w-8 h-8 text-red-600 hover:text-red-900 hover:bg-red-50 rounded-full transition-colors duration-200"
+                                  title="Delete service"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         ))}

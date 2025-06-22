@@ -146,38 +146,39 @@ const RegionSubmissionsList = () => {
 
     try {
       // Map the status from the popup to the API status
-      let apiStatus:
-        | "approved"
-        | "rejected"
-        | "sent for revision"
-        | "in-progress" = "in-progress"; // Default to in-progress
+      let apiStatus: string = "in-progress"; // Default to in-progress
 
       if (data.status === "Need more info") {
         apiStatus = "sent for revision";
       } else if (data.status === "Under review") {
         apiStatus = "in-progress";
       } else if (data.status === "Completed") {
-        apiStatus = "approved";
+        apiStatus = "completed";
       }
 
-      // Update the submission status
-      await updateSubmissionStatus(
-        selectedSubmission._id,
-        apiStatus,
-        undefined,
-        data.admin_comments
+      // Use the admin API endpoint for region admin updates
+      const response = await fetch(
+        `/api/admin/submissions/${selectedSubmission._id}`,
+        {
+          method: "PUT",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            Pragma: "no-cache",
+            Expires: "0",
+          },
+          body: JSON.stringify({
+            status: apiStatus,
+            admin_comments: data.admin_comments,
+            tax_summary_file: data.tax_summary_file,
+          }),
+        }
       );
 
-      // If there's a tax summary file, we need to handle it separately
-      // This would typically be done through a different API call
-      if (data.tax_summary_file) {
-        // Create an admin-user interaction with the tax summary file
-        await createAdminUserInteraction({
-          submissionId: selectedSubmission._id,
-          status: apiStatus,
-          admin_comments: data.admin_comments,
-          tax_summary_file: data.tax_summary_file,
-        });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to update submission");
       }
 
       // Close the popup and refresh submissions

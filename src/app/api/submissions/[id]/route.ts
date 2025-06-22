@@ -13,9 +13,13 @@ export async function PUT(
     // Get user session or authenticate with custom token
     const session = await getServerSession(authOptions);
     let userId;
+    let userRole;
+    let userRegion;
 
     if (session?.user) {
       userId = session.user.id;
+      userRole = (session.user as any).role;
+      userRegion = (session.user as any).region;
     } else {
       // Try custom authentication
       const auth = await authenticate(request);
@@ -25,24 +29,124 @@ export async function PUT(
       }
 
       userId = auth.userId;
+      userRole = auth.role;
+      userRegion = auth.region;
     }
 
-    const { formData, status, fileUrls } = await request.json();
+    const { formData, status, fileUrls, admin_comments, rejectionReason } =
+      await request.json();
     const { id } = await params;
 
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
+    // Build match query based on user role
+    let matchQuery: any = { _id: new ObjectId(id) };
+
+    if (userRole === "regionAdmin") {
+      // For region admin, check if submission belongs to their region
+      const regionsCollection = db.collection("regions");
+      const usersCollection = db.collection("users");
+
+      // Get the region document for the region admin
+      let regionDoc = null;
+      let regionName = null;
+
+      // If userRegion is provided, try to find by ID first
+      if (userRegion) {
+        try {
+          regionDoc = await regionsCollection.findOne({
+            _id: new ObjectId(userRegion),
+          });
+          if (regionDoc) {
+            regionName = regionDoc.name;
+          }
+        } catch (error) {
+          console.error("Error finding region by ID:", error);
+        }
+      }
+
+      // If region not found by ID and user is authenticated, try to find by user ID
+      if (!regionDoc && userId) {
+        // Find the user to get their region
+        const userDoc = await usersCollection.findOne({
+          _id: new ObjectId(userId),
+        });
+
+        if (userDoc && userDoc.region) {
+          // Try to find the region using the user's region reference
+          try {
+            regionDoc = await regionsCollection.findOne({
+              _id: new ObjectId(userDoc.region),
+            });
+            if (regionDoc) {
+              regionName = regionDoc.name;
+            }
+          } catch (error) {
+            console.error("Error finding region from user document:", error);
+          }
+        }
+      }
+
+      if (!regionDoc || !regionName) {
+        return NextResponse.json(
+          { error: "Region not found" },
+          { status: 404 }
+        );
+      }
+
+      // Convert region name to lowercase for case-insensitive comparison
+      const lowercaseRegionName = regionName.toLowerCase();
+
+      // For region admin, match submissions in their region
+      matchQuery = {
+        _id: new ObjectId(id),
+        $or: [
+          {
+            "formData.address.city": {
+              $regex: new RegExp(lowercaseRegionName, "i"),
+            },
+          },
+          {
+            "formData.address.state": {
+              $regex: new RegExp(lowercaseRegionName, "i"),
+            },
+          },
+        ],
+      };
+    } else if (userRole === "admin") {
+      // Admin can access any submission
+      matchQuery = { _id: new ObjectId(id) };
+    } else {
+      // Regular users can only access their own submissions
+      matchQuery = { _id: new ObjectId(id), userId: userId };
+    }
+
     // Get the existing submission to merge formData and fileUrls
-    const existingSubmission = await submissions.findOne({
-      _id: new ObjectId(id),
-      userId: userId,
-    });
+    const existingSubmission = await submissions.findOne(matchQuery);
+
+    if (!existingSubmission) {
+      return NextResponse.json(
+        { error: "Submission not found or unauthorized" },
+        { status: 404 }
+      );
+    }
 
     const updateData: any = {
-      status,
       updatedAt: new Date(),
     };
+
+    // Add status if provided
+    if (status) {
+      updateData.status = status;
+
+      // Add timestamp fields based on status
+      if (status === "approved") {
+        updateData.approvedAt = new Date();
+      } else if (status === "rejected") {
+        updateData.rejectedAt = new Date();
+      }
+    }
 
     // Merge new formData with existing formData
     if (formData) {
@@ -57,12 +161,19 @@ export async function PUT(
       updateData.fileUrls = { ...existingFileUrls, ...fileUrls };
     }
 
-    const result = await submissions.updateOne(
-      { _id: new ObjectId(id), userId: userId },
-      {
-        $set: updateData,
-      }
-    );
+    // Add admin comments if provided
+    if (admin_comments) {
+      updateData.admin_comments = admin_comments;
+    }
+
+    // Add rejection reason if provided
+    if (rejectionReason) {
+      updateData.rejectionReason = rejectionReason;
+    }
+
+    const result = await submissions.updateOne(matchQuery, {
+      $set: updateData,
+    });
 
     if (result.matchedCount === 0) {
       return NextResponse.json(
@@ -89,9 +200,13 @@ export async function GET(
     // Get user session or authenticate with custom token
     const session = await getServerSession(authOptions);
     let userId;
+    let userRole;
+    let userRegion;
 
     if (session?.user) {
       userId = session.user.id;
+      userRole = (session.user as any).role;
+      userRegion = (session.user as any).region;
     } else {
       // Try custom authentication
       const auth = await authenticate(request);
@@ -101,6 +216,8 @@ export async function GET(
       }
 
       userId = auth.userId;
+      userRole = auth.role;
+      userRegion = auth.region;
     }
 
     const { id } = await params;
@@ -108,10 +225,92 @@ export async function GET(
     const db = await connectToDatabase();
     const submissions = db.collection("submissions");
 
+    // Build match query based on user role
+    let matchQuery: any = { _id: new ObjectId(id) };
+
+    if (userRole === "regionAdmin") {
+      // For region admin, check if submission belongs to their region
+      const regionsCollection = db.collection("regions");
+      const usersCollection = db.collection("users");
+
+      // Get the region document for the region admin
+      let regionDoc = null;
+      let regionName = null;
+
+      // If userRegion is provided, try to find by ID first
+      if (userRegion) {
+        try {
+          regionDoc = await regionsCollection.findOne({
+            _id: new ObjectId(userRegion),
+          });
+          if (regionDoc) {
+            regionName = regionDoc.name;
+          }
+        } catch (error) {
+          console.error("Error finding region by ID:", error);
+        }
+      }
+
+      // If region not found by ID and user is authenticated, try to find by user ID
+      if (!regionDoc && userId) {
+        // Find the user to get their region
+        const userDoc = await usersCollection.findOne({
+          _id: new ObjectId(userId),
+        });
+
+        if (userDoc && userDoc.region) {
+          // Try to find the region using the user's region reference
+          try {
+            regionDoc = await regionsCollection.findOne({
+              _id: new ObjectId(userDoc.region),
+            });
+            if (regionDoc) {
+              regionName = regionDoc.name;
+            }
+          } catch (error) {
+            console.error("Error finding region from user document:", error);
+          }
+        }
+      }
+
+      if (!regionDoc || !regionName) {
+        return NextResponse.json(
+          { error: "Region not found" },
+          { status: 404 }
+        );
+      }
+
+      // Convert region name to lowercase for case-insensitive comparison
+      const lowercaseRegionName = regionName.toLowerCase();
+
+      // For region admin, match submissions in their region
+      matchQuery = {
+        _id: new ObjectId(id),
+        $or: [
+          {
+            "formData.address.city": {
+              $regex: new RegExp(lowercaseRegionName, "i"),
+            },
+          },
+          {
+            "formData.address.state": {
+              $regex: new RegExp(lowercaseRegionName, "i"),
+            },
+          },
+        ],
+      };
+    } else if (userRole === "admin") {
+      // Admin can access any submission
+      matchQuery = { _id: new ObjectId(id) };
+    } else {
+      // Regular users can only access their own submissions
+      matchQuery = { _id: new ObjectId(id), userId: userId };
+    }
+
     // Get submission with payment status using aggregation pipeline
     const submissionResult = await submissions
       .aggregate([
-        { $match: { _id: new ObjectId(id), userId: userId } },
+        { $match: matchQuery },
         // Join with services collection to match serviceName with service_unique_name
         {
           $lookup: {

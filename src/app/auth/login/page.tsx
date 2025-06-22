@@ -28,7 +28,11 @@ function LoginContent() {
     const callback = searchParams.get("callbackUrl");
     if (callback) {
       // Check if the callback URL is valid
-      const validPaths = ["/dashboard/user", "/dashboard/admin"];
+      const validPaths = [
+        "/dashboard/user",
+        "/dashboard/admin",
+        "/dashboard/region-admin",
+      ];
       const isValidPath = validPaths.some((path) => callback.startsWith(path));
 
       // If it's a valid path, use it; otherwise, it will default to "/"
@@ -45,14 +49,18 @@ function LoginContent() {
   useEffect(() => {
     // Only redirect if we're sure the user is logged in (has id and role) and 2FA is not required
     if (!loading && user && user.id && user.role && !showTwoFactor) {
-      console.log("User authenticated:", user, callbackUrl);
+      console.log("User authenticated: 1234", user, callbackUrl);
 
       // Determine target URL
       const targetUrl =
         callbackUrl ||
-        (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+        (user.role === "admin"
+          ? "/dashboard/admin"
+          : user.role === "regionAdmin"
+          ? "/dashboard/region-admin/submissions"
+          : "/dashboard/user");
 
-      console.log("User authenticated, redirecting to:", targetUrl);
+      console.log("User authenticated, redirecting to: 1234", targetUrl);
 
       // Use window.location for direct navigation
       if (typeof window !== "undefined") {
@@ -162,7 +170,11 @@ function LoginContent() {
     // Determine target URL
     const targetUrl =
       callbackUrl ||
-      (user.role === "admin" ? "/dashboard/admin" : "/dashboard/user");
+      (user.role === "admin"
+        ? "/dashboard/admin"
+        : user.role === "regionAdmin"
+        ? "/dashboard/region-admin/submissions"
+        : "/dashboard/user");
 
     console.log("2FA successful, redirecting to:", targetUrl);
 

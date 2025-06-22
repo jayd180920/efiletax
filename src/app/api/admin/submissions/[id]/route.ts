@@ -2,12 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import User from "@/models/User";
+import Region from "@/models/Region";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { authenticate } from "@/lib/auth";
 import { getToken } from "next-auth/jwt";
 import mongoose, { isValidObjectId } from "mongoose";
 import { sendSubmissionUpdateNotification } from "@/lib/notification-utils";
+import AdminUserInteraction from "@/models/AdminUserInteraction";
 
 // GET /api/admin/submissions/[id] - Get a specific submission (admin or regionAdmin only)
 export async function GET(
@@ -362,7 +364,6 @@ export async function PUT(
     // If user is regionAdmin, check if they have access to this submission
     if (userRole === "regionAdmin") {
       // Get the admin's user record to find their region
-      // Find the admin user by userId or email depending on what we have
       const admin = userId
         ? await User.findById(userId)
         : session?.user?.email
@@ -375,10 +376,26 @@ export async function PUT(
         );
       }
 
-      // Check if submission is from admin's region
+      // Get the region document to find the region name
+      const regionDoc = await Region.findById(admin.region);
+      if (!regionDoc) {
+        return NextResponse.json(
+          { error: "Region not found" },
+          { status: 404 }
+        );
+      }
+
+      const regionName = regionDoc.name.toLowerCase();
+
+      // Check if submission is from admin's region based on address
+      const submissionCity =
+        submission.formData?.address?.city?.toLowerCase() || "";
+      const submissionState =
+        submission.formData?.address?.state?.toLowerCase() || "";
+
       if (
-        !submission.region ||
-        submission.region.toString() !== admin.region.toString()
+        !submissionCity.includes(regionName) &&
+        !submissionState.includes(regionName)
       ) {
         return NextResponse.json(
           { error: "You don't have access to this submission" },
@@ -469,6 +486,39 @@ export async function PUT(
 
     // Save submission
     await submission.save();
+
+    // Create AdminUserInteraction record for region admin actions
+    if (userRole === "regionAdmin" && (admin_comments || tax_summary_file)) {
+      try {
+        // Map the normalized status to AdminUserInteraction status enum
+        let interactionStatus = "Under review"; // Default status
+        if (normalizedStatus === "sent for revision") {
+          interactionStatus = "sent for revision";
+        } else if (normalizedStatus === "in-progress") {
+          interactionStatus = "In-progress";
+        } else if (normalizedStatus === "completed") {
+          interactionStatus = "Completed";
+        } else if (normalizedStatus === "approved") {
+          interactionStatus = "Completed";
+        } else if (admin_comments) {
+          // If there are comments but no specific status mapping, use "Need more info"
+          interactionStatus = "Need more info";
+        }
+
+        const interaction = new AdminUserInteraction({
+          submissionId: id,
+          status: interactionStatus,
+          admin_comments: admin_comments || undefined,
+          tax_summary_file: tax_summary_file || undefined,
+        });
+
+        await interaction.save();
+        console.log("AdminUserInteraction created:", interaction);
+      } catch (interactionError) {
+        console.error("Error creating AdminUserInteraction:", interactionError);
+        // Don't fail the main request if interaction creation fails
+      }
+    }
 
     // Return updated submission
     const updatedSubmission = await Submission.findById(id).populate(

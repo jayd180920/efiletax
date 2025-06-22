@@ -29,6 +29,7 @@ export default function RegionAdminDashboardPage() {
         // Show password reset popup if password is not set
         setShowPasswordPopup(true);
       }
+      // Removed automatic redirect to submissions page - let AuthContext handle navigation
     }
   }, [user, loading, router]);
 

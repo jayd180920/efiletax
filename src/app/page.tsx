@@ -51,6 +51,8 @@ function HomeContent() {
       let targetUrl = callbackUrl || "";
       if (user.role === "admin") {
         targetUrl = "/dashboard/admin";
+      } else if (user.role === "regionAdmin") {
+        targetUrl = "/dashboard/region-admin/submissions";
       } else {
         targetUrl = "/dashboard/user";
       }

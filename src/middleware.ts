@@ -6,6 +6,7 @@ import { verifyTokenEdge } from "./lib/auth-edge";
 const protectedPaths = [
   "/dashboard/user",
   "/dashboard/admin",
+  "/dashboard/region-admin",
   "/services/gst-filing/new-registration",
   // Add other protected paths here
 ];
@@ -14,7 +15,7 @@ const protectedPaths = [
 const bypassPaths = ["/payment-success", "/payment-failed"];
 
 // Paths that require admin role
-const adminPaths = ["/dashboard/admin"];
+const adminPaths = ["/dashboard/admin", "/dashboard/region-admin"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;

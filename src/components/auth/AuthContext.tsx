@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       // Call the login API
       const user = await loginApi(email, password, callbackUrl, recaptchaToken);
-      console.log("AuthContext: login API returned user:", user);
+      console.log("AuthContext: login API returned user:", user, callbackUrl);
 
       // Set the user in state
       setUser(user);
@@ -145,13 +145,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Determine the target URL
-      const targetUrl =
-        callbackUrl ||
-        (user.role === "admin" || user.role === "regionAdmin"
-          ? "/dashboard/admin"
-          : "/dashboard/user");
+      let navUrl = "/";
+      if (user.role === "admin") {
+        navUrl = "/dashboard/admin";
+        console.log("11111111 Admin", navUrl, user.role);
+      } else if (user.role === "regionAdmin") {
+        navUrl = "/dashboard/region-admin/submissions";
+        console.log("11111111 regionAdmin", navUrl, user.role);
+      } else {
+        navUrl = "/dashboard/user";
+        console.log("11111111 user", navUrl, user.role);
+      }
+      const targetUrl = navUrl;
 
       console.log("AuthContext: Redirecting to:", targetUrl);
+      console.log("AuthContext: User object:", JSON.stringify(user, null, 2));
 
       // Use window.location for direct navigation
       if (typeof window !== "undefined") {
@@ -160,10 +168,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setTimeout(() => {
           // Force navigation to the target URL
           console.log(
-            "AuthContext: Using window.location to navigate to:",
-            targetUrl
+            "AuthContext: About to navigate to:",
+            targetUrl,
+            "Current URL:",
+            window.location.href
           );
-          window.location.href = targetUrl;
+          window.location.href = targetUrl || "/";
         }, 500); // Increased from 100ms to 500ms
       }
 

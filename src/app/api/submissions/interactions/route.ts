@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
     // Try multiple authentication methods
     let isAuthenticated = false;
     let userId = null;
+    let userRole = null;
 
     // 1. Try NextAuth session first
     console.log("GET /api/submissions/interactions: Checking NextAuth session");
@@ -26,14 +27,16 @@ export async function GET(req: NextRequest) {
       console.log("GET /api/submissions/interactions: Session found with user");
       isAuthenticated = true;
       userId = session.user.id;
+      userRole = session.user.role;
     }
 
     // 2. If no session, try NextAuth JWT token
+    let nextAuthToken = null;
     if (!isAuthenticated) {
       console.log(
         "GET /api/submissions/interactions: Checking NextAuth JWT token"
       );
-      const nextAuthToken = await getToken({
+      nextAuthToken = await getToken({
         req,
         secret: process.env.NEXTAUTH_SECRET,
       });
@@ -42,18 +45,21 @@ export async function GET(req: NextRequest) {
         console.log("GET /api/submissions/interactions: NextAuth token found");
         isAuthenticated = true;
         userId = nextAuthToken.sub;
+        userRole = nextAuthToken.role as string;
       }
     }
 
     // 3. If still not authenticated, try custom token
+    let customAuth = null;
     if (!isAuthenticated) {
       console.log("GET /api/submissions/interactions: Checking custom token");
-      const customAuth = await authenticate(req);
+      customAuth = await authenticate(req);
 
       if (customAuth) {
         console.log("GET /api/submissions/interactions: Custom token found");
         isAuthenticated = true;
         userId = customAuth.userId;
+        userRole = customAuth.role;
       }
     }
 
@@ -91,12 +97,21 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Check if the submission belongs to the authenticated user
-    if (submission.userId.toString() !== userId) {
-      return NextResponse.json(
-        { error: "You don't have permission to access this submission" },
-        { status: 403 }
+    // Check permissions based on user role
+    if (userRole === "regionAdmin") {
+      // Region admins can access interactions for submissions in their region
+      // Additional region-based access control can be added here if needed
+      console.log(
+        "GET /api/submissions/interactions: Region admin access granted"
       );
+    } else {
+      // Regular users can only access their own submissions
+      if (submission.userId.toString() !== userId) {
+        return NextResponse.json(
+          { error: "You don't have permission to access this submission" },
+          { status: 403 }
+        );
+      }
     }
 
     // Get interactions for the submission

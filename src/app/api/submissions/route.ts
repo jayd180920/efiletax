@@ -1,9 +1,10 @@
 import { NextResponse, NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { connectToDatabase } from "@/lib/db";
 import { ObjectId } from "mongodb";
 import { authenticate } from "@/lib/auth";
+import { authenticateRequest } from "@/lib/auth-server";
 import mongoose from "mongoose";
 
 export async function GET(request: NextRequest) {
@@ -20,59 +21,37 @@ export async function GET(request: NextRequest) {
     // Calculate skip for pagination
     const skip = (page - 1) * limit;
 
-    // Get user session or authenticate with custom token
-    const session = await getServerSession(authOptions);
-    let userId;
-    let userRole;
-    let userRegion;
+    // Use the robust authentication function
+    console.log("Submissions API: Starting authentication check");
+    const auth = await authenticateRequest(request);
 
-    console.log("Submissions API: Checking authentication");
-    console.log("NextAuth session exists:", !!session);
-    console.log("Environment:", process.env.NODE_ENV);
-
-    if (session?.user) {
-      userId = session.user.id;
-      userRole = (session.user as any).role;
-      userRegion = (session.user as any).region;
-      console.log("User authenticated via NextAuth session:", {
-        id: userId,
-        role: userRole,
-        email: session.user.email,
-      });
-    } else {
-      console.log("No NextAuth session, trying custom authentication");
-      // Try custom authentication
-      const auth = await authenticate(request);
-
-      if (!auth) {
-        console.log("Custom authentication also failed");
-        console.log(
-          "Request cookies:",
-          request.cookies
-            .getAll()
-            .map((c) => ({ name: c.name, hasValue: !!c.value }))
-        );
-        return NextResponse.json(
-          {
-            error: "Unauthorized - No valid session or token found",
-            debug: {
-              hasNextAuthSession: !!session,
-              environment: process.env.NODE_ENV,
-              timestamp: new Date().toISOString(),
-            },
+    if (!auth) {
+      console.log("Authentication failed - no valid session or token found");
+      return NextResponse.json(
+        {
+          error: "Unauthorized - No valid session or token found",
+          debug: {
+            environment: process.env.NODE_ENV,
+            timestamp: new Date().toISOString(),
+            cookies: request.cookies.getAll().map((c) => ({
+              name: c.name,
+              hasValue: !!c.value,
+            })),
           },
-          { status: 401 }
-        );
-      }
-
-      userId = auth.userId;
-      userRole = auth.role;
-      userRegion = auth.region;
-      console.log("User authenticated via custom token:", {
-        id: userId,
-        role: userRole,
-      });
+        },
+        { status: 401 }
+      );
     }
+
+    const userId = auth.userId;
+    const userRole = auth.role;
+    const userRegion = auth.region;
+
+    console.log("User authenticated successfully:", {
+      id: userId,
+      role: userRole,
+      email: auth.email,
+    });
 
     // Connect to database
     const db = await connectToDatabase();
@@ -296,28 +275,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // Try multiple authentication methods
-    let isAuthenticated = false;
-    let userId = null;
+    // Use the robust authentication function
+    const auth = await authenticateRequest(request);
 
-    // 1. Try NextAuth session first
-    const session = await getServerSession(authOptions);
-    if (session?.user) {
-      isAuthenticated = true;
-      userId = session.user.id;
-    } else {
-      // 2. If no session, try custom authentication
-      const auth = await authenticate(request);
-      if (auth) {
-        isAuthenticated = true;
-        userId = auth.userId;
-      }
-    }
-
-    // Check if we have authentication
-    if (!isAuthenticated) {
+    if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const userId = auth.userId;
 
     const {
       formData,
@@ -359,28 +324,14 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // Try multiple authentication methods
-    let isAuthenticated = false;
-    let userId = null;
+    // Use the robust authentication function
+    const auth = await authenticateRequest(request);
 
-    // 1. Try NextAuth session first
-    const session = await getServerSession(authOptions);
-    if (session?.user) {
-      isAuthenticated = true;
-      userId = session.user.id;
-    } else {
-      // 2. If no session, try custom authentication
-      const auth = await authenticate(request);
-      if (auth) {
-        isAuthenticated = true;
-        userId = auth.userId;
-      }
-    }
-
-    // Check if we have authentication
-    if (!isAuthenticated) {
+    if (!auth) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const userId = auth.userId;
 
     const { id, formData, status, files, fileUrls } = await request.json();
 

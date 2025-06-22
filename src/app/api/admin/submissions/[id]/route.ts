@@ -404,6 +404,10 @@ export async function PUT(
       }
     }
     console.log("admin_comments status ", normalizedStatus, submission);
+    // Get admin details for tracking who completed the submission
+    const adminUser = await User.findById(userId);
+    const adminName = adminUser ? adminUser.name : "Unknown Admin";
+
     // Update submission status with normalized value
     submission.status = normalizedStatus;
 
@@ -461,6 +465,14 @@ export async function PUT(
       // No additional fields needed for "in-progress" status
       // No notifications sent for "in-progress" status
     } else if (normalizedStatus === "completed") {
+      // Track who completed the submission
+      submission.completedBy = {
+        adminId: new mongoose.Types.ObjectId(userId),
+        adminName: adminName,
+        adminRole: userRole as "admin" | "regionAdmin",
+        completedAt: new Date(),
+      };
+
       // Get user details for notification
       const user = await User.findById(submission.userId);
       if (user) {
@@ -476,6 +488,82 @@ export async function PUT(
           undefined, // No comments for completed status
           tax_summary_file // Pass the file URL if provided
         );
+      }
+
+      // If region admin completed the submission, notify super admin
+      if (userRole === "regionAdmin") {
+        try {
+          // Find all super admins
+          const superAdmins = await User.find({ role: "admin" });
+
+          for (const superAdmin of superAdmins) {
+            // Send email and WhatsApp notification to super admin
+            const { sendEmail, sendWhatsAppMessage } = await import(
+              "@/lib/notification-utils"
+            );
+
+            const emailSubject = "Region Admin Completed Submission";
+            const emailContent = `
+              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                <h2 style="color: #1a56db;">Submission Completed by Region Admin</h2>
+                <p>Hello ${superAdmin.name},</p>
+                <p>A submission has been completed by region admin <strong>${adminName}</strong>.</p>
+                
+                <div style="background-color: #f3f4f6; padding: 15px; border-left: 4px solid #1a56db; margin: 20px 0;">
+                  <p style="margin: 0;"><strong>Submission Details:</strong></p>
+                  <p style="margin-top: 10px;">Service: ${
+                    submission.serviceName
+                  }</p>
+                  <p>Completed by: ${adminName} (Region Admin)</p>
+                  <p>Completed at: ${new Date().toLocaleString()}</p>
+                  ${
+                    tax_summary_file
+                      ? `<p>Tax summary file uploaded: Yes</p>`
+                      : ""
+                  }
+                </div>
+                
+                <p>Please review the completed submission if needed.</p>
+                
+                <div style="margin: 25px 0;">
+                  <a href="${
+                    process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+                  }/dashboard/admin/submissions/${
+              submission._id
+            }" style="background-color: #1a56db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">View Submission</a>
+                </div>
+                
+                <p>Best regards,<br>The eFileTax System</p>
+              </div>
+            `;
+
+            await sendEmail(superAdmin.email, emailSubject, emailContent);
+
+            if (superAdmin.phone) {
+              const whatsappMessage =
+                `Hello ${superAdmin.name},\n\n` +
+                `A submission has been completed by region admin ${adminName}.\n\n` +
+                `Service: ${submission.serviceName}\n` +
+                `Completed at: ${new Date().toLocaleString()}\n` +
+                `${
+                  tax_summary_file ? "Tax summary file uploaded: Yes\n" : ""
+                }` +
+                `\nPlease review the completed submission if needed.\n\n` +
+                `View submission: ${
+                  process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+                }/dashboard/admin/submissions/${submission._id}\n\n` +
+                `Best regards,\nThe eFileTax System`;
+
+              await sendWhatsAppMessage(superAdmin.phone, whatsappMessage);
+            }
+          }
+        } catch (notificationError) {
+          console.error(
+            "Error sending super admin notification:",
+            notificationError
+          );
+          // Don't fail the main request if notification fails
+        }
       }
     }
 

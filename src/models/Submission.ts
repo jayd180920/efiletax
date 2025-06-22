@@ -19,6 +19,12 @@ export interface ISubmission extends mongoose.Document {
   paymentStatus: "pending" | "paid";
   amount: number;
   region?: mongoose.Types.ObjectId;
+  completedBy?: {
+    adminId: mongoose.Types.ObjectId;
+    adminName: string;
+    adminRole: "admin" | "regionAdmin";
+    completedAt: Date;
+  };
   createdAt: Date;
   updatedAt: Date;
   approvedAt?: Date;
@@ -82,6 +88,22 @@ const SubmissionSchema = new mongoose.Schema<ISubmission>(
     region: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Region",
+    },
+    completedBy: {
+      adminId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      adminName: {
+        type: String,
+      },
+      adminRole: {
+        type: String,
+        enum: ["admin", "regionAdmin"],
+      },
+      completedAt: {
+        type: Date,
+      },
     },
     approvedAt: {
       type: Date,

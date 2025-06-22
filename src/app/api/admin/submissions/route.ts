@@ -166,16 +166,62 @@ export async function GET(req: NextRequest) {
           const regionNames = assignedRegions.map((region) => region.name);
           console.log("Region names to filter by:", regionNames);
 
-          // Filter submissions where formData.address.city or formData.address.state matches region names
-          query.$or = [
-            { "formData.address.city": { $in: regionNames } },
-            { "formData.address.state": { $in: regionNames } },
-          ];
-
-          console.log(
-            "Filtering submissions by address matching region names:",
-            regionNames
-          );
+          // If regionId is provided, filter by specific region
+          if (regionId) {
+            const specificRegion = await Region.findById(regionId);
+            if (
+              specificRegion &&
+              assignedRegions.some((r) => r._id.toString() === regionId)
+            ) {
+              // Filter submissions where formData.address.city or formData.address.state matches specific region
+              query.$or = [
+                {
+                  "formData.address.city": {
+                    $regex: new RegExp(specificRegion.name, "i"),
+                  },
+                },
+                {
+                  "formData.address.state": {
+                    $regex: new RegExp(specificRegion.name, "i"),
+                  },
+                },
+              ];
+              console.log(
+                "Filtering submissions by specific region:",
+                specificRegion.name
+              );
+            } else {
+              // Region admin doesn't have access to this region
+              return NextResponse.json({
+                success: true,
+                submissions: [],
+                pagination: {
+                  total: 0,
+                  page,
+                  limit,
+                  pages: 0,
+                },
+              });
+            }
+          } else {
+            // Filter submissions where formData.address.city or formData.address.state matches any assigned region
+            query.$or = [
+              {
+                "formData.address.city": {
+                  $in: regionNames.map((name) => new RegExp(name, "i")),
+                },
+              },
+              {
+                "formData.address.state": {
+                  $in: regionNames.map((name) => new RegExp(name, "i")),
+                },
+              },
+            ];
+            console.log(
+              "Filtering submissions by address matching region names:",
+              regionNames
+            );
+          }
         } else {
           console.log(
             "Region admin has no regions assigned, returning empty results"
@@ -208,14 +254,31 @@ export async function GET(req: NextRequest) {
     } else if (userRole === "admin") {
       // For regular admins, only filter by region if regionId is provided
       if (regionId) {
-        query.region = regionId;
-        console.log("Admin filtering by specific region:", regionId);
+        const specificRegion = await Region.findById(regionId);
+        if (specificRegion) {
+          query.$or = [
+            {
+              "formData.address.city": {
+                $regex: new RegExp(specificRegion.name, "i"),
+              },
+            },
+            {
+              "formData.address.state": {
+                $regex: new RegExp(specificRegion.name, "i"),
+              },
+            },
+          ];
+          console.log(
+            "Admin filtering by specific region:",
+            specificRegion.name
+          );
+        }
       }
       // If isRegionAdmin parameter is true, we might want to show only submissions with regions
-      if (isRegionAdmin) {
-        query.region = { $exists: true, $ne: null };
+      if (isRegionAdmin && !regionId) {
+        // Show all submissions for admin when in region admin view but no specific region selected
         console.log(
-          "Admin requesting region admin view - filtering submissions with regions"
+          "Admin requesting region admin view - showing all submissions"
         );
       }
     }

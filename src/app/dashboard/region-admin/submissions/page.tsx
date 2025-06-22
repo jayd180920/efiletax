@@ -39,6 +39,12 @@ interface Service {
   charge: number;
 }
 
+interface Region {
+  _id: string;
+  name: string;
+  adminId?: string;
+}
+
 interface Pagination {
   total: number;
   page: number;
@@ -51,6 +57,7 @@ const RegionAdminSubmissionsPage = () => {
   const router = useRouter();
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [services, setServices] = useState<Service[]>([]);
+  const [regions, setRegions] = useState<Region[]>([]);
   const [pagination, setPagination] = useState<Pagination>({
     total: 0,
     page: 1,
@@ -60,7 +67,7 @@ const RegionAdminSubmissionsPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
-  const [serviceFilter, setServiceFilter] = useState<string | null>(null);
+  const [regionFilter, setRegionFilter] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] =
@@ -85,6 +92,31 @@ const RegionAdminSubmissionsPage = () => {
     }
   }, [user, loading, router]);
 
+  // Fetch regions assigned to the region admin
+  const fetchRegions = async () => {
+    try {
+      const response = await fetch("/api/admin/regions", {
+        method: "GET",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to fetch regions");
+      }
+
+      const data = await response.json();
+      setRegions(data.regions || []);
+    } catch (error: any) {
+      console.error("Error fetching regions:", error);
+    }
+  };
+
   // Fetch submissions
   const fetchSubmissions = async () => {
     try {
@@ -95,8 +127,8 @@ const RegionAdminSubmissionsPage = () => {
       if (statusFilter) {
         url += `&status=${statusFilter}`;
       }
-      if (serviceFilter) {
-        url += `&serviceId=${serviceFilter}`;
+      if (regionFilter) {
+        url += `&regionId=${regionFilter}`;
       }
       if (searchTerm) {
         url += `&search=${encodeURIComponent(searchTerm)}`;
@@ -160,8 +192,9 @@ const RegionAdminSubmissionsPage = () => {
     if (user && user.role === "regionAdmin") {
       fetchSubmissions();
       fetchServices();
+      fetchRegions();
     }
-  }, [pagination.page, statusFilter, serviceFilter, user]);
+  }, [pagination.page, statusFilter, regionFilter, user]);
 
   // Handle page change
   const handlePageChange = (newPage: number) => {
@@ -179,12 +212,12 @@ const RegionAdminSubmissionsPage = () => {
     setPagination({ ...pagination, page: 1 }); // Reset to first page
   };
 
-  // Handle service filter change
-  const handleServiceFilterChange = (
+  // Handle region filter change
+  const handleRegionFilterChange = (
     e: React.ChangeEvent<HTMLSelectElement>
   ) => {
     const value = e.target.value;
-    setServiceFilter(value === "all" ? null : value);
+    setRegionFilter(value === "all" ? null : value);
     setPagination({ ...pagination, page: 1 }); // Reset to first page
   };
 
@@ -349,6 +382,12 @@ const RegionAdminSubmissionsPage = () => {
         return "bg-red-100 text-red-800";
       case "pending":
         return "bg-yellow-100 text-yellow-800";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "sent for revision":
+        return "bg-orange-100 text-orange-800";
       case "paid":
       case "success":
         return "bg-green-100 text-green-800";
@@ -406,28 +445,33 @@ const RegionAdminSubmissionsPage = () => {
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
+                      <option value="sent for revision">
+                        Sent for Revision
+                      </option>
                     </select>
                   </div>
 
                   <div className="flex items-center space-x-2">
                     <label
-                      htmlFor="service-filter"
+                      htmlFor="region-filter"
                       className="text-sm text-gray-700"
                     >
-                      Service:
+                      Region:
                     </label>
                     <select
-                      id="service-filter"
+                      id="region-filter"
                       className="rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
-                      value={serviceFilter || "all"}
-                      onChange={handleServiceFilterChange}
+                      value={regionFilter || "all"}
+                      onChange={handleRegionFilterChange}
                     >
-                      <option value="all">All Services</option>
-                      {services?.map((service) => (
-                        <option key={service?._id} value={service?._id}>
-                          {service?.name}
+                      <option value="all">All Regions</option>
+                      {regions?.map((region) => (
+                        <option key={region?._id} value={region?._id}>
+                          {region?.name}
                         </option>
                       ))}
                     </select>

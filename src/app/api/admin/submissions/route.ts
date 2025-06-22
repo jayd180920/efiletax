@@ -4,7 +4,7 @@ import Submission from "@/models/Submission";
 import User from "@/models/User";
 import Region from "@/models/Region";
 import { getServerSession } from "next-auth";
-import { authOptions, authenticate } from "@/lib/auth";
+import { authOptions, authenticate  } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(req: NextRequest) {
   try {

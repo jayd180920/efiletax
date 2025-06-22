@@ -15,6 +15,7 @@ const BASE_URL = "https://app.efiletax.in"; // Change this to your server URL
 const TEST_ENDPOINTS = [
   "/api/auth/session",
   "/api/submissions?page=1&limit=1",
+  "/api/payment/check?serviceId=680bb07c9ce1b2f7ef7e680e",
   "/api/auth/providers",
 ];
 

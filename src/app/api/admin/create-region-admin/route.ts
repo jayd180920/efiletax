@@ -3,7 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import "@/models"; // Import models to ensure they're registered
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions, authenticate } from "@/lib/auth";
+import { authOptions, authenticate  } from "@/app/api/auth/[...nextauth]/route";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import axios from "axios";

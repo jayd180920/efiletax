@@ -3,7 +3,7 @@ import dbConnect from "@/lib/mongodb";
 import Submission from "@/models/Submission";
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions  } from "@/app/api/auth/[...nextauth]/route";
 import { isValidObjectId } from "mongoose";
 
 // PUT /api/admin/submissions/[id]/update-form - Update a submission's form data (admin or regionAdmin only)

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions  } from "@/app/api/auth/[...nextauth]/route";
 
 // This is a special API endpoint to fix the User model schema
 // It should only be accessible to admins

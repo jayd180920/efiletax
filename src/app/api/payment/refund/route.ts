@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions  } from "@/app/api/auth/[...nextauth]/route";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import PaymentRefund from "@/models/PaymentRefund";
 import dbConnect from "@/lib/mongodb";

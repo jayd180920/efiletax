@@ -1,34 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { generateTxnId, generatePayUFormData, getPayUConfig } from "@/lib/payu";
 import dbConnect from "@/lib/mongodb";
 import Service from "@/models/Service";
 import User from "@/models/User";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import { authenticate } from "@/lib/auth";
+import { authenticateRequest } from "@/lib/auth-server";
 
 export async function POST(req: NextRequest) {
   try {
-    let userId = null;
-    let userEmail = null;
+    console.log("Payment Initiate API: Starting authentication check");
 
-    // First try to get the user from NextAuth session
-    const session = await getServerSession();
-    if (session && session.user) {
-      userEmail = session.user.email;
-    } else {
-      // If NextAuth session fails, try custom JWT authentication
-      const authResult = await authenticate(req);
-      if (authResult) {
-        userId = authResult.userId;
-      } else {
-        // If both authentication methods fail, return 401
-        return NextResponse.json(
-          { error: "Authentication required" },
-          { status: 401 }
-        );
-      }
+    // Use the robust authentication function
+    const auth = await authenticateRequest(req);
+
+    if (!auth) {
+      console.log("Payment Initiate API: Authentication failed");
+      return NextResponse.json(
+        {
+          error: "Authentication required",
+          debug: {
+            environment: process.env.NODE_ENV,
+            timestamp: new Date().toISOString(),
+            cookies: req.cookies.getAll().map((c) => ({
+              name: c.name,
+              hasValue: !!c.value,
+            })),
+          },
+        },
+        { status: 401 }
+      );
     }
+
+    const userId = auth.userId;
+    const userEmail = auth.email;
+
+    console.log("Payment Initiate API: User authenticated successfully:", {
+      id: userId,
+      email: userEmail,
+    });
 
     // Get request body
     const body = await req.json();

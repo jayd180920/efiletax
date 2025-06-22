@@ -170,7 +170,7 @@ const SubmissionsPage = () => {
   // Fetch services
   const fetchServices = async () => {
     try {
-      const response = await fetch("/api/common-services", {
+      const response = await fetch("/api/services", {
         method: "GET",
         credentials: "include",
         headers: {
@@ -397,6 +397,12 @@ const SubmissionsPage = () => {
         return "bg-red-100 text-red-800";
       case "pending":
         return "bg-yellow-100 text-yellow-800";
+      case "in-progress":
+        return "bg-blue-100 text-blue-800";
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "sent for revision":
+        return "bg-orange-100 text-orange-800";
       case "paid":
       case "success":
         return "bg-green-100 text-green-800";
@@ -454,8 +460,13 @@ const SubmissionsPage = () => {
                     >
                       <option value="all">All</option>
                       <option value="pending">Pending</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="completed">Completed</option>
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
+                      <option value="sent for revision">
+                        Sent for Revision
+                      </option>
                     </select>
                   </div>
 

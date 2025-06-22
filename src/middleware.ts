@@ -8,6 +8,7 @@ const protectedPaths = [
   "/dashboard/admin",
   "/dashboard/region-admin",
   "/services/gst-filing/new-registration",
+  "/services", // This will protect all service pages including dynamic routes
   // Add other protected paths here
 ];
 

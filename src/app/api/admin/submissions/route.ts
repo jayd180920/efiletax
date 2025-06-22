@@ -424,6 +424,15 @@ export async function GET(req: NextRequest) {
           as: "regionDetails",
         },
       },
+      // Join with users collection to get completedBy admin details
+      {
+        $lookup: {
+          from: "users",
+          localField: "completedBy.adminId",
+          foreignField: "_id",
+          as: "completedByAdmin",
+        },
+      },
       // Add computed fields for payment status and service info
       {
         $addFields: {
@@ -475,6 +484,25 @@ export async function GET(req: NextRequest) {
               else: null,
             },
           },
+          // Format completedBy details
+          completedBy: {
+            $cond: {
+              if: { $ne: ["$completedBy", null] },
+              then: {
+                adminId: "$completedBy.adminId",
+                adminName: {
+                  $cond: {
+                    if: { $gt: [{ $size: "$completedByAdmin" }, 0] },
+                    then: { $arrayElemAt: ["$completedByAdmin.name", 0] },
+                    else: "$completedBy.adminName",
+                  },
+                },
+                adminRole: "$completedBy.adminRole",
+                completedAt: "$completedBy.completedAt",
+              },
+              else: null,
+            },
+          },
         },
       },
       // Remove the joined arrays to keep response clean
@@ -485,6 +513,7 @@ export async function GET(req: NextRequest) {
           matchedServiceId: 0,
           userDetails: 0,
           regionDetails: 0,
+          completedByAdmin: 0,
         },
       }
     );

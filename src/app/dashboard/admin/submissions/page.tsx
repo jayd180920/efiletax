@@ -16,7 +16,13 @@ interface Submission {
   };
   serviceId: string;
   serviceName: string;
-  status: "pending" | "approved" | "rejected" | "draft" | "sent for revision";
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "draft"
+    | "sent for revision"
+    | "completed";
   formData: Record<string, any>;
   files: Record<string, string[]>;
   rejectionReason?: string;
@@ -29,6 +35,12 @@ interface Submission {
   approvedAt?: string;
   rejectedAt?: string;
   paymentAmount?: number;
+  completedBy?: {
+    adminId: string;
+    adminName: string;
+    adminRole: "admin" | "regionAdmin";
+    completedAt: string;
+  };
 }
 
 interface Region {
@@ -635,6 +647,31 @@ const SubmissionsPage = () => {
                           </p>
                         </div>
                       </div>
+
+                      {/* Show admin/region admin name for completed/approved submissions */}
+                      {(submission.status === "completed" ||
+                        submission.status === "approved") &&
+                        submission.completedBy && (
+                          <div className="mt-2 p-2 bg-green-50 rounded-md border border-green-200">
+                            <p className="text-sm text-green-800">
+                              <span className="font-medium">
+                                {submission.completedBy.adminRole === "admin"
+                                  ? "Admin"
+                                  : "Region Admin"}
+                                :
+                              </span>{" "}
+                              {submission.completedBy.adminName}
+                              {submission.completedBy.completedAt && (
+                                <span className="text-green-600 ml-2">
+                                  • Completed on{" "}
+                                  {formatDate(
+                                    submission.completedBy.completedAt
+                                  )}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                        )}
 
                       {/* Comments Section */}
                       <div className="mt-3">

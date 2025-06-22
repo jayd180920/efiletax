@@ -416,6 +416,14 @@ export async function PUT(
       submission.approvedAt = new Date();
       submission.rejectionReason = undefined;
 
+      // Track who approved the submission
+      submission.completedBy = {
+        adminId: new mongoose.Types.ObjectId(userId),
+        adminName: adminName,
+        adminRole: userRole as "admin" | "regionAdmin",
+        completedAt: new Date(),
+      };
+
       if (tax_summary_file) {
         submission.tax_summary = tax_summary_file;
 

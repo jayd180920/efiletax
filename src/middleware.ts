@@ -57,6 +57,7 @@ export async function middleware(request: NextRequest) {
       request.cookies.get("next-auth.session-token")?.value ||
       request.cookies.get("__Secure-next-auth.session-token")?.value;
     console.log("NextAuth session token exists:", !!sessionToken);
+    console.log("Environment:", process.env.NODE_ENV);
 
     // Check if we have any valid authentication
     let isAuthenticated = false;

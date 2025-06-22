@@ -25,26 +25,53 @@ export async function GET(request: NextRequest) {
     let userId;
     let userRole;
     let userRegion;
-    console.log("ABCD", session);
+
+    console.log("Submissions API: Checking authentication");
+    console.log("NextAuth session exists:", !!session);
+    console.log("Environment:", process.env.NODE_ENV);
+
     if (session?.user) {
       userId = session.user.id;
       userRole = (session.user as any).role;
       userRegion = (session.user as any).region;
-      console.log(
-        "User authenticated via NextAuth session: ABCD",
-        session.user
-      );
+      console.log("User authenticated via NextAuth session:", {
+        id: userId,
+        role: userRole,
+        email: session.user.email,
+      });
     } else {
+      console.log("No NextAuth session, trying custom authentication");
       // Try custom authentication
       const auth = await authenticate(request);
 
       if (!auth) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        console.log("Custom authentication also failed");
+        console.log(
+          "Request cookies:",
+          request.cookies
+            .getAll()
+            .map((c) => ({ name: c.name, hasValue: !!c.value }))
+        );
+        return NextResponse.json(
+          {
+            error: "Unauthorized - No valid session or token found",
+            debug: {
+              hasNextAuthSession: !!session,
+              environment: process.env.NODE_ENV,
+              timestamp: new Date().toISOString(),
+            },
+          },
+          { status: 401 }
+        );
       }
 
       userId = auth.userId;
       userRole = auth.role;
       userRegion = auth.region;
+      console.log("User authenticated via custom token:", {
+        id: userId,
+        role: userRole,
+      });
     }
 
     // Connect to database

@@ -196,12 +196,17 @@ export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
-      name: "next-auth.session-token", // 👈 avoid "__Secure-" for HTTP/IP
+      name:
+        process.env.NODE_ENV === "production"
+          ? "__Secure-next-auth.session-token"
+          : "next-auth.session-token",
       options: {
         httpOnly: true,
         sameSite: "lax",
         path: "/",
-        secure: false, // 👈 allow cookie over HTTP (must be false for IP-based access)
+        secure: process.env.NODE_ENV === "production", // Use secure cookies in production
+        domain:
+          process.env.NODE_ENV === "production" ? ".efiletax.in" : undefined, // Set domain for production
       },
     },
   },

@@ -649,7 +649,7 @@ const SubmissionsPage = () => {
                       </div>
 
                       {/* Show admin/region admin name for completed/approved submissions */}
-                      {(submission.status === "completed" ||
+                      {/* {(submission.status === "completed" ||
                         submission.status === "approved") &&
                         submission.completedBy && (
                           <div className="mt-2 p-2 bg-green-50 rounded-md border border-green-200">
@@ -673,7 +673,7 @@ const SubmissionsPage = () => {
                           </div>
                         )}
 
-                      {/* Comments Section */}
+                      Comments Section */}
                       <div className="mt-3">
                         <button
                           className="text-sm text-blue-600 hover:text-blue-800 focus:outline-none show-comments"

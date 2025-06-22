@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import Service from "@/models/Service";
 import { getServerSession } from "next-auth";
-import { authOptions, authenticate  } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticateRequest } from "@/lib/auth-server";
 import { getToken } from "next-auth/jwt";
 import { isValidObjectId } from "mongoose";
 
@@ -88,7 +89,7 @@ export async function PUT(
     // 3. If still not authenticated, try custom token
     if (!isAuthenticated) {
       console.log("PUT /api/services/[id]: Checking custom token");
-      const customAuth = await authenticate(req);
+      const customAuth = await authenticateRequest(req);
 
       if (customAuth) {
         console.log("PUT /api/services/[id]: Custom token found");
@@ -254,7 +255,7 @@ export async function DELETE(
     // 3. If still not authenticated, try custom token
     if (!isAuthenticated) {
       console.log("DELETE /api/services/[id]: Checking custom token");
-      const customAuth = await authenticate(req);
+      const customAuth = await authenticateRequest(req);
 
       if (customAuth) {
         console.log("DELETE /api/services/[id]: Custom token found");

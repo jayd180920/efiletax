@@ -4,7 +4,8 @@ import Submission from "@/models/Submission";
 import User from "@/models/User";
 import Region from "@/models/Region";
 import { getServerSession } from "next-auth";
-import { authOptions, authenticate  } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticateRequest } from "@/lib/auth-server";
 
 export async function GET(req: NextRequest) {
   try {
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
       }
     } else {
       // If no valid NextAuth session, try custom auth
-      const auth = await authenticate(req);
+      const auth = await authenticateRequest(req);
       console.log("Custom auth result:", auth);
 
       // If no valid auth or user is not admin or regionAdmin, return unauthorized

@@ -3,7 +3,8 @@ import dbConnect from "@/lib/mongodb";
 import "@/models"; // Import models to ensure they're registered
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions, authenticate  } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticateRequest } from "@/lib/auth-server";
 
 // API endpoint to get all region admins
 export async function GET(req: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
       console.log("User authenticated via NextAuth session as admin");
     } else {
       // If no valid NextAuth session, try custom auth
-      const auth = await authenticate(req);
+      const auth = await authenticateRequest(req);
 
       // If no valid auth or user is not admin, return unauthorized
       if (!auth || auth.role !== "admin") {

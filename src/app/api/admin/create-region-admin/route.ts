@@ -3,7 +3,8 @@ import dbConnect from "@/lib/mongodb";
 import "@/models"; // Import models to ensure they're registered
 import User from "@/models/User";
 import { getServerSession } from "next-auth";
-import { authOptions, authenticate  } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authenticateRequest } from "@/lib/auth-server";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import axios from "axios";
@@ -22,7 +23,7 @@ export async function POST(req: NextRequest) {
       console.log("User authenticated via NextAuth session as admin");
     } else {
       // If no valid NextAuth session, try custom auth
-      const auth = await authenticate(req);
+      const auth = await authenticateRequest(req);
 
       // If no valid auth or user is not admin, return unauthorized
       if (!auth || auth.role !== "admin") {

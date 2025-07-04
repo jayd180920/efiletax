@@ -573,3 +573,8 @@ div.request-details-header {
 p.text-sm.font-medium.text-gray-500.green-text {
   color: #21b2aa;
 }
+.grid.grid-cols-2.gap-4.refund-popup-flex {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}

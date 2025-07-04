@@ -146,8 +146,8 @@ const RefundModal: React.FC<RefundModalProps> = ({
           </button>
         </div>
 
-        <div className="mb-6 rounded-lg bg-gray-50 p-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="mb-6 rounded-lg bg-gray-50 p-4 refund-popup">
+          <div className="grid grid-cols-2 gap-4 refund-popup-flex">
             <div>
               <p className="text-sm text-gray-500">Transaction ID</p>
               <p className="font-medium text-gray-800">

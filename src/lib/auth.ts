@@ -71,7 +71,7 @@ export function generateToken(user: UserForToken): string {
     region: user.region,
   };
 
-  return jwt.sign(payload, secret, { expiresIn: "7d" });
+  return jwt.sign(payload, secret, { expiresIn: "24m" });
 }
 
 /**

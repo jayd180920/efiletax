@@ -87,17 +87,24 @@ export async function uploadFileToS3(
       key,
     });
 
-    // Upload the file to S3
+    // Upload the file to S3 with secure headers
     const command = new PutObjectCommand({
       Bucket: bucketName,
       Key: key,
       Body: file,
-      ContentType: contentType,
+      ContentType: "application/octet-stream", // Force secure content type
+      ContentDisposition: `attachment; filename="${fileName}"`, // Force download
       Metadata: {
         originalFileName: fileName,
+        originalContentType: contentType, // Store original content type in metadata
         userId,
         serviceId,
+        uploadTimestamp: new Date().toISOString(),
       },
+      // Security headers
+      CacheControl: "private, no-cache, no-store, must-revalidate",
+      // Prevent public access
+      ACL: undefined, // Don't set any ACL to prevent public access
     });
 
     const response = await s3Client.send(command);

@@ -1,5 +1,6 @@
 import React, { useState, useRef, ChangeEvent, useEffect } from "react";
-import { deleteFileFromS3 } from "@/lib/s3-client";
+import { deleteFileFromS3, getSecureDownloadUrl } from "@/lib/s3-client";
+import { getAllowedFileExtensions } from "@/utils/file-validation";
 
 interface FileUploadFieldProps {
   label: string;
@@ -29,7 +30,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   name,
   file,
   onFileChange,
-  accept = ".pdf,.jpg,.jpeg,.png",
+  accept,
   required = false,
   uploadStatus = null,
   isUploading = false,
@@ -37,6 +38,9 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
   existingFileKey = "",
   onFileRemove,
 }) => {
+  // Use secure file types from validation utility
+  const allowedExtensions = getAllowedFileExtensions();
+  const acceptTypes = accept || allowedExtensions.join(",");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showPreview, setShowPreview] = useState(false);
   const [fileToRemove, setFileToRemove] = useState<string | null>(null);
@@ -193,7 +197,7 @@ const FileUploadField: React.FC<FileUploadFieldProps> = ({
               ref={fileInputRef}
               onChange={handleFileChange}
               className="hidden"
-              accept={accept}
+              accept={acceptTypes}
             />
 
             <button

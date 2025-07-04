@@ -5,6 +5,7 @@ import { apiHandler, UnauthorizedError } from "@/lib/api-utils";
 import { getToken } from "next-auth/jwt";
 import User from "@/models/User";
 import dbConnect from "@/lib/mongodb";
+import { validateFile, FileInfo } from "@/utils/file-validation";
 
 /**
  * Parse multipart form data in Next.js App Router
@@ -110,6 +111,37 @@ export async function POST(req: NextRequest) {
           type: file.mimetype,
         });
 
+        // Validate the file before uploading
+        const fileInfo: FileInfo = {
+          buffer: file.buffer,
+          originalFilename: file.originalFilename,
+          mimetype: file.mimetype,
+          size: file.buffer.length,
+        };
+
+        console.log("UPLOAD API: Validating file...");
+        const validationResult = validateFile(fileInfo);
+
+        if (!validationResult.valid) {
+          console.error("UPLOAD API: File validation failed", {
+            filename: file.originalFilename,
+            reason: validationResult.reason,
+          });
+          return NextResponse.json(
+            {
+              error: "File validation failed",
+              details: validationResult.reason,
+              filename: file.originalFilename,
+            },
+            { status: 400 }
+          );
+        }
+
+        console.log("UPLOAD API: File validation passed", {
+          filename: file.originalFilename,
+          detectedType: validationResult.detectedType,
+        });
+
         try {
           // Upload to S3
           console.log("UPLOAD API: Uploading to S3...");
@@ -130,6 +162,7 @@ export async function POST(req: NextRequest) {
             key: result.key,
             url: result.url,
             contentType: file.mimetype,
+            validationType: validationResult.detectedType,
           });
         } catch (error) {
           console.error("UPLOAD API: S3 upload error:", error);

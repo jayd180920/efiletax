@@ -159,13 +159,20 @@ export async function uploadMultipleFilesToS3(
 /**
  * Generate a pre-signed URL for downloading a file from S3
  * @param key S3 object key
+ * @param filename Optional filename for the download
  * @returns Pre-signed URL for downloading the file
  */
-export async function getSignedDownloadUrl(key: string): Promise<string> {
+export async function getSignedDownloadUrl(
+  key: string,
+  filename?: string
+): Promise<string> {
   try {
-    const response = await fetch(
-      `/api/s3/download?key=${encodeURIComponent(key)}`
-    );
+    const params = new URLSearchParams({ key });
+    if (filename) {
+      params.append("filename", filename);
+    }
+
+    const response = await fetch(`/api/s3/download?${params.toString()}`);
 
     if (!response.ok) {
       throw new Error("Failed to generate download URL");
@@ -177,6 +184,24 @@ export async function getSignedDownloadUrl(key: string): Promise<string> {
     console.error("Error generating download URL:", error);
     throw error;
   }
+}
+
+/**
+ * Get secure proxy URL for downloading a file from S3
+ * This is the recommended method for secure file downloads
+ * @param key S3 object key
+ * @param filename Optional filename for the download
+ * @returns Secure proxy URL for downloading the file
+ */
+export async function getSecureDownloadUrl(
+  key: string,
+  filename?: string
+): Promise<string> {
+  const params = new URLSearchParams({ key });
+  if (filename) {
+    params.append("filename", filename);
+  }
+  return `/api/s3/proxy?${params.toString()}`;
 }
 
 /**

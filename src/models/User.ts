@@ -15,9 +15,15 @@ export interface IUser extends mongoose.Document {
   twoFactorSecret?: string;
   twoFactorEnabled?: boolean;
   twoFactorTempSecret?: string;
+  failedLoginAttempts?: number;
+  lastFailedLogin?: Date;
+  lockedUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword?: (candidatePassword: string) => Promise<boolean>;
+  isAccountLocked?: () => boolean;
+  incrementFailedAttempts?: () => Promise<void>;
+  resetFailedAttempts?: () => Promise<void>;
 }
 
 const UserSchema = new mongoose.Schema<IUser>(
@@ -87,6 +93,16 @@ const UserSchema = new mongoose.Schema<IUser>(
       type: Date,
       select: false, // Don't return token expiry by default in queries
     },
+    failedLoginAttempts: {
+      type: Number,
+      default: 0,
+    },
+    lastFailedLogin: {
+      type: Date,
+    },
+    lockedUntil: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
@@ -126,6 +142,64 @@ UserSchema.methods.comparePassword = async function (
     console.error("Error comparing passwords:", error);
     throw error;
   }
+};
+
+// Method to check if account is locked
+UserSchema.methods.isAccountLocked = function (): boolean {
+  return !!(this.lockedUntil && this.lockedUntil > new Date());
+};
+
+// Method to increment failed login attempts with exponential backoff
+UserSchema.methods.incrementFailedAttempts = async function (): Promise<void> {
+  // If we have a previous failed attempt, check if it's been more than 2 hours
+  // If so, reset the counter
+  if (this.lastFailedLogin) {
+    const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000);
+    if (this.lastFailedLogin < twoHoursAgo) {
+      this.failedLoginAttempts = 0;
+    }
+  }
+
+  this.failedLoginAttempts = (this.failedLoginAttempts || 0) + 1;
+  this.lastFailedLogin = new Date();
+
+  // Implement exponential backoff lockout periods
+  let lockoutDuration = 0;
+
+  if (this.failedLoginAttempts >= 3) {
+    // 3 attempts: 5 minutes
+    if (this.failedLoginAttempts === 3) {
+      lockoutDuration = 5 * 60 * 1000; // 5 minutes
+    }
+    // 4 attempts: 15 minutes
+    else if (this.failedLoginAttempts === 4) {
+      lockoutDuration = 15 * 60 * 1000; // 15 minutes
+    }
+    // 5 attempts: 30 minutes
+    else if (this.failedLoginAttempts === 5) {
+      lockoutDuration = 30 * 60 * 1000; // 30 minutes
+    }
+    // 6 attempts: 1 hour
+    else if (this.failedLoginAttempts === 6) {
+      lockoutDuration = 60 * 60 * 1000; // 1 hour
+    }
+    // 7+ attempts: 24 hours
+    else {
+      lockoutDuration = 24 * 60 * 60 * 1000; // 24 hours
+    }
+
+    this.lockedUntil = new Date(Date.now() + lockoutDuration);
+  }
+
+  await this.save();
+};
+
+// Method to reset failed login attempts
+UserSchema.methods.resetFailedAttempts = async function (): Promise<void> {
+  this.failedLoginAttempts = 0;
+  this.lastFailedLogin = undefined;
+  this.lockedUntil = undefined;
+  await this.save();
 };
 
 // Check if model exists before creating a new one (for hot reloading in development)

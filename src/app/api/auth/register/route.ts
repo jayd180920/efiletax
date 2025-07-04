@@ -5,6 +5,8 @@ import { generateToken } from "@/lib/auth";
 import { apiHandler, ValidationError } from "@/lib/api-utils";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import rateLimiter, { getClientIP, RATE_LIMIT_CONFIG } from "@/lib/rate-limit";
+import { logRegisterSuccess, logRegisterFailed } from "@/lib/auth-logger";
 
 // Function to verify reCAPTCHA token
 async function verifyRecaptcha(token: string): Promise<boolean> {
@@ -77,6 +79,29 @@ async function sendPasswordSetupEmail(
 
 export async function POST(req: NextRequest) {
   return apiHandler(async () => {
+    console.log("Registration API route called");
+
+    // Get client IP for rate limiting and logging
+    const clientIP = getClientIP(req);
+    console.log("Client IP:", clientIP);
+
+    // Check IP-based rate limiting for registration
+    const ipRateLimit = rateLimiter.checkLimit(
+      clientIP,
+      RATE_LIMIT_CONFIG.REGISTER.IP_LIMIT,
+      RATE_LIMIT_CONFIG.REGISTER.WINDOW_MS,
+      "ip"
+    );
+
+    if (!ipRateLimit.allowed) {
+      console.log("Registration IP rate limit exceeded for:", clientIP);
+      throw new ValidationError(
+        `Too many registration attempts from this IP. Please try again in ${Math.ceil(
+          (ipRateLimit.retryAfter || 0) / 60
+        )} minutes.`
+      );
+    }
+
     // Connect to database
     await dbConnect();
 
@@ -86,6 +111,7 @@ export async function POST(req: NextRequest) {
 
     // Validate input
     if (!name || !email) {
+      await logRegisterFailed(req, email || "unknown", "Missing name or email");
       throw new ValidationError("Please provide name and email");
     }
 
@@ -94,6 +120,7 @@ export async function POST(req: NextRequest) {
       const isRecaptchaValid = await verifyRecaptcha(recaptchaToken);
       if (!isRecaptchaValid) {
         console.log("reCAPTCHA validation failed");
+        await logRegisterFailed(req, email, "reCAPTCHA validation failed");
         throw new ValidationError(
           "reCAPTCHA validation failed. Please try again."
         );
@@ -103,41 +130,53 @@ export async function POST(req: NextRequest) {
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
+      await logRegisterFailed(req, email, "Email already in use");
       throw new ValidationError("Email already in use");
     }
 
-    // Generate a password reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    try {
+      // Generate a password reset token
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const resetTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create new user without password
-    const user = await User.create({
-      name,
-      email,
-      phone,
-      role: "user", // Default role
-      resetToken,
-      resetTokenExpiry,
-      isPasswordSet: false, // Flag to indicate password needs to be set by user
-    });
+      // Create new user without password
+      const user = await User.create({
+        name,
+        email,
+        phone,
+        role: "user", // Default role
+        resetToken,
+        resetTokenExpiry,
+        isPasswordSet: false, // Flag to indicate password needs to be set by user
+      });
 
-    // Send email with password setup link
-    await sendPasswordSetupEmail(email, name, resetToken);
+      // Send email with password setup link
+      await sendPasswordSetupEmail(email, name, resetToken);
 
-    // Return success response
-    return NextResponse.json(
-      {
-        success: true,
-        message:
-          "Registration successful! Please check your email to set up your password.",
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
+      // Log successful registration
+      await logRegisterSuccess(req, user._id.toString(), user.email);
+
+      console.log("User registered successfully:", user.email);
+
+      // Return success response
+      return NextResponse.json(
+        {
+          success: true,
+          message:
+            "Registration successful! Please check your email to set up your password.",
+          user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
         },
-      },
-      { status: 201 }
-    );
+        { status: 201 }
+      );
+    } catch (error) {
+      console.error("Registration error:", error);
+      await logRegisterFailed(req, email, "Registration failed");
+      throw error;
+    }
   });
 }

@@ -134,8 +134,21 @@ export default function ServicePage() {
           }
         );
 
+        // Check for session expiry (401 status)
+        if (response.status === 401) {
+          // Store the current URL to redirect back after login
+          const currentUrl = window.location.href;
+          sessionStorage.setItem("redirectAfterLogin", currentUrl);
+
+          // Redirect to login with session expired message
+          window.location.href = `/auth/login?message=${encodeURIComponent(
+            "Your session expired, please login to continue using our services"
+          )}&redirect=${encodeURIComponent(currentUrl)}`;
+          return;
+        }
+
         if (!response.ok) {
-          throw new Error("Failed to fetch payment details");
+          throw new Error("Failed to check payment status. Please try again.");
         }
 
         const data = await response.json();
@@ -152,6 +165,16 @@ export default function ServicePage() {
               credentials: "include",
             }
           );
+
+          // Check for session expiry on transaction fetch as well
+          if (transactionResponse.status === 401) {
+            const currentUrl = window.location.href;
+            sessionStorage.setItem("redirectAfterLogin", currentUrl);
+            window.location.href = `/auth/login?message=${encodeURIComponent(
+              "Your session expired, please login to continue using our services"
+            )}&redirect=${encodeURIComponent(currentUrl)}`;
+            return;
+          }
 
           if (transactionResponse.ok) {
             const transactionData = await transactionResponse.json();

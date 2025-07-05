@@ -18,12 +18,36 @@ interface Service {
   unique_name: string;
 }
 
+interface Submission {
+  _id: string;
+  status:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "sent for revision"
+    | "in-progress"
+    | "completed";
+  serviceName: string;
+  paymentStatus: "pending" | "paid";
+  createdAt: string;
+  updatedAt: string;
+  approvedAt?: string;
+  rejectedAt?: string;
+  completedBy?: {
+    adminId: string;
+    adminName: string;
+    adminRole: "admin" | "regionAdmin";
+    completedAt: string;
+  };
+}
+
 interface PaymentTransaction {
   _id: string;
   userId: string;
   user?: User;
   serviceId: string;
   service?: Service;
+  submission?: Submission;
   payuTxnId: string;
   mihpayid: string;
   status: "success" | "failure" | "pending";
@@ -822,8 +846,18 @@ const PaymentTransactionsList: React.FC = () => {
                   onClick={() => handleSort("status")}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>Status</span>
+                    <span>Payment Status</span>
                     {getSortIcon("status")}
+                  </div>
+                </th>
+                <th
+                  scope="col"
+                  className="group cursor-pointer px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500"
+                  onClick={() => handleSort("submission.status")}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Submission Status</span>
+                    {getSortIcon("submission.status")}
                   </div>
                 </th>
                 <th
@@ -905,6 +939,38 @@ const PaymentTransactionsList: React.FC = () => {
                       )}
                     </div>
                   </td>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    {transaction.submission ? (
+                      <span
+                        className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
+                          transaction.submission.status === "completed"
+                            ? "bg-green-100 text-green-800"
+                            : transaction.submission.status === "approved"
+                            ? "bg-blue-100 text-blue-800"
+                            : transaction.submission.status === "in-progress"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : transaction.submission.status === "rejected"
+                            ? "bg-red-100 text-red-800"
+                            : transaction.submission.status ===
+                              "sent for revision"
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {transaction.submission.status
+                          .split(" ")
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1)
+                          )
+                          .join(" ")}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400 text-sm">
+                        No submission
+                      </span>
+                    )}
+                  </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {format(
                       new Date(transaction.createdAt),
@@ -913,10 +979,16 @@ const PaymentTransactionsList: React.FC = () => {
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium">
                     {transaction.status === "success" &&
-                      !transaction.refunded && (
+                      !transaction.refunded &&
+                      transaction.submission &&
+                      (transaction.submission.status === "pending" ||
+                        transaction.submission.status === "rejected" ||
+                        transaction.submission.status ===
+                          "sent for revision") && (
                         <button
                           onClick={() => handleRefundClick(transaction)}
                           className="text-red-600 hover:text-red-900 refund-button"
+                          title={`Refund available - Submission status: ${transaction.submission.status}`}
                         >
                           Refund
                         </button>
@@ -924,6 +996,30 @@ const PaymentTransactionsList: React.FC = () => {
                     {transaction.refunded && (
                       <span className="text-gray-500">Refunded</span>
                     )}
+                    {transaction.status === "success" &&
+                      !transaction.refunded &&
+                      transaction.submission &&
+                      (transaction.submission.status === "completed" ||
+                        transaction.submission.status === "approved" ||
+                        transaction.submission.status === "in-progress") && (
+                        <span
+                          className="text-gray-400 text-sm"
+                          title={`Refund not available - Submission status: ${transaction.submission.status}`}
+                        >
+                          No refund
+                        </span>
+                      )}
+                    {transaction.status === "success" &&
+                      !transaction.refunded &&
+                      !transaction.submission && (
+                        <button
+                          onClick={() => handleRefundClick(transaction)}
+                          className="text-red-600 hover:text-red-900 refund-button"
+                          title="Refund available - No submission found"
+                        >
+                          Refund
+                        </button>
+                      )}
                   </td>
                 </tr>
               ))}

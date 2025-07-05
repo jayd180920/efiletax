@@ -74,18 +74,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Generate transaction ID
-    const txnId = generateTxnId();
-
-    // Create payment transaction record
-    const paymentTransaction = new PaymentTransaction({
+    // Check for existing pending payment transaction for this user and service
+    let paymentTransaction = await PaymentTransaction.findOne({
       userId: user._id,
-      payuTxnId: txnId,
-      status: "pending",
-      amount: service.charge || 0,
       serviceId: service._id,
-      hash: "", // Will be updated with the actual hash
-    });
+      status: "pending",
+    }).sort({ createdAt: -1 }); // Get the most recent pending transaction
+
+    let txnId: string;
+
+    if (paymentTransaction) {
+      // Reuse existing pending transaction
+      txnId = paymentTransaction.payuTxnId;
+      console.log(
+        "Payment Initiate API: Reusing existing pending transaction:",
+        txnId
+      );
+    } else {
+      // Generate new transaction ID and create new transaction record
+      txnId = generateTxnId();
+
+      paymentTransaction = new PaymentTransaction({
+        userId: user._id,
+        payuTxnId: txnId,
+        status: "pending",
+        amount: service.charge || 0,
+        serviceId: service._id,
+        hash: "", // Will be updated with the actual hash
+      });
+
+      console.log("Payment Initiate API: Creating new transaction:", txnId);
+    }
 
     // Ensure we have valid values for all required parameters
     const amount = service.charge || 0;

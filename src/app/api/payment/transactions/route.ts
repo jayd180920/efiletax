@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions  } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import PaymentTransaction from "@/models/PaymentTransaction";
 import PaymentRefund from "@/models/PaymentRefund";
+import Submission from "@/models/Submission";
 import dbConnect from "@/lib/mongodb";
 import mongoose from "mongoose";
 import { authenticate } from "@/lib/auth";
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
   const search = url.searchParams.get("search") || "";
   const sortField = url.searchParams.get("sortField") || "createdAt";
   const sortOrder = url.searchParams.get("sortOrder") || "desc";
+  const statusFilter = url.searchParams.get("status") || "";
 
   try {
     console.log("GET /api/payment/transactions: Starting authentication check");
@@ -137,13 +139,57 @@ export async function GET(req: NextRequest) {
         },
       },
       {
+        $lookup: {
+          from: "submissions",
+          let: {
+            userId: { $toString: "$userId" },
+            serviceUniqueName: {
+              $arrayElemAt: ["$serviceDetails.service_unique_name", 0],
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", "$$userId"] },
+                    { $eq: ["$serviceId", "$$serviceUniqueName"] },
+                  ],
+                },
+              },
+            },
+            {
+              $sort: { createdAt: -1 },
+            },
+            {
+              $limit: 1,
+            },
+          ],
+          as: "submissionDetails",
+        },
+      },
+      {
         $addFields: {
           user: { $arrayElemAt: ["$userDetails", 0] },
           service: { $arrayElemAt: ["$serviceDetails", 0] },
+          submission: { $arrayElemAt: ["$submissionDetails", 0] },
           refunded: { $gt: [{ $size: "$refundDetails" }, 0] },
           refundDetails: 1,
         },
       },
+      // Apply search filter if provided
+      ...(search ? [{ $match: searchFilter }] : []),
+      // Apply status filter if provided
+      ...(statusFilter && statusFilter !== "all"
+        ? [
+            {
+              $match:
+                statusFilter === "refund"
+                  ? { refunded: true }
+                  : { status: statusFilter, refunded: { $ne: true } },
+            },
+          ]
+        : []),
       {
         $project: {
           _id: 1,
@@ -171,7 +217,16 @@ export async function GET(req: NextRequest) {
           "user.email": 1,
           "service._id": 1,
           "service.name": 1,
-          "service.unique_name": 1,
+          "service.service_unique_name": 1,
+          "submission._id": 1,
+          "submission.status": 1,
+          "submission.serviceName": 1,
+          "submission.paymentStatus": 1,
+          "submission.createdAt": 1,
+          "submission.updatedAt": 1,
+          "submission.approvedAt": 1,
+          "submission.rejectedAt": 1,
+          "submission.completedBy": 1,
         },
       },
       {
@@ -187,11 +242,96 @@ export async function GET(req: NextRequest) {
 
     // Execute the aggregation pipeline
     const transactions = await PaymentTransaction.aggregate(
-      aggregationPipeline
+      aggregationPipeline as any[]
     );
 
-    // Get total count for pagination
-    const totalCount = await PaymentTransaction.countDocuments();
+    // Get total count for pagination with same filters
+    const countPipeline = [
+      {
+        $lookup: {
+          from: "users",
+          localField: "userId",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "services",
+          localField: "serviceId",
+          foreignField: "_id",
+          as: "serviceDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "paymentrefunds",
+          localField: "_id",
+          foreignField: "paymentTransactionId",
+          as: "refundDetails",
+        },
+      },
+      {
+        $lookup: {
+          from: "submissions",
+          let: {
+            userId: { $toString: "$userId" },
+            serviceUniqueName: {
+              $arrayElemAt: ["$serviceDetails.service_unique_name", 0],
+            },
+          },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$userId", "$$userId"] },
+                    { $eq: ["$serviceId", "$$serviceUniqueName"] },
+                  ],
+                },
+              },
+            },
+            {
+              $sort: { createdAt: -1 },
+            },
+            {
+              $limit: 1,
+            },
+          ],
+          as: "submissionDetails",
+        },
+      },
+      {
+        $addFields: {
+          user: { $arrayElemAt: ["$userDetails", 0] },
+          service: { $arrayElemAt: ["$serviceDetails", 0] },
+          submission: { $arrayElemAt: ["$submissionDetails", 0] },
+          refunded: { $gt: [{ $size: "$refundDetails" }, 0] },
+          refundDetails: 1,
+        },
+      },
+      // Apply search filter if provided
+      ...(search ? [{ $match: searchFilter }] : []),
+      // Apply status filter if provided
+      ...(statusFilter && statusFilter !== "all"
+        ? [
+            {
+              $match:
+                statusFilter === "refund"
+                  ? { refunded: true }
+                  : { status: statusFilter, refunded: { $ne: true } },
+            },
+          ]
+        : []),
+      {
+        $count: "total",
+      },
+    ];
+
+    const countResult = await PaymentTransaction.aggregate(
+      countPipeline as any[]
+    );
+    const totalCount = countResult.length > 0 ? countResult[0].total : 0;
 
     return NextResponse.json({
       transactions,
